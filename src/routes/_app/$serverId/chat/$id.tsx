@@ -1,14 +1,8 @@
 import { createFileRoute } from "@tanstack/solid-router"
-import { For, Show, createMemo } from "solid-js"
-import { twMerge } from "tailwind-merge"
-import { tv } from "tailwind-variants"
-import { ChatImage } from "~/components/chat-ui/chat-image"
+import { For, createMemo } from "solid-js"
 import { ChatMessage } from "~/components/chat-ui/chat-message"
 import { ChatTopbar } from "~/components/chat-ui/chat-topbar"
-import { ReactionTags } from "~/components/chat-ui/reaction-tags"
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar"
 import { useChatMessages, type Message } from "~/lib/hooks/data/use-chat-messages"
-import { useZero } from "~/lib/zero-context"
 
 export const Route = createFileRoute("/_app/$serverId/chat/$id")({
 	component: RouteComponent,
