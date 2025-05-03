@@ -1,4 +1,4 @@
-import { For, Show, createMemo } from "solid-js"
+import { For, Show, createMemo, type Accessor, type Signal } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import { tv } from "tailwind-variants"
 import type { Message } from "~/lib/hooks/data/use-chat-messages"
@@ -32,7 +32,6 @@ export function ChatMessage(props: {
 	isLastMessage: boolean
 	isGroupStart: boolean
 	isGroupEnd: boolean
-	messagesEndRef: HTMLDivElement | undefined
 }) {
 	const showAvatar = createMemo(() => props.isGroupStart)
 
@@ -91,7 +90,7 @@ export function ChatMessage(props: {
 					</span>
 				</Button>
 			</Show>
-			<div class="flex gap-4" ref={isLastMessage() ? props.messagesEndRef : undefined}>
+			<div class="flex gap-4">
 				<Show when={showAvatar()}>
 					<Avatar>
 						<AvatarImage src={props.message.author?.avatarUrl} />

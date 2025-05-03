@@ -1,9 +1,10 @@
 import { createFileRoute, useParams } from "@tanstack/solid-router"
-import { type Accessor, For, createMemo } from "solid-js"
+import { type Accessor, For, createMemo, onMount } from "solid-js"
 import { ChatMessage } from "~/components/chat-ui/chat-message"
 import { ChatTopbar } from "~/components/chat-ui/chat-topbar"
 import { FloatingBar } from "~/components/chat-ui/floating-bar"
 import { type Message, useChatMessages } from "~/lib/hooks/data/use-chat-messages"
+import { createChangeEffect } from "~/lib/utils/signals"
 
 export const Route = createFileRoute("/_app/$serverId/chat/$id")({
 	component: RouteComponent,
@@ -11,10 +12,29 @@ export const Route = createFileRoute("/_app/$serverId/chat/$id")({
 
 function RouteComponent() {
 	const params = useParams({ from: "/_app/$serverId/chat/$id" })()
-
-	const messagesEndRef: HTMLDivElement | undefined = undefined
+	let messagesRef: HTMLDivElement | undefined
 
 	const messages = createMemo(() => useChatMessages(params.id))
+
+	const lastMessageId = createMemo(() => {
+		return messages().messages().at(0)?.id
+	})
+
+	// Smooth-scroll to the bottom of the messages when the last message id changes
+	// TODO: Should be only when the last message is from the current user (?)
+	createChangeEffect(lastMessageId, (currentId) => {
+		if (currentId && messagesRef) {
+			messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "smooth" })
+		}
+	})
+
+	// Scroll to the bottom of the messages when the component mounts
+	onMount(() => {
+		if (lastMessageId() && messagesRef) {
+			messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "instant" })
+		}
+	})
+
 	const processedMessages = createMemo(() => {
 		const groupedMessages = messages()
 			.messages()
@@ -85,7 +105,7 @@ function RouteComponent() {
 	return (
 		<div class="flex h-screen flex-col">
 			<ChatTopbar />
-			<div class="flex-1 space-y-6 overflow-y-auto p-4 pl-0">
+			<div class="flex-1 space-y-6 overflow-y-auto p-4 pl-0" ref={messagesRef}>
 				<For each={processedMessages().processedGroupedMessages}>
 					{([date, messages], dateIndex) => (
 						<div class="flex flex-col">
@@ -106,7 +126,6 @@ function RouteComponent() {
 											isLastMessage={isLastMessage}
 											isGroupStart={isGroupStart}
 											isGroupEnd={isGroupEnd}
-											messagesEndRef={messagesEndRef}
 										/>
 									)
 								}}
