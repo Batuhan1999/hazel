@@ -13,7 +13,10 @@ import { Tabs } from "~/components/ui/tabs"
 import { TextField } from "~/components/ui/text-field"
 import { Tooltip } from "~/components/ui/tooltip"
 
-import { Index } from "solid-js"
+import { For, Index, Show } from "solid-js"
+import { IconCheck } from "~/components/icons/check"
+import { IconChevronUpDown } from "~/components/icons/chevron-up-down"
+import { Combobox } from "~/components/ui/combo-box"
 
 export const Route = createFileRoute("/internal")({
 	component: RouteComponent,
@@ -224,6 +227,31 @@ function RouteComponent() {
 						</Index>
 					</ListBox.Content>
 				</ListBox>
+			</div>
+			<div class="flex flex-row gap-3">
+				{/* @ts-expect-error */}
+				<Combobox collection={collection} class="w-[200px]">
+					<Combobox.Control>
+						<Combobox.Input placeholder="Select framework..." />
+						<Combobox.Trigger>
+							<IconChevronUpDown class="size-4 opacity-50" />
+						</Combobox.Trigger>
+					</Combobox.Control>
+
+					<Combobox.Content>
+						<Combobox.ItemGroup>
+							<For each={collection.items}>
+								{(framework) => (
+									<Combobox.Item item={framework}>
+										<Combobox.ItemText>{framework.label}</Combobox.ItemText>
+
+										<Combobox.ItemIndicator />
+									</Combobox.Item>
+								)}
+							</For>
+						</Combobox.ItemGroup>
+					</Combobox.Content>
+				</Combobox>
 			</div>
 		</div>
 	)
