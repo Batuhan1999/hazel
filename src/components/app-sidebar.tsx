@@ -3,23 +3,27 @@ import { useAuth } from "clerk-solidjs"
 import { For, createMemo } from "solid-js"
 import { twMerge } from "tailwind-merge"
 import { useDmChannels } from "~/lib/hooks/data/use-dm-channels"
+import { useServerChannels } from "~/lib/hooks/data/use-server-channels"
+import type { Channel } from "~/lib/schema"
 import { IconHashtag } from "./icons/hashtag"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
+import { Sidebar, SidebarItem } from "./ui/sidebar"
 
 export interface SidebarProps {
 	class?: string
 }
 
-export const Sidebar = (props: SidebarProps) => {
+export const AppSidebar = (props: SidebarProps) => {
 	const params = useParams({ from: "/_app/$serverId" })
 	const serverId = createMemo(() => params().serverId)
 
-	const { channels } = useDmChannels(serverId)
+	const { channels: dmChannels } = useDmChannels(serverId)
+	const { channels: serverChannels } = useServerChannels(serverId)
 
 	const { userId } = useAuth()
 
 	const computedChannels = createMemo(() => {
-		return channels()
+		return dmChannels()
 			.map((channel) => {
 				const friends = channel.users.filter((user) => user.id !== userId())
 				const isSingleDm = friends.length === 1
@@ -34,56 +38,58 @@ export const Sidebar = (props: SidebarProps) => {
 			})
 			.filter((channel) => channel !== null)
 	})
+
 	return (
-		<div class={twMerge("flex h-full flex-col bg-sidebar px-2 py-3 text-sidebar-foreground", props.class)}>
+		<Sidebar {...props}>
 			<ul class="flex flex-col gap-3">
+				<For each={serverChannels()}>
+					{(channel) => <ChannelItem channel={channel} serverId={serverId()} />}
+				</For>
 				<For each={computedChannels()}>
-					{(channel) => <ChannelLink channel={channel} serverId={serverId()} />}
+					{(channel) => <DmChannelLink channel={channel} serverId={serverId()} />}
 				</For>
 			</ul>
-		</div>
+		</Sidebar>
 	)
 }
 
-export const SidebarItem = () => {
-	return <li class="flex flex-col gap-3 hover:bg-mu">WOW</li>
-}
-
 export interface ChannelItemProps {
-	name: string
+	channel: Channel
+	serverId: string
 }
 
 export const ChannelItem = (props: ChannelItemProps) => {
 	return (
-		<li class="group/sidebar-item flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted">
-			<IconHashtag class="size-5 text-muted-foreground" />
-			<p class="text-muted-foreground group-hover/sidebar-item:text-foreground">{props.name}</p>
-		</li>
+		<Link to="/$serverId/chat/$id" params={{ serverId: props.serverId, id: props.channel.id }}>
+			<SidebarItem>
+				<IconHashtag class="size-5 text-muted-foreground" />
+				<p class="text-muted-foreground group-hover/sidebar-item:text-foreground">{props.channel.name}</p>
+			</SidebarItem>
+		</Link>
 	)
 }
 
-// Define types for props for better clarity
 interface Friend {
-	id: string // Assuming id is string
+	id: string
 	avatarUrl: string
 	tag: string
 	displayName: string
 }
 
-interface Channel {
+interface ComputedChannel {
 	id: string
 	friends: Friend[]
 }
 
-interface ChannelLinkProps {
-	channel: Channel
+interface DmChannelLinkProps {
+	channel: ComputedChannel
 	serverId: string
 }
 
-const ChannelLink = (props: ChannelLinkProps) => {
+const DmChannelLink = (props: DmChannelLinkProps) => {
 	return (
 		<Link to="/$serverId/chat/$id" params={{ serverId: props.serverId, id: props.channel.id }}>
-			<li class="group/sidebar-item flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted">
+			<SidebarItem>
 				<div class="-space-x-4 flex items-center justify-center">
 					<For each={props.channel.friends}>
 						{(friend) => (
@@ -100,9 +106,7 @@ const ChannelLink = (props: ChannelLinkProps) => {
 					{/* Derive display name directly from props */}
 					{props.channel.friends.map((friend) => friend.displayName).join(", ")}
 				</p>
-			</li>
+			</SidebarItem>
 		</Link>
 	)
 }
-
-export default ChannelLink

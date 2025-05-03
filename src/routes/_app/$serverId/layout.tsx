@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute } from "@tanstack/solid-router"
-import { Sidebar } from "~/components/sidebar"
+import { AppSidebar } from "~/components/app-sidebar"
 import { ServerSelectSidebar } from "./-components/server-select-sidebar"
 
 export const Route = createFileRoute("/_app/$serverId")({
@@ -18,7 +18,7 @@ function RouteComponent() {
 				</div>
 			</main>
 			<aside class="fixed inset-y-0 left-14 block w-62 overflow-y-auto border-border border-r">
-				<Sidebar />
+				<AppSidebar />
 			</aside>
 		</div>
 	)
