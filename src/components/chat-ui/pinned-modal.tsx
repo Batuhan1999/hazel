@@ -13,16 +13,20 @@ export function PinnedModal() {
 	const params = useParams({ from: "/_app/$serverId/chat/$id" })()
 	const channelId = createMemo(() => params.id)
 
-	const pinnedMessages = usePinnedMessages(channelId)
+	const pinnedMessages = createMemo(() => usePinnedMessages(channelId))
+
+	const sortedMessages = createMemo(() =>
+		[...pinnedMessages().pinnedMessages()].sort((a, b) => a.message?.createdAt! - b.message?.createdAt!),
+	)
 
 	const scrollToMessage = (messageId: string) => {
-		const element = document.getElementById(messageId)
+		const element = document.getElementById(`message-${messageId}`)
 		if (element) {
 			element.scrollIntoView({ behavior: "smooth", block: "center" })
 
-			element.classList.add("bg-primary/20")
+			element.classList.add("bg-primary/30")
 			setTimeout(() => {
-				element.classList.remove("bg-primary/20")
+				element.classList.remove("bg-primary/30")
 			}, 1500)
 		}
 	}
@@ -39,7 +43,7 @@ export function PinnedModal() {
 					<IconPin2 /> Pinned Messages
 				</Popover.Title>
 				<div class="flex flex-col gap-2">
-					<For each={pinnedMessages.pinnedMessages()}>
+					<For each={sortedMessages()}>
 						{(pinnedMessage) => (
 							// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 							<div
@@ -49,7 +53,8 @@ export function PinnedModal() {
 								<div class="flex gap-3">
 									<div class="absolute top-0 right-0 z-10 flex opacity-0 group-hover:opacity-100">
 										<Button
-											onClick={() => {
+											onClick={(e) => {
+												e.stopPropagation()
 												z.mutate.pinnedMessages.delete({
 													id: pinnedMessage.id,
 												})
@@ -70,6 +75,7 @@ export function PinnedModal() {
 												{pinnedMessage?.message?.author?.displayName}
 											</span>
 											<span class="text-muted-fg text-xs">
+												{/* TODO: Add day date here */}
 												{new Date(pinnedMessage?.message?.createdAt!).toLocaleTimeString(
 													"en-US",
 													{
