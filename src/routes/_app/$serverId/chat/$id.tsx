@@ -28,13 +28,7 @@ function RouteComponent() {
 		}
 	})
 
-	// Scroll to the bottom of the messages when the component mounts
-	// createEffect(() => {
-	// 	if (lastMessageId() && messagesRef) {
-	// 		messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "instant" })
-	// 	}
-	// })
-
+	// Scroll to the bottom of the messages when the chat is switched
 	createEffect(() => {
 		if (params.id && messagesRef) {
 			messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "instant" })
