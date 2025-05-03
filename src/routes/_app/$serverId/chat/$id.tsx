@@ -24,7 +24,10 @@ function RouteComponent() {
 	// TODO: Should be only when the last message is from the current user (?)
 	createChangeEffect(lastMessageId, (currentId) => {
 		if (currentId && messagesRef) {
-			messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "smooth" })
+			// Check if we are 500px from the bottom and only scroll if we are
+			if (messagesRef.scrollTop + messagesRef.clientHeight >= messagesRef.scrollHeight - 500) {
+				messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "smooth" })
+			}
 		}
 	})
 
