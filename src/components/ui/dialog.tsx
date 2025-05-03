@@ -70,6 +70,7 @@ const Dialog = Object.assign(DialogRoot, {
 	Header: DialogHeader,
 	Footer: DialogFooter,
 	Title: DialogTitle,
+	Trigger: DialogTrigger,
 	Description: DialogDescription,
 })
 
