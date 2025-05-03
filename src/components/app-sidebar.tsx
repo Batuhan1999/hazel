@@ -5,10 +5,12 @@ import { useDmChannels } from "~/lib/hooks/data/use-dm-channels"
 import { useServerChannels } from "~/lib/hooks/data/use-server-channels"
 import type { Channel } from "~/lib/schema"
 import { IconHashtag } from "./icons/hashtag"
+import { IconPlus } from "./icons/plus"
+import { IconPlusSmall } from "./icons/plus-small"
 import { Avatar } from "./ui/avatar"
 import { Button } from "./ui/button"
-import { Popover } from "./ui/popover"
-import { Sidebar, SidebarItem } from "./ui/sidebar"
+import { Dialog } from "./ui/dialog"
+import { Sidebar } from "./ui/sidebar"
 
 export interface SidebarProps {
 	class?: string
@@ -42,14 +44,58 @@ export const AppSidebar = (props: SidebarProps) => {
 
 	return (
 		<Sidebar {...props}>
-			<ul class="flex flex-col gap-3">
+			<Sidebar.Group
+				title="Text Channels"
+				action={
+					<Dialog>
+						<Dialog.Trigger
+							class="text-muted-foreground"
+							asChild={(props) => (
+								<Button intent="ghost" size="icon" {...props}>
+									<IconPlusSmall />
+								</Button>
+							)}
+						/>
+						<Dialog.Content>
+							<Dialog.Header>
+								<Dialog.Title>Join a Channel</Dialog.Title>
+								<Dialog.Description>Enter the name of the channel you want to join.</Dialog.Description>
+							</Dialog.Header>
+						</Dialog.Content>
+					</Dialog>
+				}
+			>
 				<For each={serverChannels()}>
 					{(channel) => <ChannelItem channel={channel} serverId={serverId()} />}
 				</For>
+			</Sidebar.Group>
+			<Sidebar.Group
+				title="DM's"
+				action={
+					<Dialog>
+						<Dialog.Trigger
+							class="text-muted-foreground"
+							asChild={(props) => (
+								<Button intent="ghost" size="icon" {...props}>
+									<IconPlusSmall />
+								</Button>
+							)}
+						/>
+						<Dialog.Content>
+							<Dialog.Header>
+								<Dialog.Title>Add Direct Message</Dialog.Title>
+								<Dialog.Description>
+									Enter the username of the person you want to message.
+								</Dialog.Description>
+							</Dialog.Header>
+						</Dialog.Content>
+					</Dialog>
+				}
+			>
 				<For each={computedChannels()}>
 					{(channel) => <DmChannelLink channel={channel} serverId={serverId()} />}
 				</For>
-			</ul>
+			</Sidebar.Group>
 		</Sidebar>
 	)
 }
@@ -62,10 +108,10 @@ export interface ChannelItemProps {
 export const ChannelItem = (props: ChannelItemProps) => {
 	return (
 		<Link to="/$serverId/chat/$id" params={{ serverId: props.serverId, id: props.channel.id }}>
-			<SidebarItem>
+			<Sidebar.Item>
 				<IconHashtag class="size-5 text-muted-foreground" />
 				<p class="text-muted-foreground group-hover/sidebar-item:text-foreground">{props.channel.name}</p>
-			</SidebarItem>
+			</Sidebar.Item>
 		</Link>
 	)
 }
@@ -90,7 +136,7 @@ interface DmChannelLinkProps {
 const DmChannelLink = (props: DmChannelLinkProps) => {
 	return (
 		<Link to="/$serverId/chat/$id" params={{ serverId: props.serverId, id: props.channel.id }}>
-			<SidebarItem>
+			<Sidebar.Item>
 				<div class="-space-x-4 flex items-center justify-center">
 					<For each={props.channel.friends}>
 						{(friend) => (
@@ -107,7 +153,7 @@ const DmChannelLink = (props: DmChannelLinkProps) => {
 					{/* Derive display name directly from props */}
 					{props.channel.friends.map((friend) => friend.displayName).join(", ")}
 				</p>
-			</SidebarItem>
+			</Sidebar.Item>
 		</Link>
 	)
 }

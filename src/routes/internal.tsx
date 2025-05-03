@@ -6,7 +6,9 @@ import { Avatar } from "~/components/ui/avatar"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
 import { Dialog } from "~/components/ui/dialog"
+import { Menu } from "~/components/ui/menu"
 import { Popover } from "~/components/ui/popover"
+import { Separator } from "~/components/ui/separator"
 import { TextField } from "~/components/ui/text-field"
 import { Tooltip } from "~/components/ui/tooltip"
 
@@ -140,6 +142,29 @@ function RouteComponent() {
 			<div class="flex flex-row gap-3">
 				<TextField label="Label" placeholder="Placeholder" />
 				<TextField label="Label" placeholder="Placeholder" helperText="Helper Text" />
+			</div>
+			<div class="flex flex-row gap-3">
+				<Menu>
+					<Menu.Trigger asChild={(props) => <Button {...props}>Menu</Button>} />
+					<Menu.Content>
+						<Menu.Item value="1">Item 1</Menu.Item>
+						<Menu.Separator />
+						<Menu.Item value="2">Item 2</Menu.Item>
+						<Menu.Item value="3">Item 3</Menu.Item>
+					</Menu.Content>
+				</Menu>
+				<Menu>
+					<Menu.Trigger asChild={(props) => <Button {...props}>Menu</Button>} />
+					<Menu.Content>
+						<Menu.Item value="1">Item 1</Menu.Item>
+						<Menu.Item value="2">Item 2</Menu.Item>
+						<Menu.Item value="3">Item 3</Menu.Item>
+					</Menu.Content>
+				</Menu>
+			</div>
+			<div class="flex flex-row gap-3">
+				<Separator />
+				<Separator orientation="vertical" />
 			</div>
 		</div>
 	)
