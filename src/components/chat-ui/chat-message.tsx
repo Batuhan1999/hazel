@@ -333,7 +333,7 @@ export function ChatMessage(props: {
 						<Menu.Trigger class={twMerge(buttonVariants({ intent: "ghost", size: "icon" }))}>
 							<IconDotsHorizontal class="size-4" />
 						</Menu.Trigger>
-						<Menu.Content class="flex flex-col">
+						<Menu.Content>
 							<For each={actions().filter((a) => a.showMenu)}>
 								{(a) => (
 									// TODO: Show hotkey here
