@@ -35,7 +35,7 @@ export function PinnedModal() {
 	return (
 		<Popover>
 			<Popover.Trigger>
-				<Button size="icon" intent="ghost">
+				<Button size="square" intent="ghost">
 					<IconPin class="size-4" />
 				</Button>
 			</Popover.Trigger>
@@ -52,7 +52,7 @@ export function PinnedModal() {
 								class={chatMessageStyles({ variant: "pinned" })}
 							>
 								<div class="flex gap-3">
-									<div class="absolute top-0 right-0 z-10 flex opacity-0 group-hover:opacity-100">
+									<div class="absolute top-1 right-1 z-10 flex opacity-0 group-hover:opacity-100">
 										<Button
 											onClick={(e) => {
 												e.stopPropagation()
@@ -60,8 +60,8 @@ export function PinnedModal() {
 													id: pinnedMessage.id,
 												})
 											}}
-											size="icon"
-											intent="ghost"
+											size="icon-small"
+											intent="icon"
 											class="group-hover:opacity-100"
 										>
 											<IconCircleXSolid />

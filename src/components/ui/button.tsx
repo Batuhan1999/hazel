@@ -22,6 +22,7 @@ const buttonVariants = tv({
 			small: "h-8 rounded-md px-3 text-xs",
 			large: "h-10 rounded-md px-8",
 			icon: "size-6 [&_svg]:size-6",
+			"icon-small": "size-4 [&_svg]:size-4",
 			square: "size-9",
 		},
 	},

@@ -7,7 +7,7 @@ import { IconGroup } from "../icons/group"
 import { IconPhone } from "../icons/phone"
 import { IconSearch } from "../icons/search"
 import { IconUserPlus } from "../icons/user-plus"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
+import { Avatar } from "../ui/avatar"
 import { Button } from "../ui/button"
 import { TextField } from "../ui/text-field"
 import { PinnedModal } from "./pinned-modal"
@@ -54,14 +54,14 @@ export function ChatTopbar() {
 				</p>
 			</div>
 			<div class="flex gap-2">
-				<Button size="icon" intent="ghost">
+				<Button size="square" intent="ghost">
 					<IconPhone />
 				</Button>
 				<PinnedModal />
-				<Button size="icon" intent="ghost">
+				<Button size="square" intent="ghost">
 					<IconUserPlus />
 				</Button>
-				<Button size="icon" intent="ghost">
+				<Button size="square" intent="ghost">
 					<IconGroup />
 				</Button>
 				<div>
