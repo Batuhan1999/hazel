@@ -27,7 +27,7 @@
 - Delete Channel
 - Close DM Chat
 
-## Server
+## Server Page
 - Members page
 - Kick User
 - Manage Roles
