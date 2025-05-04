@@ -2,6 +2,7 @@ import { Avatar as ArkAvatar } from "@ark-ui/solid"
 import { Show, splitProps } from "solid-js"
 
 import { twMerge } from "tailwind-merge"
+import { type VariantProps, tv } from "tailwind-variants"
 import { IconUser } from "../icons/user"
 
 export interface AvatarProps extends AvatarRootProps {
@@ -32,23 +33,30 @@ export const AvatarMolecule = (props: AvatarProps) => {
 	)
 }
 
-export interface AvatarRootProps extends ArkAvatar.RootProps {
-	shape?: "circle" | "square"
-}
+export const avatarVariants = tv({
+	base: "relative flex shrink-0 overflow-hidden",
+	variants: {
+		shape: {
+			circle: "rounded-full",
+			square: "rounded-md",
+		},
+		size: {
+			default: "size-10",
+			xs: "size-6",
+		},
+	},
+	defaultVariants: {
+		shape: "square",
+		size: "default",
+	},
+})
+
+export interface AvatarRootProps extends ArkAvatar.RootProps, VariantProps<typeof avatarVariants> {}
 
 export const AvatarRoot = (props: AvatarRootProps) => {
-	const [local, rest] = splitProps(props, ["class", "shape"])
+	const [local, rest] = splitProps(props, ["class", "shape", "size"])
 
-	return (
-		<ArkAvatar.Root
-			class={twMerge(
-				"relative flex size-10 shrink-0 overflow-hidden",
-				local.shape === "circle" ? "rounded-full" : "rounded-md",
-				local.class,
-			)}
-			{...rest}
-		/>
-	)
+	return <ArkAvatar.Root class={twMerge(avatarVariants(local), local.class)} {...rest} />
 }
 
 export const AvatarImage = (props: ArkAvatar.ImageProps) => {

@@ -93,7 +93,7 @@ export const AppSidebar = (props: SidebarProps) => {
 					{(channel) => <ChannelItem channel={channel} serverId={serverId()} />}
 				</For>
 			</Sidebar.Group>
-			<Sidebar.Group title="DM's" action={<CreateDmDialog />}>
+			<Sidebar.Group title="DM's" action={<CreateDmDialog serverId={serverId} />}>
 				<For each={computedChannels()}>
 					{(channel) => <DmChannelLink channel={channel} serverId={serverId()} />}
 				</For>
