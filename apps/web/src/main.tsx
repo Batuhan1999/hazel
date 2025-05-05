@@ -4,6 +4,8 @@ import { render } from "solid-js/web"
 import { routeTree } from "./routeTree.gen"
 import "./styles.css"
 
+import "./styles/code.css"
+
 const router = createRouter({
 	routeTree,
 	defaultPreload: "intent",

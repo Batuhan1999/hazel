@@ -1,6 +1,6 @@
 import { useParams } from "@tanstack/solid-router"
-import { For, type JSX, Show, createMemo, createSignal } from "solid-js"
-import { twMerge } from "tailwind-merge"
+import { For, type JSX, Show, createMemo, createSignal, splitProps } from "solid-js"
+import { twJoin, twMerge } from "tailwind-merge"
 import { tv } from "tailwind-variants"
 import type { Message } from "~/lib/hooks/data/use-chat-messages"
 import { newId } from "~/lib/id-helpers"
@@ -18,12 +18,13 @@ import { Button, buttonVariants } from "../ui/button"
 import { Menu } from "../ui/menu"
 import { Popover } from "../ui/popover"
 import { Tooltip } from "../ui/tooltip"
-import { ChatImage } from "./chat-image"
+
 import { ConfirmDialog } from "./confirm-dialog"
 import { ReactionTags } from "./reaction-tags"
 import { UserTag } from "./user-tag"
 
 import { Markdown } from "@maki-chat/markdown"
+import { ChatImage } from "./chat-image"
 
 function extractTextFromJsonNodes(nodes: any[]): string {
 	if (!Array.isArray(nodes)) return ""
@@ -376,7 +377,51 @@ export function ChatMessage(props: {
 							<span class="text-muted-foreground text-xs">{messageTime()}</span>
 						</div>
 					</Show>
-					<Markdown class="text-sm" children={props.message.content} renderingStrategy="reconcile" />
+					<Markdown
+						children={props.message.content}
+						components={{
+							a: (props) => (
+								<a
+									class={twJoin([
+										"outline-0 outline-offset-2 transition-[color,_opacity] focus-visible:outline-2 focus-visible:outline-ring forced-colors:outline-[Highlight]",
+										"disabled:cursor-default disabled:opacity-60 forced-colors:disabled:text-[GrayText]",
+										"text-primary hover:underline",
+									])}
+									target="_blank"
+									rel="noopener noreferrer"
+									{...props}
+								/>
+							),
+							p: (props) => <p class="leading-none" {...props} />,
+							h1: (props) => <h1 class="font-bold text-xl" {...props} />,
+							blockquote: (props) => (
+								<blockquote
+									class="rounded-[1px] border-primary border-l-4 bg-primary/10 py-0.5 pl-2 text-primary-fg italic"
+									{...props}
+								/>
+							),
+							pre: (props) => (
+								<pre
+									class={twJoin("bg-muted/50", "border", "font-mono", "rounded", "text-sm")}
+									{...props}
+								/>
+							),
+							img: (props) => {
+								const [imgProps, rest] = splitProps(props, ["src", "alt"])
+								return (
+									<ChatImage
+										src={imgProps.src!}
+										alt={imgProps.alt!}
+										onClick={() => {
+											setSelectedImage(imgProps.src!)
+										}}
+										{...rest}
+									/>
+								)
+							},
+						}}
+						renderingStrategy="reconcile"
+					/>
 					<div class="flex flex-col gap-2 pt-2">
 						<Show when={attachedCount() > 0}>
 							<div
@@ -435,7 +480,11 @@ export function ChatMessage(props: {
 					{/* Keep aspect ratio */}
 					<div class="max-h-[90vh] max-w-[90vw]">
 						<img
-							src={`${import.meta.env.VITE_BUCKET_URL}/${selectedImage()}`}
+							src={
+								selectedImage()?.startsWith("https")
+									? selectedImage()!
+									: `${import.meta.env.VITE_BUCKET_URL}/${selectedImage()}`
+							}
 							alt={selectedImage()!}
 							class="max-h-[90vh] max-w-[90vw]"
 						/>

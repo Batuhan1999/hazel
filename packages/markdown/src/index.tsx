@@ -7,6 +7,11 @@ import { type PluggableList, unified } from "unified"
 import { VFile } from "vfile"
 import type { Options as TransformOptions } from "./types"
 
+import rehypeHighlight from "rehype-highlight"
+import remarkGfm from "remark-gfm"
+
+import "highlight.js/styles/github.css"
+
 import type { Root } from "hast"
 import rehypeFilter, { type Options as FilterOptions } from "./rehype-filter"
 import { MarkdownRoot } from "./renderer"
@@ -59,8 +64,10 @@ export const Markdown: Component<Partial<SolidMarkdownOptions>> = (opts) => {
 		const children = options.children
 		const processor = unified()
 			.use(remarkParse)
+			.use(remarkGfm)
 			.use(options.remarkPlugins || [])
 			.use(remarkRehype, { allowDangerousHtml: true })
+			.use(rehypeHighlight)
 			.use(options.rehypePlugins || [])
 			.use(rehypeFilter, options)
 
