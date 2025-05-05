@@ -1,6 +1,7 @@
 import { useAuth } from "clerk-solidjs"
-import { For, Show, createEffect, createMemo, createSignal, onCleanup, type JSX } from "solid-js"
+import { For, type JSX, Show, createEffect, createMemo, createSignal, onCleanup } from "solid-js"
 import { twMerge } from "tailwind-merge"
+import { tv } from "tailwind-variants"
 import { useChatMessage } from "~/lib/hooks/data/use-chat-message"
 import { newId } from "~/lib/id-helpers"
 import { useZero } from "~/lib/zero/zero-context"
@@ -8,7 +9,6 @@ import { chatStore$ } from "~/routes/_app/$serverId/chat/$id"
 import { IconCirclePlusSolid } from "../icons/solid/circle-plus-solid"
 import { IconCircleXSolid } from "../icons/solid/circle-x-solid"
 import { Button } from "../ui/button"
-import { tv } from "tailwind-variants"
 
 // Type for individual attachment state
 type Attachment = {
@@ -190,7 +190,7 @@ const useGlobalEditorFocus = (editorRef: () => HTMLDivElement | undefined) => {
 				return
 			}
 
-			if (document.querySelector('[data-react-aria-modal="true"]')) {
+			if (document.querySelector('[data-aria-modal="true"]')) {
 				return
 			}
 
