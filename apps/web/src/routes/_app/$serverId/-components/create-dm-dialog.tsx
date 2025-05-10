@@ -9,7 +9,8 @@ import { Button } from "~/components/ui/button"
 import { Dialog } from "~/components/ui/dialog"
 import { ListBox } from "~/components/ui/list-box"
 import { TextField } from "~/components/ui/text-field"
-import { newId } from "~/lib/id-helpers"
+import { createJoinChannelMutation } from "~/lib/actions/user-actions"
+
 import type { User } from "~/lib/zero/schema"
 import { useZero } from "~/lib/zero/zero-context"
 
@@ -21,13 +22,13 @@ export const CreateDmDialog = (props: CreateDmDialogProps) => {
 	const z = useZero()
 	const friendQuery = z.query.users
 
-	const navigate = useNavigate()
-
 	const [friends] = createQuery(() => friendQuery)
 
 	const [friendFilter, setFriendFilter] = createSignal<string>("")
 
 	const [isDialogOpen, setDialogOpen] = createSignal(false)
+
+	const navigate = useNavigate()
 
 	const filteredFriends = createMemo(() => {
 		if (friendFilter() === "") return friends()
@@ -106,43 +107,10 @@ export const CreateDmDialog = (props: CreateDmDialogProps) => {
 					<Button
 						intent="default"
 						onClick={async () => {
-							const userIds = selectFriends().map((friend) => friend.id)
-
-							if (userIds.length === 1) {
-								const channel = await z.query.serverChannels
-									.whereExists("users", (q) => q.where("id", "=", userIds[0]))
-									.one()
-									.run()
-
-								if (channel) {
-									navigate({
-										to: "/$serverId/chat/$id",
-										params: { id: channel.id, serverId: props.serverId() },
-									})
-									return
-								}
-							}
-
-							const channelid = newId("serverChannels")
-
-							await z.mutateBatch(async (tx) => {
-								await tx.serverChannels.insert({
-									id: channelid,
-									createdAt: new Date().getTime(),
-									serverId: props.serverId(),
-									channelType: "direct",
-									name: "DM",
-								})
-
-								await tx.channelMembers.insert({
-									userId: z.userID,
-									channelId: channelid,
-								})
-
-								const filteredUserIds = userIds.filter((id) => id !== z.userID)
-								for (const userId of filteredUserIds) {
-									await tx.channelMembers.insert({ userId: userId, channelId: channelid })
-								}
+							const { channelId } = await createJoinChannelMutation({
+								serverId: props.serverId(),
+								userIds: selectFriends().map((friend) => friend.id),
+								z,
 							})
 
 							setDialogOpen(false)
@@ -152,7 +120,7 @@ export const CreateDmDialog = (props: CreateDmDialogProps) => {
 
 							navigate({
 								to: "/$serverId/chat/$id" as const,
-								params: { id: channelid, serverId: props.serverId() },
+								params: { id: channelId, serverId: props.serverId() },
 							})
 						}}
 					>

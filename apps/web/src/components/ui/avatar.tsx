@@ -1,7 +1,6 @@
 import { type HTMLArkProps, ark } from "@ark-ui/solid"
 import { splitProps } from "solid-js"
 
-import { twMerge } from "tailwind-merge"
 import { type VariantProps, tv } from "tailwind-variants"
 
 export type AvatarProps = {
@@ -11,13 +10,14 @@ export type AvatarProps = {
 	VariantProps<typeof avatarVariants>
 
 export const Avatar = (props: AvatarProps) => {
-	const [localProps, rootProps] = splitProps(props, ["name", "src"])
+	const [localProps, rootProps] = splitProps(props, ["name", "src", "class"])
 
 	return (
 		<ark.img
-			class={twMerge(avatarVariants(rootProps), rootProps.class)}
+			class={avatarVariants({ ...rootProps, class: localProps.class })}
 			src={localProps.src || `https://avatar.vercel.sh/${props.name}.svg`}
 			alt={localProps.name}
+			{...rootProps}
 		/>
 	)
 }
@@ -30,6 +30,7 @@ export const avatarVariants = tv({
 			square: "rounded-md",
 		},
 		size: {
+			xxl: "size-16",
 			default: "size-10",
 			sm: "size-8",
 			xs: "size-6",

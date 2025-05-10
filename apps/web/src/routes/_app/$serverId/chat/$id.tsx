@@ -137,6 +137,7 @@ function RouteComponent() {
 												message={message().message}
 												isGroupStart={message().isGroupStart}
 												isGroupEnd={message().isGroupEnd}
+												serverId={() => params.serverId}
 											/>
 										)
 									}}

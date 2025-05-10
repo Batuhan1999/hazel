@@ -1,5 +1,6 @@
 // src/components/ui/button.tsx
 
+import { type HTMLArkProps, ark } from "@ark-ui/solid"
 import { type Component, type JSX, splitProps } from "solid-js"
 // Keep tailwind-variants
 import { type VariantProps, tv } from "tailwind-variants"
@@ -32,7 +33,7 @@ const buttonVariants = tv({
 	},
 })
 
-export interface ButtonProps extends JSX.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+export interface ButtonProps extends HTMLArkProps<"button">, VariantProps<typeof buttonVariants> {
 	isPending?: boolean
 }
 
@@ -46,9 +47,9 @@ const Button: Component<ButtonProps> = (props) => {
 	})
 
 	return (
-		<button class={classes} {...rest}>
+		<ark.button class={classes} {...rest}>
 			{local.children}
-		</button>
+		</ark.button>
 	)
 }
 

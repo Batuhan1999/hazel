@@ -14,7 +14,9 @@ import { TextField } from "~/components/ui/text-field"
 import { Tooltip } from "~/components/ui/tooltip"
 
 import { For, Index } from "solid-js"
+import { IconChat } from "~/components/icons/chat"
 import { IconChevronUpDown } from "~/components/icons/chevron-up-down"
+import { IconProfile } from "~/components/icons/profile"
 import { Combobox } from "~/components/ui/combo-box"
 import { toaster } from "~/components/ui/toaster"
 

@@ -19,6 +19,7 @@ import { Route as AppServerIdLayoutImport } from './routes/_app/$serverId/layout
 import { Route as AppServerIdIndexImport } from './routes/_app/$serverId/index'
 import { Route as AppServerIdSettingsImport } from './routes/_app/$serverId/settings'
 import { Route as AppServerIdBillingImport } from './routes/_app/$serverId/billing'
+import { Route as AppServerIdProfileIdImport } from './routes/_app/$serverId/profile/$id'
 import { Route as AppServerIdChatIdImport } from './routes/_app/$serverId/chat/$id'
 
 // Create/Update Routes
@@ -67,6 +68,12 @@ const AppServerIdSettingsRoute = AppServerIdSettingsImport.update({
 const AppServerIdBillingRoute = AppServerIdBillingImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => AppServerIdLayoutRoute,
+} as any)
+
+const AppServerIdProfileIdRoute = AppServerIdProfileIdImport.update({
+  id: '/profile/$id',
+  path: '/profile/$id',
   getParentRoute: () => AppServerIdLayoutRoute,
 } as any)
 
@@ -143,6 +150,13 @@ declare module '@tanstack/solid-router' {
       preLoaderRoute: typeof AppServerIdChatIdImport
       parentRoute: typeof AppServerIdLayoutImport
     }
+    '/_app/$serverId/profile/$id': {
+      id: '/_app/$serverId/profile/$id'
+      path: '/profile/$id'
+      fullPath: '/$serverId/profile/$id'
+      preLoaderRoute: typeof AppServerIdProfileIdImport
+      parentRoute: typeof AppServerIdLayoutImport
+    }
   }
 }
 
@@ -153,6 +167,7 @@ interface AppServerIdLayoutRouteChildren {
   AppServerIdSettingsRoute: typeof AppServerIdSettingsRoute
   AppServerIdIndexRoute: typeof AppServerIdIndexRoute
   AppServerIdChatIdRoute: typeof AppServerIdChatIdRoute
+  AppServerIdProfileIdRoute: typeof AppServerIdProfileIdRoute
 }
 
 const AppServerIdLayoutRouteChildren: AppServerIdLayoutRouteChildren = {
@@ -160,6 +175,7 @@ const AppServerIdLayoutRouteChildren: AppServerIdLayoutRouteChildren = {
   AppServerIdSettingsRoute: AppServerIdSettingsRoute,
   AppServerIdIndexRoute: AppServerIdIndexRoute,
   AppServerIdChatIdRoute: AppServerIdChatIdRoute,
+  AppServerIdProfileIdRoute: AppServerIdProfileIdRoute,
 }
 
 const AppServerIdLayoutRouteWithChildren =
@@ -189,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/$serverId/settings': typeof AppServerIdSettingsRoute
   '/$serverId/': typeof AppServerIdIndexRoute
   '/$serverId/chat/$id': typeof AppServerIdChatIdRoute
+  '/$serverId/profile/$id': typeof AppServerIdProfileIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -199,6 +216,7 @@ export interface FileRoutesByTo {
   '/$serverId/settings': typeof AppServerIdSettingsRoute
   '/$serverId': typeof AppServerIdIndexRoute
   '/$serverId/chat/$id': typeof AppServerIdChatIdRoute
+  '/$serverId/profile/$id': typeof AppServerIdProfileIdRoute
 }
 
 export interface FileRoutesById {
@@ -212,6 +230,7 @@ export interface FileRoutesById {
   '/_app/$serverId/settings': typeof AppServerIdSettingsRoute
   '/_app/$serverId/': typeof AppServerIdIndexRoute
   '/_app/$serverId/chat/$id': typeof AppServerIdChatIdRoute
+  '/_app/$serverId/profile/$id': typeof AppServerIdProfileIdRoute
 }
 
 export interface FileRouteTypes {
@@ -226,6 +245,7 @@ export interface FileRouteTypes {
     | '/$serverId/settings'
     | '/$serverId/'
     | '/$serverId/chat/$id'
+    | '/$serverId/profile/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/internal'
@@ -235,6 +255,7 @@ export interface FileRouteTypes {
     | '/$serverId/settings'
     | '/$serverId'
     | '/$serverId/chat/$id'
+    | '/$serverId/profile/$id'
   id:
     | '__root__'
     | '/_app'
@@ -246,6 +267,7 @@ export interface FileRouteTypes {
     | '/_app/$serverId/settings'
     | '/_app/$serverId/'
     | '/_app/$serverId/chat/$id'
+    | '/_app/$serverId/profile/$id'
   fileRoutesById: FileRoutesById
 }
 
@@ -293,7 +315,8 @@ export const routeTree = rootRoute
         "/_app/$serverId/billing",
         "/_app/$serverId/settings",
         "/_app/$serverId/",
-        "/_app/$serverId/chat/$id"
+        "/_app/$serverId/chat/$id",
+        "/_app/$serverId/profile/$id"
       ]
     },
     "/_app/": {
@@ -317,6 +340,10 @@ export const routeTree = rootRoute
     },
     "/_app/$serverId/chat/$id": {
       "filePath": "_app/$serverId/chat/$id.tsx",
+      "parent": "/_app/$serverId"
+    },
+    "/_app/$serverId/profile/$id": {
+      "filePath": "_app/$serverId/profile/$id.tsx",
       "parent": "/_app/$serverId"
     }
   }

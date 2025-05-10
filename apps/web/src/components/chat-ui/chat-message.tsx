@@ -1,5 +1,5 @@
 import { useParams } from "@tanstack/solid-router"
-import { For, type JSX, Show, createMemo, createSignal, splitProps } from "solid-js"
+import { type Accessor, For, type JSX, Show, createMemo, createSignal, splitProps } from "solid-js"
 import { twJoin, twMerge } from "tailwind-merge"
 import { tv } from "tailwind-variants"
 
@@ -26,6 +26,7 @@ import { ReactionTags } from "./reaction-tags"
 import { UserTag } from "./user-tag"
 
 import { Markdown } from "@maki-chat/markdown"
+import { UserAvatar } from "../user-ui/user-popover-content"
 import { ChatImage } from "./chat-image"
 
 function extractTextFromJsonNodes(nodes: any[]): string {
@@ -62,6 +63,7 @@ type ChatAction = {
 }
 
 export function ChatMessage(props: {
+	serverId: Accessor<string>
 	message: Message
 	isGroupStart: boolean
 	isGroupEnd: boolean
@@ -366,7 +368,7 @@ export function ChatMessage(props: {
 					</Menu>
 				</div>
 				<Show when={showAvatar()}>
-					<Avatar src={props.message.author?.avatarUrl} name={props.message.author?.displayName!} />
+					<UserAvatar user={props.message.author!} serverId={props.serverId} />
 				</Show>
 				<Show when={!showAvatar()}>
 					<div class="w-10 items-center justify-end pr-1 text-[10px] text-muted-foreground leading-tight opacity-0 group-hover:opacity-100">
