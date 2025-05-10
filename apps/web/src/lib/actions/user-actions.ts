@@ -7,14 +7,22 @@ export const createJoinChannelMutation = async ({
 	serverId,
 	z,
 }: { serverId: string; userIds: string[]; z: Zero<Schema> }) => {
+	const isSingleUser = userIds.length === 1
 	if (userIds.length === 1) {
-		const channel = await z.query.serverChannels
+		const potentialChannel = await z.query.serverChannels
+			.where("channelType", "=", "single")
+			.where("serverId", "=", serverId)
 			.whereExists("users", (q) => q.where("id", "=", userIds[0]))
+			.whereExists("users", (q) => q.where("id", "=", z.userID))
+			.related("users")
+			.limit(100)
 			.one()
 			.run()
 
-		return {
-			channelId: channel?.id!,
+		if (potentialChannel) {
+			return {
+				channelId: potentialChannel.id,
+			}
 		}
 	}
 
@@ -25,7 +33,7 @@ export const createJoinChannelMutation = async ({
 			id: channelid,
 			createdAt: new Date().getTime(),
 			serverId: serverId,
-			channelType: "direct",
+			channelType: isSingleUser ? "single" : "direct",
 			name: "DM",
 		})
 

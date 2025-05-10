@@ -7,8 +7,8 @@ import { IconSearch } from "~/components/icons/search"
 import { Avatar } from "~/components/ui/avatar"
 import { Button } from "~/components/ui/button"
 import { TextField } from "~/components/ui/text-field"
+import { createJoinChannelMutation } from "~/lib/actions/user-actions"
 import { useServerMembers } from "~/lib/hooks/data/use-server-members"
-import { newId } from "~/lib/id-helpers"
 import { useZero } from "~/lib/zero/zero-context"
 
 export const Route = createFileRoute("/_app/$serverId/")({
@@ -27,48 +27,18 @@ function RouteComponent() {
 
 	const navigate = Route.useNavigate()
 
-	const { userId } = useAuth()
-
-	const handleOpenChat = async ({
-		targetUserId,
-		userId,
-		serverId,
-	}: { targetUserId: string; userId: string; serverId: string }) => {
-		if (!userId || !targetUserId || userId === targetUserId) {
+	const handleOpenChat = async ({ targetUserId, serverId }: { targetUserId: string; serverId: string }) => {
+		if (!targetUserId) {
 			return
 		}
 
-		const potentialChannel = await z.query.serverChannels
-			.where("channelType", "=", "direct")
-			.where("serverId", "=", serverId)
-			.whereExists("users", (q) => q.where("id", "=", userId))
-			.whereExists("users", (q) => q.where("id", "=", targetUserId))
-			.related("users")
-			.limit(100)
-			.one()
-			.run()
+		const { channelId } = await createJoinChannelMutation({
+			z,
+			serverId: serverId,
+			userIds: [targetUserId],
+		})
 
-		if (potentialChannel && potentialChannel.users?.length === 2) {
-			return navigate({ to: "/$serverId/chat/$id" as const, params: { id: potentialChannel.id, serverId } })
-		}
-
-		const channelId = newId("serverChannels")
-
-		try {
-			await z.mutateBatch(async (tx) => {
-				await tx.serverChannels.insert({
-					id: channelId,
-					serverId: serverId,
-					channelType: "direct",
-					name: "DM",
-				})
-				await tx.channelMembers.insert({ userId: userId, channelId: channelId, joinedAt: Date.now() })
-				await tx.channelMembers.insert({ userId: targetUserId, channelId: channelId, joinedAt: Date.now() })
-			})
-			navigate({ to: "/$serverId/chat/$id" as const, params: { id: channelId, serverId } })
-		} catch (error) {
-			console.error("Failed to create DM channel:", error)
-		}
+		navigate({ to: "/$serverId/chat/$id" as const, params: { id: channelId, serverId } })
 	}
 
 	return (
@@ -100,7 +70,6 @@ function RouteComponent() {
 									onClick={() =>
 										handleOpenChat({
 											targetUserId: member.user!.id,
-											userId: userId()!,
 											serverId: serverId(),
 										})
 									}
