@@ -2,7 +2,7 @@ import { createQuery } from "@rocicorp/zero/solid"
 import { type Accessor, createMemo } from "solid-js"
 import { useZero } from "~/lib/zero/zero-context"
 
-export const useServerMemmbers = ({
+export const useServerMembers = ({
 	searchQuery,
 	serverId,
 }: { serverId: Accessor<string>; searchQuery: Accessor<string | undefined> }) => {
