@@ -17,112 +17,182 @@ type AuthData = {
 type TableName = keyof Schema["tables"]
 
 export const permissions = definePermissions<AuthData, Schema>(schema, () => {
-	const allowIfMessageSender = (authData: AuthData, { cmp }: ExpressionBuilder<Schema, "messages">) =>
+	const messages_allowIfMessageSender = (authData: AuthData, { cmp }: ExpressionBuilder<Schema, "messages">) =>
 		cmp("authorId", "=", authData.sub ?? "")
 
-	const allowIfOwner = (authData: AuthData, { cmp }: ExpressionBuilder<Schema, "users">) =>
+	const users_allowIfOwner = (authData: AuthData, { cmp }: ExpressionBuilder<Schema, "users">) =>
 		cmp("id", "=", authData.sub ?? "")
 
 	const allowIfRowOwner = (authData: AuthData, { cmpLit }: ExpressionBuilder<Schema, TableName>) =>
 		cmpLit("userId", "=", authData.sub)
 
-	const isChannelParti = (authData: AuthData, eb: ExpressionBuilder<Schema, "serverChannels">) =>
-		eb.or(eb.exists("users", (iq) => iq.where("id", "=", authData.sub ?? "")))
+	const serverChannels_isChannelParticipant = (authData: AuthData, eb: ExpressionBuilder<Schema, "serverChannels">) =>
+		eb.exists("users", (iq) => iq.where("id", "=", authData.sub ?? ""))
 
-	const isChannelPublic = (authData: AuthData, eb: ExpressionBuilder<Schema, "serverChannels">) =>
-		eb.and(eb.cmp("channelType", "=", "public"))
+	const serverChannels_isChannelPublic = (authData: AuthData, eb: ExpressionBuilder<Schema, "serverChannels">) =>
+		eb.and(
+			// Channel is public
+			eb.cmp("channelType", "=", "public"),
+			// And the user is a member of the server
+			eb.exists("server", (iq) => iq.whereExists("members", (iq) => iq.where("userId", "=", authData.sub ?? ""))),
+		)
 
-	const isChannelParticipant = (authData: AuthData, eb: ExpressionBuilder<Schema, "pinnedMessages" | "messages">) =>
-		eb.or(eb.exists("channel", (iq) => iq.whereExists("users", (iq) => iq.where("id", "=", authData.sub ?? ""))))
+	const pinnedMessages_isChannelParticipant = (
+		authData: AuthData,
+		eb: ExpressionBuilder<Schema, "pinnedMessages" | "messages">,
+	) => eb.or(eb.exists("channel", (iq) => iq.whereExists("users", (iq) => iq.where("id", "=", authData.sub ?? ""))))
 
-	const isServerMember = (authData: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
+	const server_isMemberOfServer = (authData: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
 		eb.or(eb.exists("members", (iq) => iq.where("userId", "=", authData.sub ?? "")))
 
-	const isServerOwner = (authData: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
+	const serverMembers_isServerMember = (authData: AuthData, eb: ExpressionBuilder<Schema, "serverMembers">) =>
+		eb.exists("server", (iq) => iq.whereExists("members", (mq) => mq.where("userId", "=", authData.sub ?? "")))
+
+	const server_isServerOwner = (authData: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
 		eb.or(
 			eb.exists("members", (iq) =>
 				iq.where((eq) => eq.and(eq.cmp("userId", "=", authData.sub ?? ""), eq.cmp("role", "=", "owner"))),
 			),
 		)
 
-	const isPublicServer = (authData: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
+	const server_isPublicServer = (_: AuthData, eb: ExpressionBuilder<Schema, "server">) =>
 		eb.cmp("type", "=", "public")
+
+	// Only allow access to messages in channels the user is part of or public channels in servers the user is part of
+	const messages_canAccessMessage = (authData: AuthData, eb: ExpressionBuilder<Schema, "messages">) =>
+		eb.or(
+			// Message is in a channel the user is a participant of
+			eb.exists("channel", (iq) => iq.whereExists("users", (uq) => uq.where("id", "=", authData.sub ?? ""))),
+			// Message is in a public channel of a server the user is a member of
+			eb.exists("channel", (iq) =>
+				iq.where((chq) =>
+					chq.and(
+						chq.cmp("channelType", "=", "public"),
+						chq.exists("server", (siq) =>
+							siq.whereExists("members", (miq) => miq.where("userId", "=", authData.sub ?? "")),
+						),
+					),
+				),
+			),
+		)
+
+	const channelMembers_isChannelParticipant = (authData: AuthData, eb: ExpressionBuilder<Schema, "channelMembers">) =>
+		eb.exists("channel", (iq) => iq.whereExists("users", (uq) => uq.where("id", "=", authData.sub ?? "")))
+
+	const channelMembers_isPublicChannel = (authData: AuthData, eb: ExpressionBuilder<Schema, "channelMembers">) =>
+		eb.and(
+			// Channel is public
+			eb.exists("channel", (iq) => iq.where("channelType", "=", "public")),
+			// And the user is a member of the server
+			eb.exists("channel", (iq) =>
+				iq.whereExists("server", (siq) =>
+					siq.whereExists("members", (miq) => miq.where("userId", "=", authData.sub ?? "")),
+				),
+			),
+		)
+
+	const reactions_isChannelParticipant = (authData: AuthData, eb: ExpressionBuilder<Schema, "reactions">) =>
+		eb.or(
+			// Reaction is in a public channel
+			eb.exists("message", (iq) => iq.whereExists("channel", (cq) => cq.where("channelType", "=", "public"))),
+			// Reaction is in a channel the user is a participant of
+			eb.exists("message", (iq) =>
+				iq.whereExists("channel", (cq) =>
+					cq.whereExists("users", (uq) => uq.where("id", "=", authData.sub ?? "")),
+				),
+			),
+		)
+
+	const reactions_isReactionOwner = (authData: AuthData, eb: ExpressionBuilder<Schema, "reactions">) =>
+		eb.cmp("userId", "=", authData.sub ?? "")
+
+	const reactions_canAccessReaction = (authData: AuthData, eb: ExpressionBuilder<Schema, "reactions">) =>
+		eb.or(
+			// Reaction is in a channel the user is a participant of
+			eb.exists("message", (iq) =>
+				iq.whereExists("channel", (cq) =>
+					cq.whereExists("users", (uq) => uq.where("id", "=", authData.sub ?? "")),
+				),
+			),
+		)
 
 	return {
 		users: {
 			row: {
+				// If we ever have PII data in here (e.g. emails, phone numbers, etc.) we should restrict this
 				select: ANYONE_CAN,
-				insert: [allowIfOwner],
+				insert: [users_allowIfOwner],
 				update: {
-					preMutation: [allowIfOwner],
-					postMutation: [allowIfOwner],
+					preMutation: [users_allowIfOwner],
+					postMutation: [users_allowIfOwner],
 				},
-				delete: [allowIfOwner],
+				// TODO: We probably don't want to allow this at all and instead set the user to inactive
+				delete: [users_allowIfOwner],
 			},
 		},
 		messages: {
 			row: {
-				insert: [allowIfMessageSender],
+				insert: [messages_allowIfMessageSender],
 				update: {
-					preMutation: [allowIfMessageSender],
-					postMutation: [allowIfMessageSender],
+					preMutation: [messages_allowIfMessageSender],
+					postMutation: [messages_allowIfMessageSender],
 				},
-				delete: [allowIfMessageSender],
-				select: ANYONE_CAN,
+				delete: [messages_allowIfMessageSender],
+				select: [messages_canAccessMessage],
 			},
 		},
 		pinnedMessages: {
 			row: {
-				select: [isChannelParticipant],
+				select: [pinnedMessages_isChannelParticipant],
 				update: {
-					preMutation: [isChannelParticipant],
-					postMutation: [isChannelParticipant],
+					preMutation: [pinnedMessages_isChannelParticipant],
+					postMutation: [pinnedMessages_isChannelParticipant],
 				},
-				insert: [isChannelParticipant],
-				delete: [isChannelParticipant],
+				insert: [pinnedMessages_isChannelParticipant],
+				delete: [pinnedMessages_isChannelParticipant],
 			},
 		},
 		server: {
 			row: {
-				select: [isServerMember, isPublicServer],
+				select: [server_isMemberOfServer, server_isPublicServer],
+				// TODO: We probably want some restrictions on here, like max servers per user.
 				insert: ANYONE_CAN,
 				update: {
-					preMutation: [isServerOwner],
-					postMutation: [isServerOwner],
+					preMutation: [server_isServerOwner],
+					postMutation: [server_isServerOwner],
 				},
 			},
 		},
 		serverMembers: {
 			row: {
-				// TODO:
-				select: ANYONE_CAN,
+				select: [serverMembers_isServerMember],
+				// TODO: This is definitely incorrect, we should only allow inserts if the user is a member of the server (via invites)
 				insert: ANYONE_CAN,
 			},
 		},
 		serverChannels: {
 			row: {
-				// TODO: isChannelPublic currentl allows access to all channels, even when not in same server
-				select: [isChannelParti, isChannelPublic],
+				select: [serverChannels_isChannelParticipant, serverChannels_isChannelPublic],
 				update: {
-					preMutation: [isChannelParti],
-					postMutation: [isChannelParti],
+					preMutation: [serverChannels_isChannelParticipant],
+					postMutation: [serverChannels_isChannelParticipant],
 				},
-				insert: [isChannelParti],
-				delete: [isChannelParti],
+				insert: [serverChannels_isChannelParticipant],
+				delete: [serverChannels_isChannelParticipant],
 			},
 		},
 		channelMembers: {
 			row: {
-				select: ANYONE_CAN,
-				insert: ANYONE_CAN,
-				delete: ANYONE_CAN,
+				select: [channelMembers_isChannelParticipant, channelMembers_isPublicChannel],
+				insert: [channelMembers_isChannelParticipant],
+				delete: [channelMembers_isChannelParticipant],
 			},
 		},
 		reactions: {
 			row: {
-				select: ANYONE_CAN,
-				insert: ANYONE_CAN,
-				delete: ANYONE_CAN,
+				select: [reactions_canAccessReaction],
+				insert: [reactions_isChannelParticipant],
+				delete: [reactions_isReactionOwner],
 			},
 		},
 	} satisfies PermissionsConfig<AuthData, Schema>
