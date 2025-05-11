@@ -1,6 +1,7 @@
 import type { Zero as ZeroType } from "@rocicorp/zero"
 import { createZero } from "@rocicorp/zero/solid"
-import { type Schema, schema } from "./schema"
+
+import { type Schema, schema } from "@maki-chat/zero"
 
 let _zero: ZeroType<Schema> | null = null
 

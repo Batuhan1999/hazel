@@ -1,6 +1,6 @@
+import type { Schema } from "@maki-chat/zero"
 import type { Zero } from "@rocicorp/zero"
 import { type ParentProps, createContext, useContext } from "solid-js"
-import type { Schema } from "./schema"
 
 export type TZero = Zero<Schema>
 

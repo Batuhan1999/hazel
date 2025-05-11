@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/solid-router"
-import { useAuth } from "clerk-solidjs"
 import { For, createMemo, createSignal } from "solid-js"
 import { IconChat } from "~/components/icons/chat"
 import { IconHorizontalDots } from "~/components/icons/horizontal-dots"

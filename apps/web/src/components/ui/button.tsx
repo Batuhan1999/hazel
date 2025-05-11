@@ -1,7 +1,7 @@
 // src/components/ui/button.tsx
 
 import { type HTMLArkProps, ark } from "@ark-ui/solid"
-import { type Component, type JSX, splitProps } from "solid-js"
+import { type Component, splitProps } from "solid-js"
 // Keep tailwind-variants
 import { type VariantProps, tv } from "tailwind-variants"
 

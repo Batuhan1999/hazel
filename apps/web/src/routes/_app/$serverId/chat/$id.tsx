@@ -1,5 +1,5 @@
 import { createFileRoute, useParams } from "@tanstack/solid-router"
-import { type Accessor, For, Index, Show, createEffect, createMemo, createSignal } from "solid-js"
+import { type Accessor, Index, Show, createEffect, createMemo, createSignal } from "solid-js"
 import { ChatMessage } from "~/components/chat-ui/chat-message"
 import { ChatTopbar } from "~/components/chat-ui/chat-topbar"
 import { FloatingBar } from "~/components/chat-ui/floating-bar"

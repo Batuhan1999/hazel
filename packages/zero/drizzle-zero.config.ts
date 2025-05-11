@@ -1,5 +1,5 @@
+import { schema } from "@maki-chat/drizzle"
 import { drizzleZeroConfig } from "drizzle-zero"
-import * as schema from "~/drizzle/schema"
 
 export default drizzleZeroConfig(schema, {
 	casing: "camelCase",

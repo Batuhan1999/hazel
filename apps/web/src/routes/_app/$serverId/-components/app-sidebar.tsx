@@ -1,10 +1,10 @@
+import type { Channel, Member } from "@maki-chat/zero"
 import { Link, useParams } from "@tanstack/solid-router"
 import { useAuth } from "clerk-solidjs"
-import { type Accessor, For, Index, createMemo, createSignal } from "solid-js"
+import { type Accessor, Index, createMemo, createSignal } from "solid-js"
 import { IconHashtag } from "~/components/icons/hashtag"
 import { useDmChannels } from "~/lib/hooks/data/use-dm-channels"
 import { useServerChannels } from "~/lib/hooks/data/use-server-channels"
-import type { Channel, Member } from "~/lib/zero/schema"
 
 import { IconPlusSmall } from "~/components/icons/plus-small"
 import { Avatar } from "~/components/ui/avatar"

@@ -1,7 +1,7 @@
+import type { User } from "@maki-chat/zero"
 import { Link, useNavigate } from "@tanstack/solid-router"
 import type { Accessor } from "solid-js"
 import { createJoinChannelMutation } from "~/lib/actions/user-actions"
-import type { User } from "~/lib/zero/schema"
 import { useZero } from "~/lib/zero/zero-context"
 import { IconChat } from "../icons/chat"
 import { IconProfile } from "../icons/profile"

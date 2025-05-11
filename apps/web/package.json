@@ -9,15 +9,13 @@
 		"serve": "vite preview",
 		"test": "vitest run",
 		"db": "drizzle-kit",
-		"typecheck": "tsc --noEmit",
-		"generate:zero": "bunx drizzle-zero generate --format -o ./src/lib/zero/drizzle-zero.gen.ts",
-		"generate:permissions": "npx zero-deploy-permissions --schema-path='./src/lib/zero/schema.ts'  --output-file='/tmp/permissions.sql'",
-		"postinstall": "bun run generate:zero"
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@ark-ui/solid": "^5.9.0",
 		"@maki-chat/api-schema": "workspace:*",
 		"@maki-chat/markdown": "workspace:*",
+		"@maki-chat/zero": "workspace:*",
 		"@rocicorp/zero": "^0.19.2025050203",
 		"@tailwindcss/vite": "^4.1.6",
 		"@tanstack/router-plugin": "^1.120.3",

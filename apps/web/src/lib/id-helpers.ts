@@ -1,5 +1,5 @@
+import type { Schema } from "@maki-chat/zero"
 import { customAlphabet } from "nanoid"
-import type { Schema } from "./zero/schema"
 
 const prefixes = {
 	server: "srv",

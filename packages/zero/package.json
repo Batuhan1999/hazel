@@ -1,0 +1,22 @@
+{
+	"name": "@maki-chat/zero",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"generate:zero": "bunx drizzle-zero generate --format -o ./src/drizzle-zero.gen.ts",
+		"generate:permissions": "npx zero-deploy-permissions --schema-path='./src/schema.ts'  --output-file='/tmp/permissions.sql'",
+		"postinstall": "bun run generate:zero"
+	},
+	"dependencies": {
+		"@rocicorp/zero": "^0.19.2025050203",
+		"drizzle-zero": "^0.9.3"
+	},
+	"devDependencies": {
+		"@total-typescript/tsconfig": "^1.0.4",
+		"typescript": "^5.8.3"
+	},
+	"exports": {
+		".": "./src/index.ts"
+	}
+}

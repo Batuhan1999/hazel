@@ -1,6 +1,6 @@
 import type { Zero } from "@rocicorp/zero"
+import type { Schema } from "../../../../../packages/zero/src/drizzle-zero.gen"
 import { newId } from "../id-helpers"
-import type { Schema } from "../zero/drizzle-zero.gen"
 
 export const createJoinChannelMutation = async ({
 	userIds,

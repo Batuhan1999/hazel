@@ -11,7 +11,7 @@ import { ListBox } from "~/components/ui/list-box"
 import { TextField } from "~/components/ui/text-field"
 import { createJoinChannelMutation } from "~/lib/actions/user-actions"
 
-import type { User } from "~/lib/zero/schema"
+import type { User } from "@maki-chat/zero"
 import { useZero } from "~/lib/zero/zero-context"
 
 export interface CreateDmDialogProps {
