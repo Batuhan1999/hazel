@@ -17,5 +17,12 @@
 			"bucket_name": "discord-file-uploads"
 		}
 	],
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "<YOUR_DATABASE_ID>",
+			"localConnectionString": "postgresql://postgres:mkwqhcfdnqdelwn1@142.132.228.194:6992/zero"
+		}
+	],
 	"vars": {}
 }

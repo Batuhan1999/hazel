@@ -23,7 +23,7 @@ export async function initZero(userId: string, getTokenFn: () => Promise<string>
 			return token
 		},
 		mutators: createMutators(),
-		server: import.meta.env.VITE_PUBLIC_SERVER,
+		server: import.meta.env.VITE_PUBLIC_ZERO_SERVER,
 		schema,
 		kvStore: "idb",
 	})

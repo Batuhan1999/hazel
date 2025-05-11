@@ -1,10 +1,10 @@
 import { HttpApiBuilder, HttpApiScalar, HttpMiddleware, HttpServer } from "@effect/platform"
-import { Layer } from "effect"
+import { ConfigProvider, Effect, Layer } from "effect"
 
-import { oldUploadHandler } from "./api/old-upload"
+import { oldUploadHandler } from "./http/old-upload"
 
 import { MakiApi } from "@maki-chat/api-schema"
-import { HttpLive } from "./api"
+import { HttpLive } from "./http"
 
 const Live = HttpLive.pipe()
 
@@ -27,8 +27,12 @@ export default {
 			return await oldUploadHandler(request)!
 		}
 
+		const ConfigLayer = Layer.setConfigProvider(
+			ConfigProvider.fromJson({ ...env, DATABASE_URL: env.HYPERDRIVE.connectionString }),
+		)
+
 		const { dispose, handler } = HttpApiBuilder.toWebHandler(
-			Layer.mergeAll(Live, HttpApiScalarLayer, HttpServer.layerContext),
+			Layer.mergeAll(Live, HttpApiScalarLayer, HttpServer.layerContext).pipe(Layer.provide(ConfigLayer)),
 			{
 				middleware: HttpMiddleware.cors(),
 			},
