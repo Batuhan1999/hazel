@@ -1,16 +1,5 @@
-import { HttpApi, HttpApiEndpoint, HttpApiGroup, HttpApiSchema, Multipart } from "@effect/platform"
-import { Schema } from "effect"
+import { HttpApi } from "@effect/platform"
+import { RootApiGroup } from "./api/root.api"
+import { ZeroApiGroup } from "./api/zero.api"
 
-export const MakiApi = HttpApi.make("MakiApi").add(
-	HttpApiGroup.make("Root")
-		.add(HttpApiEndpoint.get("root")`/`.addSuccess(Schema.String))
-		.add(
-			HttpApiEndpoint.put("upload")`/upload`.addSuccess(Schema.String).setPayload(
-				HttpApiSchema.Multipart(
-					Schema.Struct({
-						files: Multipart.FilesSchema,
-					}),
-				),
-			),
-		),
-)
+export const MakiApi = HttpApi.make("MakiApi").add(RootApiGroup).add(ZeroApiGroup.prefix("/zero"))

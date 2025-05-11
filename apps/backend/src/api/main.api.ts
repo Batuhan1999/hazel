@@ -4,7 +4,7 @@ import { nanoid } from "nanoid"
 
 import { MakiApi } from "@maki-chat/api-schema"
 
-export const RootLive = HttpApiBuilder.group(MakiApi, "Root", (handlers) =>
+export const MainApiLive = HttpApiBuilder.group(MakiApi, "Main", (handlers) =>
 	Effect.gen(function* () {
 		return handlers
 			.handle("root", () => Effect.succeed("Maki Chat API"))

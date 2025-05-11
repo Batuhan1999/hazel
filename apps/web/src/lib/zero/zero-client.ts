@@ -1,7 +1,7 @@
 import type { Zero as ZeroType } from "@rocicorp/zero"
 import { createZero } from "@rocicorp/zero/solid"
 
-import { type Schema, schema } from "@maki-chat/zero"
+import { type Schema, createMutators, schema } from "@maki-chat/zero"
 
 let _zero: ZeroType<Schema> | null = null
 
@@ -22,6 +22,7 @@ export async function initZero(userId: string, getTokenFn: () => Promise<string>
 			}
 			return token
 		},
+		mutators: createMutators(),
 		server: import.meta.env.VITE_PUBLIC_SERVER,
 		schema,
 		kvStore: "idb",

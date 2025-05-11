@@ -2,13 +2,11 @@ import { HttpApiBuilder, HttpApiScalar, HttpMiddleware, HttpServer } from "@effe
 import { Layer } from "effect"
 
 import { oldUploadHandler } from "./api/old-upload"
-import { RootLive } from "./http"
 
 import { MakiApi } from "@maki-chat/api-schema"
+import { HttpLive } from "./api"
 
-const MakiApiLive = HttpApiBuilder.api(MakiApi).pipe(Layer.provide(RootLive))
-
-const Live = MakiApiLive.pipe()
+const Live = HttpLive.pipe()
 
 const HttpApiScalarLayer = HttpApiScalar.layer().pipe(Layer.provide(Live))
 

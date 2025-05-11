@@ -18,7 +18,9 @@
 	"packageManager": "bun@1.2.12",
 	"dependencies": {
 		"@effect/platform": "^0.81.1",
+		"@rocicorp/zero": "^0.19.2025050203",
 		"effect": "^3.14.22",
-		"nanoid": "^5.1.5"
+		"nanoid": "^5.1.5",
+		"postgres": "^3.4.5"
 	}
 }
