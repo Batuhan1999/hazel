@@ -1,5 +1,5 @@
-import { Link, createFileRoute } from "@tanstack/solid-router"
-import { For } from "solid-js"
+import { Link, createFileRoute, useNavigate } from "@tanstack/solid-router"
+import { For, createMemo } from "solid-js"
 import { Card } from "~/components/ui/card"
 import { useUserServers } from "~/lib/hooks/data/use-user-servers"
 
@@ -8,7 +8,16 @@ export const Route = createFileRoute("/_app/")({
 })
 
 function App() {
-	const { servers } = useUserServers()
+	const navigate = useNavigate()
+	const { servers, isLoading } = useUserServers()
+
+	createMemo(() => {
+		if (!isLoading() && servers().length === 0) {
+			navigate({
+				to: "/onboarding",
+			})
+		}
+	})
 
 	return (
 		<main class="container mx-auto flex w-full py-14">
