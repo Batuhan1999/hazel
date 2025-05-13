@@ -11,11 +11,11 @@
       "name": "backend",
       "version": "0.0.0",
       "dependencies": {
-        "@effect/platform": "^0.82.0",
+        "@effect/platform": "^0.82.1",
         "@rocicorp/zero": "^0.19.2025050203",
         "ably": "^2.9.0",
         "drizzle-orm": "^0.43.1",
-        "effect": "^3.15.0",
+        "effect": "^3.15.1",
         "nanoid": "^5.1.5",
         "postgres": "^3.4.5",
       },
@@ -60,8 +60,8 @@
       "name": "@maki-chat/api-schema",
       "version": "0.0.0",
       "dependencies": {
-        "@effect/platform": "^0.82.0",
-        "effect": "^3.15.0",
+        "@effect/platform": "^0.82.1",
+        "effect": "^3.15.1",
       },
       "devDependencies": {
         "@total-typescript/tsconfig": "^1.0.4",
@@ -229,7 +229,7 @@
 
     "@ecies/ciphers": ["@ecies/ciphers@0.2.3", "", { "peerDependencies": { "@noble/ciphers": "^1.0.0" } }, "sha512-tapn6XhOueMwht3E2UzY0ZZjYokdaw9XtL9kEyjhQ/Fb9vL9xTFbOaI+fV0AWvTpYu4BNloC6getKW6NtSg4mA=="],
 
-    "@effect/platform": ["@effect/platform@0.82.0", "", { "dependencies": { "find-my-way-ts": "^0.1.5", "msgpackr": "^1.11.2", "multipasta": "^0.2.5" }, "peerDependencies": { "effect": "^3.15.0" } }, "sha512-+aGwGx80JjvnSqgAWgRawBG8qFggBypoTYxSJDzsWkdLBtAmD+OBaVHAJxXqogqXmxX+X0B3PHng0OOxsYjCIw=="],
+    "@effect/platform": ["@effect/platform@0.82.1", "", { "dependencies": { "find-my-way-ts": "^0.1.5", "msgpackr": "^1.11.2", "multipasta": "^0.2.5" }, "peerDependencies": { "effect": "^3.15.1" } }, "sha512-fX5Lu//VkLXPegouxT1AdSyuRkxF55k70YaLV0vIzjgK97/u3Mow0ux8fYglm2dWDXWTLBkNprlhheGm/5/bvQ=="],
 
     "@emnapi/runtime": ["@emnapi/runtime@1.4.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-pBPWdu6MLKROBX05wSNKcNb++m5Er+KQ9QkB+WVM+pW2Kx9hoSrVTnu3BdkI5eBLZoKu/J6mW/B6i6bJB2ytXQ=="],
 
@@ -1267,7 +1267,7 @@
 
     "ee-first": ["ee-first@1.1.1", "", {}, "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow=="],
 
-    "effect": ["effect@3.15.0", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-l8eJAz1DVEUg2zgmLR9JGYRc1YrKcf/UziC41pIxUHfMgNKMt/Qg8ENhFvbyc9m6Nhrr/Zkg9XtvU7024KU32A=="],
+    "effect": ["effect@3.15.1", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-n3bDF6K3R+FSVuH+dSVU3ya2pI4Wt/tnKzum3DC/3b5e0E9HfhrhbkonOkYU3AVJJOzCA6zZE2/y6EUgQNAY4g=="],
 
     "electron-to-chromium": ["electron-to-chromium@1.5.137", "", {}, "sha512-/QSJaU2JyIuTbbABAo/crOs+SuAZLS+fVVS10PVrIT9hrRkmZl8Hb0xPSkKRUUWHQtYzXHpQUW3Dy5hwMzGZkA=="],
 
