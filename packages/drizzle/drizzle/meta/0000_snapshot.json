@@ -1,5 +1,5 @@
 {
-  "id": "7c170324-a552-4840-990a-ee871234b0ba",
+  "id": "6c4290ac-1181-4f29-a6c4-72565c6069f0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -33,6 +33,19 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "last_seen_message_id": {
+          "name": "last_seen_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notification_count": {
+          "name": "notification_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
         },
         "joined_at": {
           "name": "joined_at",
@@ -99,6 +112,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "channel_members_last_seen_message_id_messages_id_fk": {
+          "name": "channel_members_last_seen_message_id_messages_id_fk",
+          "tableFrom": "channel_members",
+          "tableTo": "messages",
+          "columnsFrom": [
+            "last_seen_message_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

@@ -6,6 +6,8 @@ CREATE TABLE "channel_members" (
 	"channel_id" text NOT NULL,
 	"is_hiddem" boolean DEFAULT false NOT NULL,
 	"is_muted" boolean DEFAULT false NOT NULL,
+	"last_seen_message_id" text,
+	"notification_count" integer DEFAULT 0 NOT NULL,
 	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "channel_members_user_id_channel_id_pk" PRIMARY KEY("user_id","channel_id")
 );
@@ -78,6 +80,7 @@ CREATE TABLE "user" (
 --> statement-breakpoint
 ALTER TABLE "channel_members" ADD CONSTRAINT "channel_members_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "channel_members" ADD CONSTRAINT "channel_members_channel_id_server_channels_id_fk" FOREIGN KEY ("channel_id") REFERENCES "public"."server_channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "channel_members" ADD CONSTRAINT "channel_members_last_seen_message_id_messages_id_fk" FOREIGN KEY ("last_seen_message_id") REFERENCES "public"."messages"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_channelId_server_channels_id_fk" FOREIGN KEY ("channelId") REFERENCES "public"."server_channels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_author_id_user_id_fk" FOREIGN KEY ("author_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "messages" ADD CONSTRAINT "messages_parent_message_id_messages_id_fk" FOREIGN KEY ("parent_message_id") REFERENCES "public"."messages"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

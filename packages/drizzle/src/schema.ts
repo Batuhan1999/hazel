@@ -103,7 +103,7 @@ export const channelMembers = pgTable(
 		isHidden: boolean("is_hiddem").default(false).notNull(),
 		isMuted: boolean("is_muted").default(false).notNull(),
 
-		lastSeenMessageId: text("last_seen_message_id").references(() => messages.id, { onDelete: "set null" }),
+		lastSeenMessageId: text("last_seen_message_id"),
 		notificationCount: integer("notification_count").notNull().default(0),
 
 		joinedAt: timestamp("joined_at", { withTimezone: true }).defaultNow().notNull(),

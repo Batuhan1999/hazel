@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1747004417533,
-      "tag": "0000_misty_rumiko_fujikawa",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1747092544211,
-      "tag": "0001_gorgeous_doctor_strange",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1747173020190,
-      "tag": "0002_far_sprite",
+      "when": 1747173316388,
+      "tag": "0000_tense_firestar",
       "breakpoints": true
     }
   ]
