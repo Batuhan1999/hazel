@@ -9,15 +9,26 @@ export const useChat = (channelId: Accessor<string>) => {
 
 	const { messages, isLoading: isLoadingMessages } = useChatMessages(channelId)
 
+	const [channel, channelResult] = createQuery(
+		() => z.query.serverChannels.where(({ cmp }) => cmp("id", "=", channelId())).one(),
+		CACHE_AWHILE,
+	)
+
 	const [channelMember, channelMemberResult] = createQuery(
 		() => z.query.channelMembers.where(({ cmp }) => cmp("channelId", "=", channelId())).one(),
 		CACHE_AWHILE,
 	)
 
-	const isLoading = createMemo(() => isLoadingMessages() && channelMemberResult().type !== "complete")
+	const isLoading = createMemo(
+		() => isLoadingMessages() && channelMemberResult().type !== "complete" && channelResult().type !== "complete",
+	)
+
+	const isChannelLoading = createMemo(() => channelResult().type !== "complete")
 
 	return {
+		channel,
 		isLoading,
+		isChannelLoading,
 		channelMember,
 		messages,
 	}

@@ -16,12 +16,22 @@ export const chatStore$ = createSignal({
 })
 
 function RouteComponent() {
-	const params = useParams({ from: "/_app/$serverId/chat/$id" })()
+	const navigate = Route.useNavigate()
+	const params = useParams({ from: "/_app/$serverId/chat/$id" })
 	let messagesRef: HTMLDivElement | undefined
 
-	const channelId = createMemo(() => params.id)
+	const channelId = createMemo(() => params().id)
 
-	const { messages, channelMember } = useChat(channelId)
+	const { messages, channelMember, channel, isChannelLoading } = useChat(channelId)
+
+	createEffect(() => {
+		if (!channel() && !isChannelLoading()) {
+			navigate({
+				to: "/$serverId",
+				params: { serverId: params().serverId },
+			})
+		}
+	})
 
 	const lastMessageId = createMemo(() => {
 		return messages().at(0)?.id
@@ -40,7 +50,7 @@ function RouteComponent() {
 
 	// Scroll to the bottom of the messages when the chat is switched
 	createEffect(() => {
-		if (params.id && messagesRef) {
+		if (params().id && messagesRef) {
 			messagesRef.scrollTo({ top: messagesRef.scrollHeight, behavior: "instant" })
 		}
 	})
@@ -141,7 +151,7 @@ function RouteComponent() {
 												isFirstNewMessage={
 													message().message.id === channelMember()?.lastSeenMessageId
 												}
-												serverId={() => params.serverId}
+												serverId={() => params().serverId}
 											/>
 										)
 									}}
@@ -152,7 +162,7 @@ function RouteComponent() {
 				</Show>
 			</div>
 			<div class="mx-2 mb-6">
-				<FloatingBar channelId={params.id} />
+				<FloatingBar channelId={params().id} />
 			</div>
 		</div>
 	)
