@@ -5,10 +5,11 @@
 # Web
 
 ## Chat UI
-- Change Input to TextArea
 - Fix Reply to Preview of Message if it's a markdown thing like a image display an icon
 - Emoji Picker
 - Add day/week/year to pinned message list
+- Fix weird Avatar flashing caused by reloads
+- Fix scroll issue when smooth scroll takes over when almost reaching the bottom LOL
 - Image preview
     - Add next/prev image support when there are multiple images in a message (including keyboard support)
     - Maybe show metadata like filename, filesize and resolution somewhere
@@ -21,7 +22,6 @@
 ## Notifications
 - Extend Notification manager on the client
 (this should track if you are active or not and if you are in the right channel and ping you accordingly)
-- Handle Unread Notifications in Chats
 - Add reconnect flow to Ably
 
 ## Components and Pages
@@ -38,7 +38,6 @@
 
 # Server
 
-- Don't send notification for sender of message
 
 # Investigations
 - Look into [campsite](https://github.com/campsite/campsite) for product inspiration
