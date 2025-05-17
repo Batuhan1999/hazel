@@ -114,7 +114,8 @@ export function MarkdownInput(props: MarkdownInputProps) {
 						// onHighlighted={() => console.log(`Code block ${index} highlighted`)} // For debugging if needed
 					/>
 				)
-			} else if (segment.className && segment.isToken) {
+			}
+			if (segment.className && segment.isToken) {
 				return (
 					<span class={segment.className} data-key={`token-${index}`}>
 						{segment.text}
