@@ -20,7 +20,6 @@ export function Channel(props: { channelId: Accessor<string>; serverId: Accessor
 
 	// Redirect when channel is not found
 	createEffect(() => {
-		console.log(messages())
 		if (!channel() && !isChannelLoading()) {
 			navigate({
 				to: "/$serverId",

@@ -240,11 +240,6 @@ export function ChatMessage(props: ChatMessageProps) {
 							id: props.message().id,
 							threadChannelId,
 						})
-
-						await tx.channelMembers.insert({
-							userId: z.userID,
-							channelId: threadChannelId,
-						})
 					})
 				}
 
