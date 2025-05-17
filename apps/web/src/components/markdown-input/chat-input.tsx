@@ -1,5 +1,5 @@
 import "highlight.js/styles/github-dark.css"
-import { createSignal } from "solid-js"
+import { createEffect, createSignal } from "solid-js"
 import { MarkdownInput } from "./markdown-input"
 import type { TokenRule } from "./types"
 
@@ -46,6 +46,11 @@ export const ChatInput = () => {
 	const [inputValue, setInputValue] = createSignal(
 		"Hello **world**! This is *italic*.\n\n```javascript\n// This is a JS code block\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\ngreet('Solid');\n```\n\nAnd `inline code` here. Plus a ```python\n# Python code\nprint('Hello from Python')\n```\nFinal text.",
 	)
+
+	createEffect(() => {
+		console.log("inputValue changed:", inputValue())
+	})
+
 	return (
 		<MarkdownInput
 			value={inputValue}

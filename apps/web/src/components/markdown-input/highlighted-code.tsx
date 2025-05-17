@@ -16,7 +16,7 @@ export function HighlightedCode(props: HighlightedCodeProps) {
 
 	createEffect(() => {
 		if (codeElementRef) {
-			let highlightedHTML
+			let highlightedHTML: string
 			if (props.code) {
 				if (props.language && hljs.getLanguage(props.language)) {
 					highlightedHTML = hljs.highlight(props.code, {

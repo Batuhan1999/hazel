@@ -23,6 +23,9 @@ export function getCaretCharacterOffsetWithin(element: HTMLElement): number {
 			}
 		}
 	}
+
+	console.log("getCaretCharacterOffsetWithin:", caretOffset)
+
 	return caretOffset
 }
 

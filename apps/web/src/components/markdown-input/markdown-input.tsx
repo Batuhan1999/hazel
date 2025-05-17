@@ -37,12 +37,23 @@ export function MarkdownInput(props: MarkdownInputProps) {
 
 	const handleInput = (e: InputEvent) => {
 		const target = e.currentTarget as HTMLDivElement
-		const currentCaretOffset = getCaretCharacterOffsetWithin(target)
-		// console.log("Saving caret offset:", currentCaretOffset, "for text length:", target.textContent?.length);
-		setCaretRestorePosition(currentCaretOffset)
-
+		let currentCaretOffset = getCaretCharacterOffsetWithin(target)
 		const newText = target.textContent || ""
-		setCurrentText(newText) // This will trigger parsedContent
+
+		// Only adjust caret for explicit newline insertions by the user.
+		// This prevents undesired jumps when typing at the end of a line
+		// that is structurally followed by a newline (e.g., due to <div> wrapping lines).
+		if (e.inputType === "insertParagraph" || e.inputType === "insertLineBreak") {
+			// If a new line was inserted, and the calculated offset points *directly at* the newline character
+			// (implying getCaretCharacterOffsetWithin placed it before the visual new line start),
+			// advance the offset to correctly position the caret on the new line.
+			if (newText[currentCaretOffset] === "\n") {
+				currentCaretOffset++
+			}
+		}
+
+		setCaretRestorePosition(currentCaretOffset)
+		setCurrentText(newText)
 		props.onValueChange(newText)
 	}
 
@@ -134,8 +145,6 @@ export function MarkdownInput(props: MarkdownInputProps) {
 			onFocus={() => setIsFocused(true)}
 			onBlur={() => {
 				setIsFocused(false)
-				// console.log("Blur event, clearing pending caret restore.");
-				// setCaretRestorePosition(null); // Optional: clear on blur
 			}}
 			class={`min-h-[40px] w-full whitespace-pre-wrap rounded-md border border-gray-300 p-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 ${
 				props.inputClass || ""
