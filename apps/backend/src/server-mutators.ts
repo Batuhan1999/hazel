@@ -17,7 +17,7 @@ export const serverMutators = (clientMutators: CustomMutatorDefs<typeof schema>,
 
 				const ably = new Ably.Rest("NY2l4Q._SC2Cw:4EX9XKKwif-URelo-XiW7AuAqAjy8QzOheHhnjocjkk")
 
-				await tx.mutate.messages.insert(data)
+				await tx.mutate.messages.insert({ ...data, createdAt: new Date().getTime() })
 
 				// This will run in the background
 				const postNotifications = async () => {

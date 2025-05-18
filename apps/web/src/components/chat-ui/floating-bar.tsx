@@ -282,6 +282,7 @@ export function FloatingBar(props: { channelId: string }) {
 				content: content,
 				authorId: auth.userId()!,
 				replyToMessageId: chatStore().replyToMessageId,
+				createdAt: new Date().getTime(),
 				attachedFiles: successfulKeys(),
 			})
 			.then(() => {

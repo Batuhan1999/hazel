@@ -11,6 +11,7 @@ export function createMutators(authData: AuthData) {
 	return {
 		messages: {
 			insert: async (tx, data: Message) => {
+				console.log("insert", data)
 				if (data.authorId !== authData.userId) {
 					throw new Error("Unauthorized")
 				}
