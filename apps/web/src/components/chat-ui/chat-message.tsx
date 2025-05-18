@@ -40,6 +40,8 @@ import { Badge } from "../ui/badge"
 import { UserAvatar } from "../user-ui/user-popover-content"
 import { ChatImage } from "./chat-image"
 
+import { Text } from "@maki-chat/markdown/base-components"
+
 function extractTextFromJsonNodes(nodes: any[]): string {
 	if (!Array.isArray(nodes)) return ""
 	return nodes
@@ -318,6 +320,8 @@ export function ChatMessage(props: ChatMessageProps) {
 
 	const [open, setOpen] = createSignal(false)
 
+	console.log(props.message().content)
+
 	createEffect(() => {
 		if (props.isFirstNewMessage()) {
 			setTimeout(async () => {
@@ -464,7 +468,7 @@ export function ChatMessage(props: ChatMessageProps) {
 									rel="noopener noreferrer"
 								/>
 							),
-							p: (props) => <p class="leading-none" {...props} />,
+							text: Text,
 							h1: (props) => <h1 class="font-bold text-xl" {...props} />,
 							blockquote: (props) => (
 								<blockquote
@@ -496,7 +500,7 @@ export function ChatMessage(props: ChatMessageProps) {
 						}}
 						renderingStrategy="reconcile"
 					/>
-					<div class="flex flex-col gap-2 pt-2">
+					<div class="flex flex-col gap-2">
 						<Show when={attachedCount() > 0}>
 							<div
 								class={twMerge(

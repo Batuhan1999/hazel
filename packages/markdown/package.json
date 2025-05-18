@@ -24,6 +24,7 @@
 		"typescript": "^5.8.3"
 	},
 	"exports": {
-		".": "./src/index.tsx"
+		".": "./src/index.tsx",
+		"./base-components": "./src/base-components.tsx"
 	}
 }

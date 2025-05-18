@@ -9,6 +9,8 @@ import { chatStore$ } from "~/routes/_app/$serverId/chat/$id"
 import { IconLoader } from "../icons/loader"
 import { IconCirclePlusSolid } from "../icons/solid/circle-plus-solid"
 import { IconCircleXSolid } from "../icons/solid/circle-x-solid"
+import { ChatInput } from "../markdown-input/chat-input"
+import { MarkdownInput } from "../markdown-input/markdown-input"
 import { Button } from "../ui/button"
 
 // Type for individual attachment state
@@ -179,9 +181,10 @@ const useFileAttachment = () => {
 	}
 }
 
-const useGlobalEditorFocus = (editorRef: () => HTMLDivElement | undefined) => {
+const createGlobalEditorFocus = (editorRef: () => HTMLTextAreaElement | undefined) => {
 	createEffect(() => {
-		if (!editorRef()) {
+		const ref = editorRef()
+		if (!ref) {
 			return
 		}
 
@@ -208,7 +211,9 @@ const useGlobalEditorFocus = (editorRef: () => HTMLDivElement | undefined) => {
 
 			if (isPrintableKey) {
 				event.preventDefault()
-				editorRef()?.focus()
+				ref.focus()
+				const content = editorRef()?.value + event.key
+				ref.value = content
 			}
 		}
 
@@ -223,17 +228,13 @@ const useGlobalEditorFocus = (editorRef: () => HTMLDivElement | undefined) => {
 export function FloatingBar(props: { channelId: string }) {
 	const auth = useAuth()
 	const [chatStore, setChatStore] = chatStore$
-	const {
-		attachments,
-		setFileInputRef,
-		handleFileChange,
-		openFileSelector,
-		removeAttachment,
-		clearAttachments, // Use this for a potential 'clear all' button if needed
-	} = useFileAttachment()
+	const { attachments, setFileInputRef, handleFileChange, openFileSelector, removeAttachment, clearAttachments } =
+		useFileAttachment()
 
-	const [editorRef, setEditorRef] = createSignal<HTMLInputElement>()
-	useGlobalEditorFocus(editorRef)
+	const [input, setInput] = createSignal("")
+	const [editorRef, setEditorRef] = createSignal<HTMLTextAreaElement>()
+
+	createGlobalEditorFocus(editorRef)
 
 	const isUploading = createMemo(() => attachments().some((att) => att.status === "uploading"))
 	const successfulKeys = createMemo(() =>
@@ -277,9 +278,7 @@ export function FloatingBar(props: { channelId: string }) {
 					// parentMessageId: null,
 				}))
 
-				// Reset editor height
-				editorRef()!.value = ""
-				editorRef()!.style.height = "auto"
+				setInput("")
 				clearAttachments()
 			})
 	}
@@ -311,22 +310,14 @@ export function FloatingBar(props: { channelId: string }) {
 					<IconCirclePlusSolid class="size-5!" />
 				</Button>
 
-				<textarea
+				<ChatInput
 					ref={setEditorRef}
-					class="w-full resize-none bg-transparent py-3 outline-none"
-					rows={1}
-					onInput={(e) => {
-						if (e.currentTarget.scrollHeight >= 240) {
-							return
-						}
-
-						e.currentTarget.style.height = "auto"
-						e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`
-					}}
+					value={input}
+					onValueChange={setInput}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" && !e.shiftKey) {
 							e.preventDefault()
-							handleSubmit(e.currentTarget.value)
+							handleSubmit(input())
 						}
 					}}
 				/>
@@ -386,7 +377,7 @@ function ReplyInfo(props: {
 
 	if (!message()?.messages()) return null
 
-	const [chatStore, setChatStore] = chatStore$
+	const [_, setChatStore] = chatStore$
 
 	return (
 		<div

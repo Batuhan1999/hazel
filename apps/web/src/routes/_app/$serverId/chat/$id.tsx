@@ -1,10 +1,10 @@
 import { createFileRoute, useParams } from "@tanstack/solid-router"
-import { createMemo, createSignal, Show } from "solid-js"
+import { Show, createMemo, createSignal, on } from "solid-js"
 import { ChatTopbar } from "~/components/chat-ui/chat-topbar"
 
-import { Channel } from "./-components/channel"
-import { Button } from "~/components/ui/button"
 import { IconX } from "~/components/icons/x"
+import { Button } from "~/components/ui/button"
+import { Channel } from "./-components/channel"
 
 export const chatStore$ = createSignal({
 	replyToMessageId: null as string | null,

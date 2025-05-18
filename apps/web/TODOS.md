@@ -8,8 +8,8 @@
 - Fix Reply to Preview of Message if it's a markdown thing like a image display an icon
 - Emoji Picker
 - Add day/week/year to pinned message list
-- Fix weird Avatar flashing caused by reloads
-- Fix scroll issue when smooth scroll takes over when almost reaching the bottom LOL
+- Add some Date viewer to shown messages
+- Fix weird Avatar flashing caused by reloads (probbaly means to fork virtua and change For to Index for our usecase)
 - Image preview
     - Add next/prev image support when there are multiple images in a message (including keyboard support)
     - Maybe show metadata like filename, filesize and resolution somewhere
