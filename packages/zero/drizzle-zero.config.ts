@@ -36,6 +36,7 @@ export default drizzleZeroConfig(schema, {
 			channelType: true,
 			createdAt: true,
 			updatedAt: true,
+			parentChannelId: true,
 		},
 		channelMembers: {
 			userId: true,
@@ -52,8 +53,8 @@ export default drizzleZeroConfig(schema, {
 			id: true,
 			content: true,
 			channelId: true,
+			threadChannelId: true,
 			authorId: true,
-			parentMessageId: true,
 			replyToMessageId: true,
 			attachedFiles: true,
 			createdAt: true,

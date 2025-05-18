@@ -81,6 +81,7 @@ interface ChatMessageProps extends JSX.HTMLAttributes<HTMLDivElement> {
 	isGroupStart: Accessor<boolean>
 	isGroupEnd: Accessor<boolean>
 	isFirstNewMessage: Accessor<boolean>
+	isThread: boolean
 }
 
 export function ChatMessage(props: ChatMessageProps) {
@@ -217,6 +218,37 @@ export function ChatMessage(props: ChatMessageProps) {
 					</EmojiPicker.Root> */}
 				</div>
 			),
+		},
+		{
+			key: "thread",
+			label: "Thread",
+			icon: <IconTrash class="size-4" />,
+			onAction: async () => {
+				const threadChannelId = props.message().threadChannelId ?? newId("serverChannels")
+
+				// This should only happen once a message is created in a thread. For now we will just create the channel immediately.
+				if (!props.message().threadChannelId) {
+					await z.mutateBatch(async (tx) => {
+						await tx.serverChannels.insert({
+							id: threadChannelId,
+							serverId: props.serverId(),
+							name: `Thread ${props.message().author?.displayName}`,
+							channelType: "thread",
+							parentChannelId: props.message().channelId,
+							createdAt: Date.now(),
+						})
+
+						await tx.messages.update({
+							id: props.message().id,
+							threadChannelId,
+						})
+					})
+				}
+
+				setChatStore((prev) => ({ ...prev, openThreadId: threadChannelId }))
+			},
+			hotkey: "t",
+			showButton: !props.isThread,
 		},
 		{
 			key: "reply",
@@ -496,6 +528,9 @@ export function ChatMessage(props: ChatMessageProps) {
 						</Show>
 						<ReactionTags message={props.message()} />
 					</div>
+					<Show when={props.message().threadChannel?.messages.length}>
+						<ThreadButton message={props.message()} />
+					</Show>
 				</div>
 			</div>
 			<ConfirmDialog
@@ -519,6 +554,51 @@ export function ChatMessage(props: ChatMessageProps) {
 				bucketUrl={import.meta.env.VITE_BUCKET_URL}
 			/>
 		</div>
+	)
+}
+
+function ThreadButton(props: { message: Message }) {
+	const threadMessages = createMemo(() => props.message.threadChannel?.messages ?? [])
+
+	const topFourAuthors = createMemo(() => {
+		const authors: { displayName: string; avatarUrl: string }[] = []
+		for (const message of threadMessages()) {
+			if (message.author?.avatarUrl && !authors.some((a) => a.avatarUrl === message.author!.avatarUrl)) {
+				authors.push({ displayName: message.author.displayName!, avatarUrl: message.author.avatarUrl })
+			}
+		}
+		return { authors: authors.slice(0, 4), total: authors.length }
+	})
+
+	const [chatStore, setChatStore] = chatStore$
+
+	return (
+		<Button
+			intent="ghost"
+			class="mt-1 flex w-full justify-start px-1"
+			onClick={() => setChatStore((prev) => ({ ...prev, openThreadId: props.message.threadChannelId }))}
+		>
+			<For each={topFourAuthors().authors}>
+				{(author) => <Avatar class="size-5" name={author.displayName!} src={author.avatarUrl} />}
+			</For>
+			<Show when={topFourAuthors().total > 4}>
+				<span class="text-muted-foreground text-xs">+{topFourAuthors().total - 4}</span>
+			</Show>
+			<div class="ml-1 flex items-center gap-1">
+				<p class="text-muted-foreground text-xs">{threadMessages().length} messages</p>
+				{/* Dot separator */}
+				<span class="mx-1 text-muted-foreground text-xs">&middot;</span>
+				{/* TODO: Show the proper date here (or something like 23 minutes ago) */}
+				<p class="text-muted-foreground text-xs">
+					Last message{" "}
+					{new Date(threadMessages()[0].createdAt!).toLocaleTimeString("en-US", {
+						hour: "2-digit",
+						minute: "2-digit",
+						hour12: false,
+					})}
+				</p>
+			</div>
+		</Button>
 	)
 }
 

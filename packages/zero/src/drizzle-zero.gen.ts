@@ -131,6 +131,16 @@ export const schema = {
             "channelId"
           >,
         },
+        threadChannelId: {
+          type: "string",
+          optional: true,
+          customType: null as unknown as ZeroCustomType<
+            typeof zeroSchema,
+            "messages",
+            "threadChannelId"
+          >,
+          serverName: "thread_channel_id",
+        },
         authorId: {
           type: "string",
           optional: false,
@@ -140,16 +150,6 @@ export const schema = {
             "authorId"
           >,
           serverName: "author_id",
-        },
-        parentMessageId: {
-          type: "string",
-          optional: true,
-          customType: null as unknown as ZeroCustomType<
-            typeof zeroSchema,
-            "messages",
-            "parentMessageId"
-          >,
-          serverName: "parent_message_id",
         },
         replyToMessageId: {
           type: "string",
@@ -406,6 +406,16 @@ export const schema = {
             "channelType"
           >,
           serverName: "channel_type",
+        },
+        parentChannelId: {
+          type: "string",
+          optional: true,
+          customType: null as unknown as ZeroCustomType<
+            typeof zeroSchema,
+            "serverChannels",
+            "parentChannelId"
+          >,
+          serverName: "parent_channel_id",
         },
         createdAt: {
           type: "number",
@@ -685,6 +695,14 @@ export const schema = {
           cardinality: "one",
         },
       ],
+      parentChannel: [
+        {
+          sourceField: ["parentChannelId"],
+          destField: ["id"],
+          destSchema: "serverChannels",
+          cardinality: "one",
+        },
+      ],
       members: [
         {
           sourceField: ["id"],
@@ -737,28 +755,20 @@ export const schema = {
           cardinality: "one",
         },
       ],
+      threadChannel: [
+        {
+          sourceField: ["threadChannelId"],
+          destField: ["id"],
+          destSchema: "serverChannels",
+          cardinality: "one",
+        },
+      ],
       author: [
         {
           sourceField: ["authorId"],
           destField: ["id"],
           destSchema: "users",
           cardinality: "one",
-        },
-      ],
-      parentMessage: [
-        {
-          sourceField: ["parentMessageId"],
-          destField: ["id"],
-          destSchema: "messages",
-          cardinality: "one",
-        },
-      ],
-      childMessages: [
-        {
-          sourceField: ["id"],
-          destField: ["parentMessageId"],
-          destSchema: "messages",
-          cardinality: "many",
         },
       ],
       replyToMessage: [

@@ -16,7 +16,7 @@ import {
 } from "drizzle-orm/pg-core"
 
 export const userRoleEnum = pgEnum("user_role", ["owner", "admin", "member"])
-export const channelTypeEnum = pgEnum("channel_type", ["public", "private", "direct", "single"])
+export const channelTypeEnum = pgEnum("channel_type", ["public", "private", "direct", "single", "thread"])
 
 export const serverTypeEnum = pgEnum("server_type", ["public", "private"])
 
@@ -83,6 +83,11 @@ export const serverChannels = pgTable(
 		name: text("name").notNull(),
 		channelType: channelTypeEnum("channel_type").default("public").notNull(),
 
+		// Parent channel for threads
+		parentChannelId: text("parent_channel_id").references((): AnyPgColumn => serverChannels.id, {
+			onDelete: "cascade",
+		}),
+
 		createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 		updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -125,12 +130,14 @@ export const messages = pgTable(
 		channelId: text("channelId").references(() => serverChannels.id, {
 			onDelete: "cascade",
 		}),
+		threadChannelId: text("thread_channel_id").references(() => serverChannels.id, {
+			onDelete: "cascade",
+		}),
 		authorId: text("author_id")
 			.references(() => users.id, {
 				onDelete: "set null",
 			})
 			.notNull(),
-		parentMessageId: text("parent_message_id").references((): any => messages.id, { onDelete: "cascade" }),
 		replyToMessageId: text("reply_to_message_id").references((): AnyPgColumn => messages.id, {
 			onDelete: "set null",
 		}),
@@ -142,8 +149,8 @@ export const messages = pgTable(
 	(table) => {
 		return {
 			channelIdx: index("message_channel_idx").on(table.channelId),
+			threadChannelIdx: index("message_thread_channel_idx").on(table.threadChannelId),
 			userIdx: index("message_user_idx").on(table.authorId),
-			parentMessageIdx: index("message_parent_idx").on(table.parentMessageId),
 			channelCreatedAtIdx: index("message_channel_created_at_idx").on(table.channelId, table.createdAt),
 		}
 	},
@@ -230,6 +237,12 @@ export const serverChannelsRelations = relations(serverChannels, ({ one, many })
 		fields: [serverChannels.serverId],
 		references: [server.id],
 	}),
+	// Each channel can have one parent channel (for threads)
+	parentChannel: one(serverChannels, {
+		fields: [serverChannels.parentChannelId],
+		references: [serverChannels.id],
+	}),
+
 	// One channel can have multiple members (via channelMembers)
 	members: many(channelMembers),
 	// One channel can have multiple messages
@@ -252,25 +265,22 @@ export const channelMembersRelations = relations(channelMembers, ({ one }) => ({
 }))
 
 export const messagesRelations = relations(messages, ({ one, many }) => ({
-	// Each message belongs to one channel (can be null if channel deleted?)
+	// Each message belongs to one channel (can be null if message exclusively in thread channel)
 	channel: one(serverChannels, {
 		fields: [messages.channelId],
 		references: [serverChannels.id],
+		relationName: "ChannelMessages",
+	}),
+	// Each message can belong to one thread channel
+	threadChannel: one(serverChannels, {
+		fields: [messages.threadChannelId],
+		references: [serverChannels.id],
+		relationName: "ThreadParent",
 	}),
 	// Each message has one author (can be null if user deleted)
 	author: one(users, {
 		fields: [messages.authorId],
 		references: [users.id],
-	}),
-	// Each message can be a child of one parent message (for threads)
-	parentMessage: one(messages, {
-		fields: [messages.parentMessageId],
-		references: [messages.id],
-		relationName: "ThreadParent",
-	}),
-	// Each message can be the parent of multiple child messages (for threads)
-	childMessages: many(messages, {
-		relationName: "ThreadParent",
 	}),
 	// Each message can be a reply to one other message
 	replyToMessage: one(messages, {

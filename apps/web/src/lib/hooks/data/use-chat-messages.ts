@@ -12,7 +12,15 @@ export const useChatMessages = (channelId: Accessor<string>, limit: Accessor<num
 
 				.related("author")
 				.related("replyToMessage", (q) => q.related("author"))
-				.related("childMessages")
+				.related("threadChannel", (q) =>
+					q.related("messages", (q) =>
+						q
+							.related("author")
+							.related("reactions")
+							.related("replyToMessage", (q) => q.related("author"))
+							.orderBy("createdAt", "desc"),
+					),
+				)
 				.related("reactions")
 				.related("pinnedInChannels")
 				.where(({ cmp }) => cmp("channelId", "=", channelId()))
