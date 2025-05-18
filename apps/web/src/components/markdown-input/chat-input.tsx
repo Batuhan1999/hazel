@@ -44,6 +44,7 @@ const myTokenRules: TokenRule[] = [
 
 export const ChatInput = () => {
 	const [inputValue, setInputValue] = createSignal(
+		// "",
 		"Hello **world**! This is *italic*.\n\n```javascript\n// This is a JS code block\nfunction greet(name) {\n  console.log(`Hello, ${name}!`);\n}\ngreet('Solid');\n```\n\nAnd `inline code` here. Plus a ```python\n# Python code\nprint('Hello from Python')\n```\nFinal text.",
 	)
 

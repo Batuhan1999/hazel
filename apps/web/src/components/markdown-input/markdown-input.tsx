@@ -1,164 +1,186 @@
-// src/MarkdownInput.tsx
-import { type JSX, Show, createEffect, createMemo, createSignal, on } from "solid-js"
-import type { Accessor } from "solid-js"
-import { getCaretCharacterOffsetWithin, setCaretByCharacterOffset } from "./caret-utils"
-import { HighlightedCode } from "./highlighted-code" // Import new component
-import { parseText } from "./parser"
-import type { ParsedSegment, TokenRule } from "./types"
+import { type Accessor, createEffect, on, createSignal, onCleanup } from "solid-js"
+import { MentionSuggestions } from "./mention-suggestions"
 
 interface MarkdownInputProps {
 	value: Accessor<string>
 	onValueChange: (value: string) => void
-	tokenRules: TokenRule[]
 	placeholder?: string
 	class?: string
 	inputClass?: string
 }
 
+// Example static user list for mentions
+const USERNAMES = ["alice", "bob", "charlie", "dave", "eve"]
+
 export function MarkdownInput(props: MarkdownInputProps) {
 	let editorRef: HTMLDivElement | undefined
-	const [currentText, setCurrentText] = createSignal(props.value())
-	const [caretRestorePosition, setCaretRestorePosition] = createSignal<number | null>(null)
-	const [isFocused, setIsFocused] = createSignal(false) // Track focus state
+	let isInternallyUpdating = false
 
-	// Sync external prop value changes
+	const [mentionActive, setMentionActive] = createSignal(false)
+	const [mentionQuery, setMentionQuery] = createSignal("")
+	const [mentionIndex, setMentionIndex] = createSignal(0)
+	const [mentionPosition, setMentionPosition] = createSignal<{left: number, top: number} | null>(null)
+	const [filteredSuggestions, setFilteredSuggestions] = createSignal<string[]>([])
+
+	function closeMention() {
+		setMentionActive(false)
+		setMentionQuery("")
+		setFilteredSuggestions([])
+	}
+
+	function openMention(pos: {left: number, top: number}) {
+		setMentionActive(true)
+		setMentionQuery("")
+		setMentionIndex(0)
+		setMentionPosition(pos)
+		setFilteredSuggestions(USERNAMES)
+	}
+
 	createEffect(
 		on(
 			() => props.value(),
 			(propVal) => {
-				if (propVal !== currentText()) {
-					// console.log("External value changed, updating currentText");
-					setCurrentText(propVal)
-					setCaretRestorePosition(null) // Reset pending restore
+				if (editorRef && editorRef.textContent !== propVal) {
+					isInternallyUpdating = true // Set flag before changing DOM
+					editorRef.textContent = propVal
+					queueMicrotask(() => {
+						isInternallyUpdating = false
+					})
 				}
 			},
 		),
 	)
 
-	const handleInput = (e: InputEvent) => {
-		const target = e.currentTarget as HTMLDivElement
-		let currentCaretOffset = getCaretCharacterOffsetWithin(target)
-		const newText = target.textContent || ""
-
-		// Only adjust caret for explicit newline insertions by the user.
-		// This prevents undesired jumps when typing at the end of a line
-		// that is structurally followed by a newline (e.g., due to <div> wrapping lines).
-		if (e.inputType === "insertParagraph" || e.inputType === "insertLineBreak") {
-			// If a new line was inserted, and the calculated offset points *directly at* the newline character
-			// (implying getCaretCharacterOffsetWithin placed it before the visual new line start),
-			// advance the offset to correctly position the caret on the new line.
-			if (newText[currentCaretOffset] === "\n") {
-				currentCaretOffset++
-			}
+	const handleInput = (event: InputEvent) => {
+		if (isInternallyUpdating) {
+			return
 		}
 
-		setCaretRestorePosition(currentCaretOffset)
-		setCurrentText(newText)
+		const target = event.currentTarget as HTMLDivElement
+		const newText = target.textContent || ""
 		props.onValueChange(newText)
+
+		// Detect if @ was typed
+		const selection = window.getSelection()
+		if (selection && selection.rangeCount > 0) {
+			const range = selection.getRangeAt(0)
+			const precedingText = range.startContainer.textContent?.slice(0, range.startOffset) || ""
+			const match = precedingText.match(/(^|\s)@(\w*)$/)
+			if (match) {
+				const query = match[2] || ""
+				const rect = range.getBoundingClientRect()
+				const editorRect = editorRef?.getBoundingClientRect()
+				const pos = editorRect && rect
+					? { left: rect.left - editorRect.left, top: rect.bottom - editorRect.top }
+					: { left: 0, top: 20 }
+				setMentionQuery(query)
+				setFilteredSuggestions(USERNAMES.filter(u => u.startsWith(query)))
+				setMentionActive(true)
+				setMentionPosition(pos)
+				setMentionIndex(0)
+			} else {
+				closeMention()
+			}
+		}
 	}
 
-	const parsedContent = createMemo<ParsedSegment[]>(() => {
-		// console.log("Re-parsing text:", currentText().substring(0, 20) + "...");
-		return parseText(currentText(), props.tokenRules)
+	createEffect(() => {
+		if (editorRef && editorRef.textContent !== props.value()) {
+			isInternallyUpdating = true
+			editorRef.textContent = props.value()
+			queueMicrotask(() => {
+				isInternallyUpdating = false
+			})
+		}
 	})
 
-	// Effect to restore caret AFTER DOM updates
-	createEffect(
-		on(
-			// React to parsedContent (indirectly currentText) AND caretRestorePosition
-			// This ensures the effect runs if either the content changes or a restore is requested
-			() => [parsedContent(), caretRestorePosition()] as const,
-			([segments, positionToRestore]) => {
-				// console.log("Caret restore effect triggered. Position to restore:", positionToRestore);
-				if (editorRef && positionToRestore !== null && isFocused()) {
-					// Use setTimeout to ensure this runs after all DOM updates,
-					// including those from highlight.js's own effects.
-					setTimeout(() => {
-						if (
-							editorRef &&
-							isFocused() && // Check focus again inside timeout
-							caretRestorePosition() === positionToRestore // Ensure position is still the one we want
-						) {
-							const currentContentLength = editorRef.textContent?.length || 0
-							const finalRestorePosition = Math.min(positionToRestore, currentContentLength)
-							// console.log(
-							//   "setTimeout: Restoring caret. Original:",
-							//   positionToRestore,
-							//   "Adjusted:",
-							//   finalRestorePosition,
-							//   "New length:",
-							//   currentContentLength,
-							// );
-							setCaretByCharacterOffset(editorRef, finalRestorePosition)
-							setCaretRestorePosition(null) // Reset after attempting restore
-						} else {
-							// console.log(
-							//   "setTimeout: Skipping caret restore - editor not active, or position changed/reset.",
-							// );
-							// If not restoring, but a position was set, clear it to prevent stale restores later
-							if (caretRestorePosition() !== null) {
-								setCaretRestorePosition(null)
-							}
-						}
-					}, 0)
-				} else if (positionToRestore !== null) {
-					// If there was a position to restore but we didn't (e.g., not focused), clear it.
-					// console.log("Caret restore effect: Not focused or no editorRef, clearing pending restore.");
-					setCaretRestorePosition(null)
+	// Keyboard navigation for mention suggestions
+	function handleKeyDown(e: KeyboardEvent) {
+		if (mentionActive()) {
+			if (e.key === "ArrowDown") {
+				e.preventDefault()
+				setMentionIndex((i) => Math.min(i + 1, filteredSuggestions().length - 1))
+			} else if (e.key === "ArrowUp") {
+				e.preventDefault()
+				setMentionIndex((i) => Math.max(i - 1, 0))
+			} else if (e.key === "Enter" || e.key === "Tab") {
+				e.preventDefault()
+				const username = filteredSuggestions()[mentionIndex()]
+				if (username) {
+					insertMention(username)
 				}
-			},
-			{ defer: false }, // Run immediately after render if dependencies change
-			// defer: true might also work, but let's try false first with setTimeout
-		),
-	)
-
-	const renderSegmentsRevised = (segments: ParsedSegment[]): (string | JSX.Element)[] => {
-		// console.log("Rendering segments:", segments.length);
-		return segments.map((segment, index) => {
-			if (segment.isCodeBlockContent) {
-				return (
-					<HighlightedCode
-						code={segment.text}
-						language={segment.language}
-						data-key={`code-${index}`}
-						class="editor-code-content"
-						// onHighlighted={() => console.log(`Code block ${index} highlighted`)} // For debugging if needed
-					/>
-				)
+				closeMention()
+			} else if (e.key === "Escape") {
+				closeMention()
 			}
-			if (segment.className && segment.isToken) {
-				return (
-					<span class={segment.className} data-key={`token-${index}`}>
-						{segment.text}
-					</span>
-				)
-			}
-			return segment.text
-		})
+		}
 	}
 
+	function insertMention(username: string) {
+		const selection = window.getSelection()
+		if (!selection || !selection.rangeCount) return
+		const range = selection.getRangeAt(0)
+		const node = range.startContainer
+		const text = node.textContent || ""
+		const offset = range.startOffset
+		const before = text.slice(0, offset)
+		const after = text.slice(offset)
+		const match = before.match(/(^|\s)@(\w*)$/)
+		if (match) {
+			const start = match.index! + match[1].length
+			const newText = before.slice(0, start) + "@" + username + " " + after
+			node.textContent = newText
+			// Move caret to after the inserted mention
+			const newOffset = start + username.length + 2
+			const newRange = document.createRange()
+			newRange.setStart(node, newOffset)
+			newRange.collapse(true)
+			selection.removeAllRanges()
+			selection.addRange(newRange)
+			props.onValueChange(editorRef?.textContent || "")
+		}
+	}
+
+	createEffect(() => {
+		if (mentionActive() && filteredSuggestions().length === 0) {
+			closeMention()
+		}
+	})
+
+	createEffect(() => {
+		function cleanupListener() {
+			document.removeEventListener("keydown", handleKeyDown)
+		}
+		if (mentionActive()) {
+			document.addEventListener("keydown", handleKeyDown)
+			onCleanup(cleanupListener)
+		}
+	})
+
 	return (
-		<div
-			ref={editorRef}
-			contentEditable={true}
-			onInput={handleInput}
-			onFocus={() => setIsFocused(true)}
-			onBlur={() => {
-				setIsFocused(false)
-			}}
-			class={`min-h-[40px] w-full whitespace-pre-wrap rounded-md border border-gray-300 p-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-				props.inputClass || ""
-			}`}
-			data-placeholder={props.placeholder}
-			aria-multiline="true"
-			spellcheck={false}
-		>
-			<Show
-				when={parsedContent().length > 0 || currentText().length > 0} // Show if there's any text or parsed segments
-				fallback={""} // CSS :empty selector handles placeholder
-			>
-				{renderSegmentsRevised(parsedContent())}
-			</Show>
+		<div class="relative">
+			<div
+				ref={editorRef}
+				contentEditable={true}
+				onInput={handleInput}
+				class={`min-h-[40px] w-full whitespace-pre-wrap rounded-md border border-border p-2 focus:border-transparent focus:outline-none focus:ring-0 ${props.inputClass || ""}`}
+				data-placeholder={props.placeholder}
+				aria-multiline="true"
+				spellcheck={false}
+			/>
+			{mentionActive() && mentionPosition() && (
+				<div style={{ position: "absolute", left: `${mentionPosition()!.left}px`, top: `${mentionPosition()!.top}px` }}>
+					<MentionSuggestions
+						suggestions={filteredSuggestions()}
+						onSelect={username => {
+						insertMention(username)
+						closeMention()
+					}}
+						activeIndex={mentionIndex()}
+					/>
+				</div>
+			)}
 		</div>
 	)
 }
+
