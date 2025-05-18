@@ -16,8 +16,9 @@ export const ChatInput = (props: ChatInputProps) => {
 			value={baseProps.value}
 			onValueChange={baseProps.onValueChange}
 			renderers={{
-				header1: (token) => <h1 class="font-bold text-2xl">{token.content}</h1>,
+				header1: (token) => <h1 class="font-bold text-xl">{token.content}</h1>,
 				bold: (token) => <strong class="font-bold">{token.content}</strong>,
+				italic: (token) => <em class="italic">{token.content}</em>,
 				codeblock: (token) => {
 					let codeRef: HTMLPreElement | undefined
 					// onMount(() => {
@@ -31,7 +32,6 @@ export const ChatInput = (props: ChatInputProps) => {
 						</pre>
 					)
 				},
-				callout: (token) => <div class="border-blue-500 border-l-4 bg-blue-50 pl-2">{token.content}</div>,
 				default: (token) => <span>{token.content}</span>,
 			}}
 			{...divProps}
