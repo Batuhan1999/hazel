@@ -5,7 +5,7 @@
 # Web
 
 ## Chat UI
-!!! fix threads input focus (should focus on threwad input when in thread)
+- fix threads input focus (should focus on thread input when in thread)
 - Fix Reply to Preview of Message if it's a markdown thing like a image display an icon
 - Emoji Picker
 - Add day/week/year to pinned message list

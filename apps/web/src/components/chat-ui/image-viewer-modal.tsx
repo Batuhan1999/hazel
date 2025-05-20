@@ -140,7 +140,7 @@ export function ImageViewerModal(props: ImageViewerModalProps) {
 							</div>
 						</div>
 						<Show
-							when={props.availableImages().length > 0}
+							when={props.availableImages().length > 1}
 							fallback={
 								<img
 									src={

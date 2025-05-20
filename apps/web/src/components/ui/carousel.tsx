@@ -95,7 +95,10 @@ export function CarouselIndicatorGroup(props: {
 }) {
 	return (
 		<ArkCarousel.IndicatorGroup
-			class={twMerge("-translate-x-1/2 absolute bottom-4 left-1/2 flex gap-2", props.class)}
+			class={twMerge(
+				"-translate-x-1/2 absolute bottom-4 left-1/2 flex gap-2 rounded-md bg-muted/50 p-1.5",
+				props.class,
+			)}
 		>
 			{props.children}
 		</ArkCarousel.IndicatorGroup>

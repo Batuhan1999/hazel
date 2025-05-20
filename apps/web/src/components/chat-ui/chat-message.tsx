@@ -494,7 +494,7 @@ export function ChatMessage(props: ChatMessageProps) {
 								)
 							},
 						}}
-						renderingStrategy="reconcile"
+						renderingStrategy="memo"
 					/>
 					<div class="flex flex-col gap-2">
 						<Show when={attachedCount() > 0}>
