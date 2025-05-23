@@ -14,7 +14,6 @@ interface MessageReplyProps {
 }
 
 export function MessageReply(props: MessageReplyProps) {
-	console.log(props.message.replyToMessage?.content)
 	return (
 		<div>
 			<svg

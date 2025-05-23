@@ -37,7 +37,6 @@ export const Serveronboarding = () => {
 					<form
 						class="flex flex-col gap-4"
 						onSubmit={async (e) => {
-							console.log("submit")
 							e.preventDefault()
 
 							const newServerId = newId("server")
