@@ -24,7 +24,8 @@ export function ChatMessage(props: ChatMessageProps) {
 	const z = useZero()
 	const params = useParams({ from: "/_app/$serverId/chat/$id" })()
 
-	const showAvatar = createMemo(() => props.isGroupStart())
+	const isRepliedTo = createMemo(() => !!props.message().replyToMessageId)
+	const showAvatar = createMemo(() => props.isGroupStart() || isRepliedTo())
 	const isPinned = createMemo(() => props.message().pinnedInChannels?.some((p) => p.channelId === params.id))
 
 	const scrollToMessage = (id: string) => {
@@ -66,7 +67,7 @@ export function ChatMessage(props: ChatMessageProps) {
 				</div>
 			</Show>
 
-			<Show when={props.message().replyToMessageId}>
+			<Show when={isRepliedTo()}>
 				<MessageReply message={props.message()} onReplyClick={scrollToMessage} />
 			</Show>
 
