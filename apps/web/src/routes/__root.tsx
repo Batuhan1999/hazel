@@ -7,6 +7,19 @@ import { FpsCounter } from "~/components/devtools/fps-counter"
 import { initZero } from "../lib/zero/zero-client"
 import { ZeroProvider } from "../lib/zero/zero-context"
 
+import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
+
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			staleTime: 1000 * 60 * 5,
+			gcTime: 1000 * 60 * 60 * 24,
+			refetchOnWindowFocus: false,
+			refetchOnReconnect: "always",
+		},
+	},
+})
+
 export const Route = createRootRouteWithContext()({
 	component: RootComponent,
 })
@@ -87,12 +100,14 @@ function ZeroInner() {
 
 function RootComponent() {
 	return (
-		<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
-			<AuthInner />
-			<TanStackRouterDevtools position="bottom-right" />
-			<Show when={import.meta.env.DEV}>
-				<FpsCounter />
-			</Show>
-		</ClerkProvider>
+		<QueryClientProvider client={queryClient}>
+			<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+				<AuthInner />
+				<TanStackRouterDevtools position="bottom-right" />
+				<Show when={import.meta.env.DEV}>
+					<FpsCounter />
+				</Show>
+			</ClerkProvider>
+		</QueryClientProvider>
 	)
 }

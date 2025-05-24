@@ -1,4 +1,5 @@
-import { Message, type MessageId } from "@maki-chat/api-schema/schema"
+import { Model } from "@maki-chat/api-schema"
+import { type ChannelId, Message, type MessageId } from "@maki-chat/api-schema/schema"
 import { types } from "cassandra-driver"
 import { Effect, pipe } from "effect"
 import { MessageRepo } from "../repositories"
@@ -38,7 +39,34 @@ export class MessageService extends Effect.Service<MessageService>()("@hazel/Mes
 			})
 		})
 
-		return { create, findById, delete: deleteMessage, update }
+		const paginate = Effect.fn("Message.paginate")(function* (
+			channelId: ChannelId,
+			params: {
+				cursor: MessageId | null
+				limit?: number
+			},
+		) {
+			yield* Effect.annotateCurrentSpan("params", params)
+
+			const messagesByChannelPaginator = yield* Model.makePartitionedPaginatedQuery(Message, {
+				tableName: "messages_by_channel",
+				spanPrefix: "Message",
+				partitionKey: "channelId",
+				cursorField: "id",
+				useCompoundCursor: true,
+				orderDirection: "DESC",
+			})
+
+			const paginateByChannel = messagesByChannelPaginator(channelId)
+			const result = yield* paginateByChannel({
+				cursor: params.cursor ?? undefined,
+				limit: params.limit ?? 20,
+			})
+
+			return result
+		})
+
+		return { create, findById, delete: deleteMessage, update, paginate }
 	}),
 	dependencies: [MessageRepo.Default],
 }) {}

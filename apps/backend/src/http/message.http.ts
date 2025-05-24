@@ -52,5 +52,24 @@ export const MessageApiLive = HttpApiBuilder.group(MakiApi, "Message", (handlers
 					return { success: true }
 				}),
 			)
+			.handle(
+				"getMessages",
+				Effect.fnUntraced(function* ({ urlParams }) {
+					const result = yield* messageService.paginate("cha_IWzcz6x7V-", {
+						cursor: urlParams.cursor,
+						limit: urlParams.limit,
+					})
+
+					return {
+						data: result.data,
+						pagination: {
+							hasNext: result.pagination.hasNext,
+							hasPrevious: result.pagination.hasPrevious,
+							nextCursor: Option.getOrUndefined(result.pagination.nextCursor),
+							previousCursor: Option.getOrUndefined(result.pagination.previousCursor),
+						},
+					}
+				}),
+			)
 	}),
 )

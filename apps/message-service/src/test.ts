@@ -1,9 +1,7 @@
-import { Model, SqlClient } from "@effect/sql"
-import { ChannelId, Message, MessageId, UserId } from "@maki-chat/api-schema/schema"
+import { ChannelId, UserId } from "@maki-chat/api-schema/schema"
 import { SqlCassandra } from "@maki-chat/backend-shared"
-import { MessageRepo } from "@maki-chat/backend-shared/repositories"
-import { types } from "cassandra-driver"
-import { String, pipe } from "effect"
+import { MessageService } from "@maki-chat/backend-shared/services"
+import { String } from "effect"
 import { Option } from "effect"
 import * as Console from "effect/Console"
 import * as Effect from "effect/Effect"
@@ -17,44 +15,37 @@ const SqlLive = SqlCassandra.layer({
 })
 
 const simpleTest = Effect.gen(function* () {
-	const sql = yield* SqlClient.SqlClient
-	const repo = yield* MessageRepo
+	const message = yield* MessageService
 
 	yield* Console.log("Testing Cassandra connection...")
 
-	const messageId = types.TimeUuid.now()
-	const create = (message: typeof Message.jsonCreate.Type) =>
-		pipe(
-			repo.insertVoid(
-				Message.insert.make({
-					id: MessageId.make(messageId.toString()),
-					...message,
-				}),
-			),
-			Effect.withSpan("Message.create", { attributes: { message } }),
-		)
-
-	const channelId = ChannelId.make(`cha_${nanoid(10)}`)
+	// const channelId = ChannelId.make(`cha_${nanoid(10)}`)
+	const channelId = ChannelId.make("cha_IWzcz6x7V-")
 	const authorId = UserId.make(`usr_${nanoid(10)}`)
 
-	yield* create({
-		content: "Hello, world!",
-		channelId: channelId,
-		threadChannelId: Option.none(),
-		authorId: authorId,
-		replyToMessageId: Option.none(),
-		attachedFiles: ["lol"],
-	}).pipe(
-		Effect.repeat({
-			times: 100000,
-		}),
-	)
+	yield* message
+		.create({
+			content: "Hello, world!",
+			channelId: channelId,
+			threadChannelId: Option.none(),
+			authorId: authorId,
+			replyToMessageId: Option.none(),
+			attachedFiles: [],
+		})
+		.pipe(
+			Effect.repeat({
+				times: 1000000,
+			}),
+		)
+
+	console.log("Messages created successfully.")
 })
 
 const main = simpleTest.pipe(
-	Effect.provide(MessageRepo.Default),
+	Effect.provide(MessageService.Default),
+	Effect.scoped,
 	Effect.provide(SqlLive),
 	Effect.catchAll((error) => Console.error(`Error: ${error}`)),
 )
 
-Effect.runPromise(main)
+await Effect.runPromise(main)

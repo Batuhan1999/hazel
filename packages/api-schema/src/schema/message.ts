@@ -43,3 +43,13 @@ export class Message extends Model.Class<Message>("@hazel/Message")({
 	createdAt: Model.DateTimeInsertFromDate,
 	updatedAt: Model.DateTimeUpdateFromDate,
 }) {}
+
+export const MessageCursorResult = Schema.Struct({
+	data: Schema.Array(Message.json),
+	pagination: Schema.Struct({
+		hasNext: Schema.Boolean,
+		hasPrevious: Schema.Boolean,
+		nextCursor: Schema.optional(MessageId),
+		previousCursor: Schema.optional(Schema.String),
+	}),
+})

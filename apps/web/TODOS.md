@@ -49,3 +49,13 @@
  - Look into [huly](https://huly.app/workbench/hazel/chunter/threads) for product inspiration
 
  - Look into Bridges here Slack to Chat Sync https://matrix.org/ecosystem/bridges/
+
+
+ # ScyllaDB Rework Todos
+
+ - Integrate into the chatUI
+ - Add channelID filters
+ - Add Authentication to endpoints
+ - Integrate Effect Api client to react query
+
+ - Add Websocket and connect

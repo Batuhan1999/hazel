@@ -672,29 +672,6 @@ export const makeRepository = <
 		readonly delete: (
 			id: Schema.Schema.Type<S["fields"][Id]>,
 		) => Effect.Effect<void, never, Schema.Schema.Context<S["fields"][Id]>>
-		readonly paginate: <CursorField extends keyof S["Type"] & keyof S["fields"]>(
-			cursorField: CursorField,
-			paginationOptions?: {
-				readonly defaultLimit?: number
-				readonly maxLimit?: number
-				readonly orderDirection?: "ASC" | "DESC"
-			},
-		) => (params: {
-			readonly cursor?: Schema.Schema.Type<S["fields"][CursorField]>
-			readonly limit?: number
-		}) => Effect.Effect<
-			{
-				readonly data: ReadonlyArray<S["Type"]>
-				readonly pagination: {
-					readonly hasNext: boolean
-					readonly hasPrevious: boolean
-					readonly nextCursor: Option.Option<Schema.Schema.Type<S["fields"][CursorField]>>
-					readonly previousCursor: Option.Option<Schema.Schema.Type<S["fields"][CursorField]>>
-				}
-			},
-			never,
-			S["Context"] | Schema.Schema.Context<S["fields"][CursorField]>
-		>
 	},
 	never,
 	SqlClient
@@ -721,7 +698,6 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = LAST_INSERT_ID(
 			insert: S["insert"]["Type"],
 		): Effect.Effect<S["Type"], never, S["Context"] | S["insert"]["Context"]> =>
 			insertSchema(insert).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.insert`, {
 					captureStackTrace: false,
 					attributes: { insert },
@@ -736,7 +712,6 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = LAST_INSERT_ID(
 			insert: S["insert"]["Type"],
 		): Effect.Effect<void, never, S["Context"] | S["insert"]["Context"]> =>
 			insertVoidSchema(insert).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.insertVoid`, {
 					captureStackTrace: false,
 					attributes: { insert },
@@ -765,7 +740,6 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 			update: S["update"]["Type"],
 		): Effect.Effect<S["Type"], never, S["Context"] | S["update"]["Context"]> =>
 			updateSchema(update).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.update`, {
 					captureStackTrace: false,
 					attributes: { update },
@@ -783,7 +757,6 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 			update: S["update"]["Type"],
 		): Effect.Effect<void, never, S["Context"] | S["update"]["Context"]> =>
 			updateVoidSchema(update).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.updateVoid`, {
 					captureStackTrace: false,
 					attributes: { update },
@@ -799,7 +772,6 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 			id: Schema.Schema.Type<S["fields"][Id]>,
 		): Effect.Effect<Option.Option<S["Type"]>, never, S["Context"] | Schema.Schema.Context<S["fields"][Id]>> =>
 			findByIdSchema(id).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.findById`, {
 					captureStackTrace: false,
 					attributes: { id },
@@ -814,66 +786,147 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 			id: Schema.Schema.Type<S["fields"][Id]>,
 		): Effect.Effect<void, never, Schema.Schema.Context<S["fields"][Id]>> =>
 			deleteSchema(id).pipe(
-				Effect.orDie,
 				Effect.withSpan(`${options.spanPrefix}.delete`, {
 					captureStackTrace: false,
 					attributes: { id },
 				}),
 			) as any
 
-		const paginate = <CursorField extends keyof S["Type"] & keyof S["fields"]>(
-			cursorField: CursorField,
-			paginationOptions?: {
-				readonly defaultLimit?: number
-				readonly maxLimit?: number
-				readonly orderDirection?: "ASC" | "DESC"
-			},
-		) => {
-			const cursorSchema = Model.fields[cursorField] as Schema.Schema.Any
-			const cursorColumn = cursorField as string
-			const defaultLimit = paginationOptions?.defaultLimit ?? 20
-			const maxLimit = paginationOptions?.maxLimit ?? 100
-			const orderDirection = paginationOptions?.orderDirection ?? "DESC"
-			const oppositeDirection = orderDirection === "ASC" ? "DESC" : "ASC"
+		return { insert, insertVoid, update, updateVoid, findById, delete: delete_ } as const
+	})
 
-			const querySchema = SqlSchema.findAll({
-				Request: Schema.Struct({
-					cursor: Schema.optionalWith(cursorSchema, { nullable: true }),
-					limit: Schema.Number,
-				}),
-				Result: Model,
-				execute: ({ cursor, limit }) => {
-					const actualLimit = Math.min(Math.max(1, limit), maxLimit)
-					const fetchLimit = actualLimit + 1
+/**
+ * Create a cursor-based paginated query for tables with partition keys.
+ *
+ * @since 1.0.0
+ * @category repository
+ */
+export const makePartitionedPaginatedQuery = <
+	S extends Any,
+	PartitionKey extends keyof S["Type"] & keyof S["fields"],
+	CursorField extends keyof S["Type"] & keyof S["fields"],
+>(
+	Model: S,
+	options: {
+		readonly tableName: string
+		readonly spanPrefix: string
+		readonly partitionKey: PartitionKey
+		readonly cursorField: CursorField
+		readonly defaultLimit?: number
+		readonly maxLimit?: number
+		readonly orderDirection?: "ASC" | "DESC"
+		readonly useCompoundCursor?: boolean
+	},
+): Effect.Effect<
+	(partitionValue: Schema.Schema.Type<S["fields"][PartitionKey]>) => (params: {
+		readonly cursor?: Schema.Schema.Type<S["fields"][CursorField]>
+		readonly limit?: number
+	}) => Effect.Effect<
+		{
+			readonly data: ReadonlyArray<S["Type"]>
+			readonly pagination: {
+				readonly hasNext: boolean
+				readonly hasPrevious: boolean
+				readonly nextCursor: Option.Option<Schema.Schema.Type<S["fields"][CursorField]>>
+				readonly previousCursor: Option.Option<Schema.Schema.Type<S["fields"][CursorField]>>
+			}
+		},
+		never,
+		| S["Context"]
+		| Schema.Schema.Context<S["fields"][CursorField]>
+		| Schema.Schema.Context<S["fields"][PartitionKey]>
+	>,
+	never,
+	SqlClient
+> =>
+	Effect.gen(function* () {
+		const sql = yield* SqlClient
+		const partitionSchema = Model.fields[options.partitionKey] as Schema.Schema.Any
+		const cursorSchema = Model.fields[options.cursorField] as Schema.Schema.Any
+		const partitionColumn = options.partitionKey as string
+		const cursorColumn = options.cursorField as string
+		const defaultLimit = options.defaultLimit ?? 20
+		const maxLimit = options.maxLimit ?? 100
+		const orderDirection = options.orderDirection ?? "DESC"
+		const useCompoundCursor = options.useCompoundCursor ?? false
 
-					return cursor
-						? sql`
-                select * from ${sql(options.tableName)}
-                where ${sql(cursorColumn)} ${sql.unsafe(orderDirection === "ASC" ? ">" : "<")} ${cursor}
-                order by ${sql(cursorColumn)} ${sql.unsafe(orderDirection)}
-                limit ${fetchLimit}
-              `
-						: sql`
-                select * from ${sql(options.tableName)}
-                order by ${sql(cursorColumn)} ${sql.unsafe(orderDirection)}
-                limit ${fetchLimit}
-              `
-				},
-			})
+		const getCursorInfoSchema = SqlSchema.findOne({
+			Request: Schema.Struct({
+				cursor: cursorSchema,
+				partitionValue: partitionSchema,
+			}),
+			Result: Model,
+			execute: ({ cursor, partitionValue }) =>
+				sql`
+          select * from ${sql(options.tableName)}
+          where ${sql(partitionColumn)} = ${partitionValue}
+          and ${sql(cursorColumn)} = ${cursor}
+        `,
+		})
 
-			const checkPreviousSchema = SqlSchema.findOne({
-				Request: cursorSchema,
-				Result: Model,
-				execute: (cursor) =>
-					sql`
+		const querySchema = SqlSchema.findAll({
+			Request: Schema.Struct({
+				cursor: Schema.NullOr(cursorSchema),
+				cursorCreatedAt: Schema.optional(Schema.String),
+				limit: Schema.Number,
+				partitionValue: partitionSchema,
+			}),
+			Result: Model,
+			execute: ({ cursor, cursorCreatedAt, limit, partitionValue }) => {
+				const actualLimit = Math.min(Math.max(1, limit), maxLimit)
+				const fetchLimit = actualLimit + 1
+
+				if (cursor && cursorCreatedAt && useCompoundCursor) {
+					return sql`
             select * from ${sql(options.tableName)}
-            where ${sql(cursorColumn)} ${sql.unsafe(orderDirection === "ASC" ? "<" : ">")} ${cursor}
-            order by ${sql(cursorColumn)} ${sql.unsafe(oppositeDirection)}
-            limit 1
-          `,
-			})
+            where ${sql(partitionColumn)} = ${partitionValue}
+            and (created_at, ${sql(cursorColumn)}) ${sql.unsafe(orderDirection === "ASC" ? ">" : "<")} (${cursorCreatedAt}, ${cursor})
+            limit ${fetchLimit}
+          `
+				}
+				if (cursor) {
+					return sql`
+            select * from ${sql(options.tableName)}
+            where ${sql(partitionColumn)} = ${partitionValue}
+            and ${sql(cursorColumn)} ${sql.unsafe(orderDirection === "ASC" ? ">" : "<")} ${cursor}
+            limit ${fetchLimit}
+          `
+				}
+				return sql`
+            select * from ${sql(options.tableName)}
+            where ${sql(partitionColumn)} = ${partitionValue}
+            limit ${fetchLimit}
+          `
+			},
+		})
 
-			return (params: {
+		const checkPreviousSchema = SqlSchema.findOne({
+			Request: Schema.Struct({
+				cursor: cursorSchema,
+				cursorCreatedAt: Schema.optional(Schema.String),
+				partitionValue: partitionSchema,
+			}),
+			Result: Model,
+			execute: ({ cursor, cursorCreatedAt, partitionValue }) => {
+				if (cursorCreatedAt && useCompoundCursor) {
+					return sql`
+            select * from ${sql(options.tableName)}
+            where ${sql(partitionColumn)} = ${partitionValue}
+            and (created_at, ${sql(cursorColumn)}) ${sql.unsafe(orderDirection === "ASC" ? "<" : ">")} (${cursorCreatedAt}, ${cursor})
+            limit 1
+          `
+				}
+				return sql`
+            select * from ${sql(options.tableName)}
+            where ${sql(partitionColumn)} = ${partitionValue}
+            and ${sql(cursorColumn)} ${sql.unsafe(orderDirection === "ASC" ? "<" : ">")} ${cursor}
+            limit 1
+          `
+			},
+		})
+
+		return (partitionValue: Schema.Schema.Type<S["fields"][PartitionKey]>) =>
+			(params: {
 				readonly cursor?: Schema.Schema.Type<S["fields"][CursorField]>
 				readonly limit?: number
 			}) =>
@@ -881,16 +934,37 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 					const requestedLimit = params.limit ?? defaultLimit
 					const actualLimit = Math.min(Math.max(1, requestedLimit), maxLimit)
 
+					let cursorCreatedAt: string | undefined = undefined
+
+					if (params.cursor && useCompoundCursor) {
+						const cursorInfo = yield* getCursorInfoSchema({
+							cursor: params.cursor,
+							partitionValue,
+						})
+
+						if (Option.isSome(cursorInfo)) {
+							cursorCreatedAt = cursorInfo.value.created_at
+						}
+					}
+
 					const results = yield* querySchema({
 						cursor: params.cursor ?? null,
+						cursorCreatedAt,
 						limit: actualLimit,
-					}).pipe(Effect.orDie)
+						partitionValue,
+					})
+
+					console.log(results, "XD")
 
 					const hasNext = results.length > actualLimit
 					const data = hasNext ? results.slice(0, actualLimit) : results
 
 					const hasPrevious = params.cursor
-						? yield* checkPreviousSchema(params.cursor).pipe(Effect.map(Option.isSome), Effect.orDie)
+						? yield* checkPreviousSchema({
+								cursor: params.cursor,
+								cursorCreatedAt,
+								partitionValue,
+							}).pipe(Effect.map(Option.isSome))
 						: false
 
 					const nextCursor =
@@ -908,14 +982,12 @@ select * from ${sql(options.tableName)} where ${sql(idColumn)} = ${request[idCol
 						},
 					}
 				}).pipe(
-					Effect.withSpan(`${options.spanPrefix}.paginate`, {
+					Effect.withSpan(`${options.spanPrefix}.paginatePartitioned`, {
 						captureStackTrace: false,
 						attributes: {
 							cursor: params.cursor,
+							partitionValue,
 						},
 					}),
 				) as any
-		}
-
-		return { insert, insertVoid, update, updateVoid, findById, delete: delete_, paginate } as const
 	})
