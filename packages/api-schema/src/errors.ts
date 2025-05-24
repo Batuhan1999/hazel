@@ -37,3 +37,22 @@ export class Unauthorized extends Schema.TaggedError<Unauthorized>()(
 			) as any
 	}
 }
+export class NotFound extends Schema.TaggedError<NotFound>()(
+	"@hazel/errors/NotFound",
+	{
+		entityType: Schema.String,
+		entityId: Schema.NullOr(Schema.Union(Schema.String, Schema.Number)),
+	},
+	HttpApiSchema.annotations({ status: 404, title: "NotFound" }),
+) {
+	override get message() {
+		if (this.entityId) {
+			return `${this.entityType} with identifier ${this.entityId} not found`
+		}
+		return `${this.entityType} not found`
+	}
+
+	static is(u: unknown): u is NotFound {
+		return Predicate.isTagged(u, "@hazel/errors/NotFound")
+	}
+}

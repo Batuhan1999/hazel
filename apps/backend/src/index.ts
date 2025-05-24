@@ -1,13 +1,28 @@
 import { HttpApiBuilder, HttpApiScalar, HttpMiddleware, HttpServer } from "@effect/platform"
-import { ConfigProvider, Layer } from "effect"
+import { ConfigProvider, Layer, String } from "effect"
 
 import { addCorsHeaders, oldUploadHandler } from "./http/old-upload"
 
+import { MessageService } from "@maki-chat/backend-shared/services"
 import { AuthorizationLive } from "./authorization.live"
 import { HttpLive } from "./http"
 import { Jose } from "./services/jose"
 
-const Live = HttpLive.pipe(Layer.provide(AuthorizationLive), Layer.provide(Jose.Default))
+import { SqlCassandra } from "@maki-chat/backend-shared"
+
+const SqlLive = SqlCassandra.layer({
+	contactPoints: ["127.0.0.1"],
+	localDataCenter: "datacenter1",
+	keyspace: "chat",
+	transformQueryNames: String.camelToSnake,
+})
+
+const Live = HttpLive.pipe(
+	Layer.provide(AuthorizationLive),
+	Layer.provide(Jose.Default),
+	Layer.provide(MessageService.Default),
+	Layer.provide(SqlLive),
+)
 
 const HttpApiScalarLayer = HttpApiScalar.layer().pipe(Layer.provide(Live))
 

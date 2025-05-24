@@ -11,6 +11,7 @@
 	},
 	"devDependencies": {
 		"@maki-chat/api-schema": "workspace:*",
+		"@maki-chat/backend-shared": "workspace:*",
 		"@maki-chat/markdown": "workspace:*",
 		"typescript": "^5.8.3",
 		"wrangler": "^4.16.1"
