@@ -1,20 +1,27 @@
 import { HttpApiEndpoint, HttpApiGroup } from "@effect/platform"
 import { Schema } from "effect"
 import { NotFound } from "../errors"
-import { Message, MessageCursorResult, MessageId } from "../schema/message"
+import { ChannelId, Message, MessageCursorResult, MessageId } from "../schema/message"
 
 export const MessageApiGroup = HttpApiGroup.make("Message")
 	.add(
-		HttpApiEndpoint.post("createMessage")`/messages`.setPayload(Message.jsonCreate).addSuccess(
-			Schema.Struct({
-				success: Schema.Boolean,
-				id: MessageId,
-			}),
-		),
+		HttpApiEndpoint.post("createMessage")`/:channelId/messages`
+			.setPayload(Message.jsonCreate)
+			.setPath(
+				Schema.Struct({
+					channelId: ChannelId,
+				}),
+			)
+			.addSuccess(
+				Schema.Struct({
+					success: Schema.Boolean,
+					id: MessageId,
+				}),
+			),
 	)
 	.add(
-		HttpApiEndpoint.put("updateMessage")`/messages/:id`
-			.setPath(Schema.Struct({ id: MessageId }))
+		HttpApiEndpoint.put("updateMessage")`/:channelId/messages/:id`
+			.setPath(Schema.Struct({ id: MessageId, channelId: ChannelId }))
 			.setPayload(Message.jsonUpdate)
 			.addSuccess(
 				Schema.Struct({
@@ -23,24 +30,32 @@ export const MessageApiGroup = HttpApiGroup.make("Message")
 			),
 	)
 	.add(
-		HttpApiEndpoint.del("deleteMessage")`/messages/:id`.setPath(Schema.Struct({ id: MessageId })).addSuccess(
-			Schema.Struct({
-				success: Schema.Boolean,
-			}),
-		),
+		HttpApiEndpoint.del("deleteMessage")`/:channelId/messages/:id`
+			.setPath(Schema.Struct({ id: MessageId, channelId: ChannelId }))
+			.addSuccess(
+				Schema.Struct({
+					success: Schema.Boolean,
+				}),
+			),
 	)
 	.add(
-		HttpApiEndpoint.get("getMessage")`/messages/:id`
+		HttpApiEndpoint.get("getMessage")`/:channelId/messages/:id`
 			.setPath(
 				Schema.Struct({
-					id: Schema.Any,
+					channelId: ChannelId,
+					id: MessageId,
 				}),
 			)
 			.addSuccess(Message.json)
 			.addError(NotFound),
 	)
 	.add(
-		HttpApiEndpoint.get("getMessages")`/messages`
+		HttpApiEndpoint.get("getMessages")`/:channelId/messages`
+			.setPath(
+				Schema.Struct({
+					channelId: ChannelId,
+				}),
+			)
 			.setUrlParams(
 				Schema.Struct({
 					cursor: Schema.optional(MessageId),

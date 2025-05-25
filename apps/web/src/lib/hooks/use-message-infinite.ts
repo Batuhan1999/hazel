@@ -1,8 +1,8 @@
 import { FetchHttpClient, HttpApiClient } from "@effect/platform"
 import { MakiApi } from "@maki-chat/api-schema"
-import type { MessageId } from "@maki-chat/api-schema/schema/message.js"
+import type { ChannelId, MessageId } from "@maki-chat/api-schema/schema/message.js"
 import { useInfiniteQuery } from "@tanstack/solid-query"
-import { Effect, Logger, ManagedRuntime, Runtime } from "effect"
+import { Effect, Logger, ManagedRuntime } from "effect"
 
 const appLayer = Logger.replace(
 	Logger.defaultLogger,
@@ -27,6 +27,9 @@ export const createInfiniteMessages = (limit = 20) => {
 						urlParams: {
 							limit: limit,
 							cursor: pageParam as MessageId | undefined,
+						},
+						path: {
+							channelId: "cha_IWzcz6x7V-" as ChannelId,
 						},
 					})
 

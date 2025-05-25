@@ -54,7 +54,6 @@
  # ScyllaDB Rework Todos
 
  - Integrate into the chatUI
- - Add channelID filters
  - Add Authentication to endpoints
 
  - Add Websocket and connect

@@ -14,6 +14,15 @@ const SqlLive = SqlCassandra.layer({
 	contactPoints: ["127.0.0.1"],
 	localDataCenter: "datacenter1",
 	keyspace: "chat",
+	clientOptions: {
+		queryOptions: {
+			prepare: false,
+		},
+		pooling: {
+			maxRequestsPerConnection: 1,
+		},
+	},
+
 	transformQueryNames: String.camelToSnake,
 	transformResultNames: String.snakeToCamel,
 })

@@ -54,9 +54,9 @@ export const MessageApiLive = HttpApiBuilder.group(MakiApi, "Message", (handlers
 			)
 			.handle(
 				"getMessages",
-				Effect.fnUntraced(function* ({ urlParams }) {
-					const result = yield* messageService.paginate("cha_IWzcz6x7V-", {
-						cursor: urlParams.cursor,
+				Effect.fnUntraced(function* ({ urlParams, path }) {
+					const result = yield* messageService.paginate(path.channelId, {
+						cursor: urlParams.cursor || null,
 						limit: urlParams.limit,
 					})
 
