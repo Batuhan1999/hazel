@@ -21,6 +21,7 @@ import * as Duration from "effect/Duration"
 import * as Effect from "effect/Effect"
 import * as Exit from "effect/Exit"
 import * as Predicate from "effect/Predicate"
+import { createMemo } from "solid-js"
 import { toaster } from "~/components/ui/toaster"
 import type { LiveRuntimeContext } from "../services/live-layer"
 import { useRuntime } from "../services/runtime"
@@ -50,9 +51,6 @@ type UseRunnerOpts<A, E extends EffectfulError> = {
 const DEFAULT_ERROR_MESSAGE = "Something went wrong"
 const DEFAULT_DEFECT_MESSAGE = "An unexpected error occurred"
 
-/**
- * @internal
- */
 const useRunner = <A, E extends EffectfulError, R extends LiveRuntimeContext>({
 	toastifyDefects = true,
 	toastifyErrors = {},
@@ -72,7 +70,6 @@ const useRunner = <A, E extends EffectfulError, R extends LiveRuntimeContext>({
 							const tagHandler = tagConfigs[errorTag]
 
 							if (tagHandler !== undefined) {
-								// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 								const message = tagHandler(error as any)
 								toaster.error({
 									title: message,
@@ -85,7 +82,6 @@ const useRunner = <A, E extends EffectfulError, R extends LiveRuntimeContext>({
 								} else if (typeof orElse === "string") {
 									toaster.error({ title: orElse })
 								} else {
-									// orElse === true, use default message
 									toaster.error({ title: DEFAULT_ERROR_MESSAGE })
 								}
 							}
@@ -124,10 +120,6 @@ const useRunner = <A, E extends EffectfulError, R extends LiveRuntimeContext>({
 export type QueryVariables = Record<string, unknown>
 export type QueryKey = readonly [string, QueryVariables?]
 
-// ==========================================
-// useEffectMutation
-// ==========================================
-
 type EffectfulMutationOptions<A, E extends EffectfulError, Variables, R extends LiveRuntimeContext> = Omit<
 	UseMutationOptions<A, E | QueryDefect, Variables>,
 	"mutationFn" | "onSuccess" | "onError" | "onSettled" | "onMutate" | "retry" | "retryDelay"
@@ -153,10 +145,6 @@ export function useEffectMutation<A, E extends EffectfulError, Variables, R exte
 		throwOnError: false,
 	}))
 }
-
-// ==========================================
-// useEffectQuery
-// ==========================================
 
 type EffectfulQueryFunction<
 	A,
@@ -196,13 +184,17 @@ export function useEffectQuery<
 		return effect.pipe(effectRunner(spanName))
 	}
 
-	return useQuery<A, E | QueryDefect, A, QueryKeyType>(() => ({
+	const queryOptions = createMemo(() => ({
 		...options,
-		queryFn: options.queryFn === skipToken ? skipToken : queryFn,
-		...(staleTime !== undefined && { staleTime: Duration.toMillis(staleTime) }),
+		queryFn: options.queryFn === skipToken ? skipToken : (queryFn as any),
+		...(staleTime !== undefined && {
+			staleTime: Duration.toMillis(staleTime),
+		}),
 		...(gcTime !== undefined && { gcTime: Duration.toMillis(gcTime) }),
 		throwOnError: false,
 	}))
+
+	return useQuery<A, E | QueryDefect, A, QueryKeyType>(queryOptions)
 }
 
 export type UseQueryResultSuccess<TData> = UseQueryResult<TData, unknown>["data"]
@@ -225,10 +217,6 @@ export type EffectfulInfiniteQueryOptions<
 	staleTime?: Duration.DurationInput
 	gcTime?: Duration.DurationInput
 } & UseRunnerOpts<A, E>
-
-// ==========================================
-// useEffectInfiniteQuery
-// ==========================================
 
 export function useEffectInfiniteQuery<
 	A,
@@ -259,15 +247,48 @@ export function useEffectInfiniteQuery<
 		return effect.pipe(effectRunner(spanName))
 	}
 
-	return useInfiniteQuery<A, E | QueryDefect, InfiniteData<A, PageParam>, QueryKeyType, PageParam>(() => ({
+	const infiniteQueryOptions = createMemo(() => ({
 		...options,
 		queryKey,
-		queryFn: effectfulQueryFn === skipToken ? skipToken : queryFn,
+		queryFn: effectfulQueryFn === skipToken ? skipToken : (queryFn as any),
 		initialPageParam,
 		getNextPageParam,
 		...(getPreviousPageParam !== undefined && { getPreviousPageParam }),
-		...(staleTime !== undefined && { staleTime: Duration.toMillis(staleTime) }),
+		...(staleTime !== undefined && {
+			staleTime: Duration.toMillis(staleTime),
+		}),
 		...(gcTime !== undefined && { gcTime: Duration.toMillis(gcTime) }),
 		throwOnError: false,
 	}))
+
+	return useInfiniteQuery<A, E | QueryDefect, InfiniteData<A, PageParam>, QueryKeyType, PageParam>(
+		infiniteQueryOptions,
+	)
+}
+
+export const createQueryDataAccessor = <T>(queryResult: UseQueryResult<T, unknown>) => {
+	return {
+		data: () => queryResult.data,
+		error: () => queryResult.error,
+		isLoading: () => queryResult.isLoading,
+		isFetching: () => queryResult.isFetching,
+		isSuccess: () => queryResult.isSuccess,
+		isError: () => queryResult.isError,
+		isPending: () => queryResult.isPending,
+		refetch: queryResult.refetch,
+	}
+}
+
+export const createMutationAccessor = <T, E, V>(mutationResult: UseMutationResult<T, E, V>) => {
+	return {
+		data: () => mutationResult.data,
+		error: () => mutationResult.error,
+		isLoading: () => mutationResult.isPending,
+		isSuccess: () => mutationResult.isSuccess,
+		isError: () => mutationResult.isError,
+		isPending: () => mutationResult.isPending,
+		mutate: mutationResult.mutate,
+		mutateAsync: mutationResult.mutateAsync,
+		reset: mutationResult.reset,
+	}
 }
