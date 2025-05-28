@@ -11,6 +11,7 @@ import "./styles/toast.css"
 
 import { ClerkProvider, useAuth } from "clerk-solidjs"
 import { Toaster } from "./components/ui/toaster"
+import { ConvexProvider, ConvexSolidClient } from "./lib/convex"
 
 const router = createRouter({
 	routeTree,
@@ -41,11 +42,15 @@ const InnerProviders = () => {
 	)
 }
 
+const convex = new ConvexSolidClient("http://127.0.0.1:3210")
+
 function App() {
 	return (
 		<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
-			<Toaster />
-			<InnerProviders />
+			<ConvexProvider client={convex}>
+				<Toaster />
+				<InnerProviders />
+			</ConvexProvider>
 		</ClerkProvider>
 	)
 }

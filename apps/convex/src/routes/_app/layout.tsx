@@ -1,6 +1,6 @@
-import { createFileRoute, redirect } from "@tanstack/solid-router"
+import { Outlet, createFileRoute, redirect } from "@tanstack/solid-router"
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_app")({
 	component: RouteComponent,
 	beforeLoad: async ({ context }) => {
 		const token = await context.auth.getToken()
@@ -14,5 +14,5 @@ export const Route = createFileRoute("/")({
 })
 
 function RouteComponent() {
-	return <div>Hello "/"!</div>
+	return <Outlet />
 }
