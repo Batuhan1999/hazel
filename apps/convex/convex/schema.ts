@@ -40,12 +40,16 @@ export default defineSchema({
 		updatedAt: v.number(),
 	}),
 	users: defineTable({
+		externalId: v.string(),
 		displayName: v.string(),
 		tag: v.string(),
 		avatarUrl: v.string(),
 		lastSeen: v.number(),
+		tokenIdentifier: v.string(),
 		status: v.union(v.literal("online"), v.literal("offline"), v.literal("away")),
-	}),
+	})
+		.index("by_externalId", ["externalId"])
+		.index("bg_tokenIdentifier", ["tokenIdentifier"]),
 	channelMembers: defineTable({
 		userId: v.id("users"),
 		channelId: v.id("serverChannels"),

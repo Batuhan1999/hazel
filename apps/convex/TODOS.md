@@ -1,3 +1,4 @@
 - Add Convex Auth Integration + Clerk (this is still big work i think)
 - Use this time to rework some of the schema stuff
 - Rebuild the UI (Rethink some of the fetching i previously did)
+- Add Convex R2 file serving (think important for saving on the convex bandwidth tax lol)

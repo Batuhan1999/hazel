@@ -18,16 +18,34 @@ export const getUsers = query({
 
 export const createUser = mutation({
 	args: {
-		displayName: v.string(),
-		tag: v.string(),
-		avatarUrl: v.string(),
+		displayName: v.optional(v.string()),
+		tag: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity()
+		if (!identity) {
+			throw new Error("Called storeUser without authentication present")
+		}
+
+		const user = await ctx.db
+			.query("users")
+			.withIndex("bg_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+			.unique()
+
+		if (user !== null) {
+			if (user.displayName !== identity.name) {
+				await ctx.db.patch(user._id, { displayName: identity.name })
+			}
+			return user._id
+		}
+
 		return await ctx.db.insert("users", {
-			displayName: args.displayName,
-			tag: args.tag,
-			avatarUrl: args.avatarUrl,
+			externalId: identity.subject,
+			avatarUrl: identity.pictureUrl || `https://avatar.vercel.sh/${identity.subject}.svg`,
+			displayName: args.displayName || identity.name || "Unknown",
+			tag: args.tag?.toLowerCase() || identity.nickname?.toLowerCase() || identity.subject.toLowerCase(),
 			lastSeen: Date.now(),
+			tokenIdentifier: identity.tokenIdentifier,
 			status: "offline",
 		})
 	},

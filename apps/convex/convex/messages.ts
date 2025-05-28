@@ -1,6 +1,6 @@
+import { paginationOptsValidator } from "convex/server"
 import { v } from "convex/values"
 import { mutation, query } from "./_generated/server"
-import { paginationOptsValidator } from "convex/server"
 
 export const getMessages = query({
 	args: {
@@ -8,6 +8,12 @@ export const getMessages = query({
 		paginationOpts: paginationOptsValidator,
 	},
 	handler: async (ctx, args) => {
+		const identity = await ctx.auth.getUserIdentity()
+		console.log("identity", identity)
+		if (identity === null) {
+			throw new Error("Not authenticated")
+		}
+
 		// TODO: Set limits on pagination numbers
 		const messages = await ctx.db
 			.query("messages")
