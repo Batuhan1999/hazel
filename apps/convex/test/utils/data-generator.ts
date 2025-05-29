@@ -54,3 +54,24 @@ export async function createChannel(
 		type: "public",
 	})
 }
+
+export async function createMessage(
+	t: TestConvex<typeof schema> | TestConvexForDataModel<(typeof schema)["schemaValidation"]>,
+	props: {
+		serverId: Id<"servers">
+		channelId: Id<"channels">
+		content?: string
+		replyToMessageId?: Id<"messages">
+		threadChannelId?: Id<"channels">
+		attachedFiles?: string[]
+	},
+) {
+	return await t.mutation(api.messages.createMessage, {
+		serverId: props.serverId,
+		channelId: props.channelId,
+		content: props.content ?? "Test message content",
+		replyToMessageId: props.replyToMessageId,
+		threadChannelId: props.threadChannelId,
+		attachedFiles: props.attachedFiles || [],
+	})
+}

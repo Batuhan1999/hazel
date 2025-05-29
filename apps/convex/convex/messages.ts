@@ -33,18 +33,21 @@ export const createMessage = userMutation({
 		content: v.string(),
 		channelId: v.id("channels"),
 		threadChannelId: v.optional(v.id("channels")),
-		authorId: v.id("users"),
 		replyToMessageId: v.optional(v.id("messages")),
 		attachedFiles: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
-		await ctx.user.validateCanViewChannel({ ctx, channelId: args.channelId })
+		if (args.content.trim() === "") {
+			throw new Error("Message content cannot be empty")
+		}
+
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: args.channelId })
 
 		const messageId = await ctx.db.insert("messages", {
 			channelId: args.channelId,
 			content: args.content,
 			threadChannelId: args.threadChannelId,
-			authorId: args.authorId,
+			authorId: ctx.user.id,
 			replyToMessageId: args.replyToMessageId,
 			attachedFiles: args.attachedFiles,
 			updatedAt: Date.now(),
