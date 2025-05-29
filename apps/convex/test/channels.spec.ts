@@ -39,7 +39,7 @@ describe("channel", () => {
 		const ct = convexTest()
 		const { server, userId, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 		const channels = await t.query(api.channels.getChannels, { serverId: server })
 		expect(channels.dmChannels).toHaveLength(0)
 		expect(channels.serverChannels).toHaveLength(1)
@@ -55,7 +55,6 @@ describe("channel", () => {
 			serverId: server,
 			name: "Public Channel",
 			type: "public",
-			ownerId: userId,
 		})
 
 		// Create private channel
@@ -63,7 +62,6 @@ describe("channel", () => {
 			serverId: server,
 			name: "Private Channel",
 			type: "private",
-			ownerId: userId,
 		})
 
 		// Create direct channel
@@ -71,7 +69,6 @@ describe("channel", () => {
 			serverId: server,
 			name: "Direct Channel",
 			type: "direct",
-			ownerId: userId,
 		})
 
 		const channels = await t.query(api.channels.getChannels, { serverId: server })
@@ -91,14 +88,13 @@ describe("channel", () => {
 		const { server, userId, t } = await setupServerAndUser(ct)
 
 		// Create parent channel
-		const parentChannelId = await createChannel(t, { serverId: server, userId })
+		const parentChannelId = await createChannel(t, { serverId: server })
 
 		// Create thread channel
 		const threadChannelId = await t.mutation(api.channels.createChannel, {
 			serverId: server,
 			name: "Thread Channel",
 			type: "thread",
-			ownerId: userId,
 			parentChannelId,
 		})
 
@@ -114,7 +110,7 @@ describe("channel", () => {
 		const ct = convexTest()
 		const { server, userId, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 		const channels = await t.query(api.channels.getChannels, { serverId: server })
 
 		const channel = channels.serverChannels[0]
@@ -127,10 +123,10 @@ describe("channel", () => {
 
 	test("user can join a channel", async () => {
 		const ct = convexTest()
-		const { server, user1Id, user2Id, t1, t2 } = await setupMultipleUsers(ct)
+		const { server, user2Id, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 2 joins the channel
 		await t2.mutation(api.channels.joinChannel, {
@@ -152,9 +148,9 @@ describe("channel", () => {
 
 	test("user cannot join channel they're already in", async () => {
 		const ct = convexTest()
-		const { server, userId, t } = await setupServerAndUser(ct)
+		const { server, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 
 		// Try to join again
 		await expect(
@@ -167,10 +163,10 @@ describe("channel", () => {
 
 	test("user can leave a channel", async () => {
 		const ct = convexTest()
-		const { server, user1Id, t1, t2 } = await setupMultipleUsers(ct)
+		const { server, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 2 joins the channel
 		await t2.mutation(api.channels.joinChannel, {
@@ -196,10 +192,10 @@ describe("channel", () => {
 
 	test("user cannot leave channel they're not in", async () => {
 		const ct = convexTest()
-		const { server, user1Id, user2Id, t1, t2 } = await setupMultipleUsers(ct)
+		const { server, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 2 tries to leave without joining
 		await expect(
@@ -212,9 +208,9 @@ describe("channel", () => {
 
 	test("user can update channel preferences", async () => {
 		const ct = convexTest()
-		const { server, userId, t } = await setupServerAndUser(ct)
+		const { server, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 
 		// Update preferences
 		await t.mutation(api.channels.updateChannelPreferences, {
@@ -235,9 +231,9 @@ describe("channel", () => {
 
 	test("user can partially update channel preferences", async () => {
 		const ct = convexTest()
-		const { server, userId, t } = await setupServerAndUser(ct)
+		const { server, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 
 		// Update only muted status
 		await t.mutation(api.channels.updateChannelPreferences, {
@@ -255,10 +251,10 @@ describe("channel", () => {
 
 	test("user cannot update preferences for channel they're not in", async () => {
 		const ct = convexTest()
-		const { server, user1Id, user2Id, t1, t2 } = await setupMultipleUsers(ct)
+		const { server, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 2 tries to update preferences without being a member
 		await expect(
@@ -275,7 +271,7 @@ describe("channel", () => {
 		const { server, user1Id, user2Id, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 1 should see the channel
 		const channels1 = await t1.query(api.channels.getChannels, { serverId: server })
@@ -295,35 +291,30 @@ describe("channel", () => {
 			serverId: server,
 			name: "Public Channel",
 			type: "public",
-			ownerId: userId,
 		})
 
 		await t.mutation(api.channels.createChannel, {
 			serverId: server,
 			name: "Private Channel",
 			type: "private",
-			ownerId: userId,
 		})
 
 		await t.mutation(api.channels.createChannel, {
 			serverId: server,
 			name: "Direct Channel",
 			type: "direct",
-			ownerId: userId,
 		})
 
 		await t.mutation(api.channels.createChannel, {
 			serverId: server,
 			name: "Single Channel",
 			type: "single",
-			ownerId: userId,
 		})
 
 		await t.mutation(api.channels.createChannel, {
 			serverId: server,
 			name: "Thread Channel",
 			type: "thread",
-			ownerId: userId,
 		})
 
 		const channels = await t.query(api.channels.getChannels, { serverId: server })
@@ -339,7 +330,7 @@ describe("channel", () => {
 		const ct = convexTest()
 		const { server, userId, t } = await setupServerAndUser(ct)
 
-		const channelId = await createChannel(t, { serverId: server, userId })
+		const channelId = await createChannel(t, { serverId: server })
 
 		// Hide the channel
 		await t.mutation(api.channels.updateChannelPreferences, {
@@ -360,7 +351,7 @@ describe("channel", () => {
 		const { server, user1Id, user2Id, t1, t2 } = await setupMultipleUsers(ct)
 
 		// User 1 creates a channel
-		const channelId = await createChannel(t1, { serverId: server, userId: user1Id })
+		const channelId = await createChannel(t1, { serverId: server })
 
 		// User 2 joins the channel
 		await t2.mutation(api.channels.joinChannel, {

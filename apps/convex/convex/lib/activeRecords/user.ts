@@ -11,13 +11,12 @@ export class User {
 		private readonly account: Account,
 	) {}
 
-	static async fromIdentity(ctx: GenericContext, identity: UserIdentity, serverId: string) {
+	static async fromIdentity(ctx: GenericContext, identity: UserIdentity, serverId: Id<"servers">) {
 		const account = await Account.fromIdentity(ctx, identity)
 
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_accountId", (q) => q.eq("accountId", account.id))
-			.filter((q) => q.eq(q.field("serverId"), serverId))
+			.withIndex("by_accountId_serverId", (q) => q.eq("accountId", account.id).eq("serverId", serverId))
 			.unique()
 
 		if (!user) throw new Error("User not found")
