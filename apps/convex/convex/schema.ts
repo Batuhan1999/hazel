@@ -57,6 +57,13 @@ export default defineSchema({
 		replyToMessageId: v.optional(v.id("messages")),
 		threadChannelId: v.optional(v.id("channels")),
 
+		reactions: v.array(
+			v.object({
+				userId: v.id("users"),
+				emoji: v.string(),
+			}),
+		),
+
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number()),
 	}),
@@ -85,9 +92,4 @@ export default defineSchema({
 		messageId: v.id("messages"),
 		channelId: v.id("channels"),
 	}).index("by_channelId", ["channelId"]),
-	reactions: defineTable({
-		messageId: v.id("messages"),
-		userId: v.id("users"),
-		emoji: v.string(),
-	}),
 })

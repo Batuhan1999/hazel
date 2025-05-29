@@ -76,18 +76,6 @@ export class User {
 		}
 	}
 
-	public async ownsReaction({ ctx, reactionId }: { ctx: GenericContext; reactionId: Id<"reactions"> }) {
-		const reaction = await ctx.db.get(reactionId)
-		if (!reaction) throw new Error("Reaction not found")
-
-		return reaction.userId === this.user._id
-	}
-	public async validateOwnsReaction({ ctx, reactionId }: { ctx: GenericContext; reactionId: Id<"reactions"> }) {
-		if (!(await this.ownsReaction({ ctx, reactionId }))) {
-			throw new Error("You do not have permission to delete this reaction")
-		}
-	}
-
 	// public async canViewUser({ ctx, userId }: { ctx: GenericContext; userId: Id<"users"> }) {
 	// 	if(userId === this.user._id) return true
 	// }

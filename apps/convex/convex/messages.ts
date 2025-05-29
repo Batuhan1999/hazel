@@ -48,6 +48,7 @@ export const createMessage = userMutation({
 			replyToMessageId: args.replyToMessageId,
 			attachedFiles: args.attachedFiles,
 			updatedAt: Date.now(),
+			reactions: [],
 		})
 
 		return messageId
@@ -81,6 +82,53 @@ export const deleteMessage = userMutation({
 
 		await ctx.db.patch(args.id, {
 			deletedAt: Date.now(),
+		})
+	},
+})
+
+export const createReaction = userMutation({
+	args: {
+		serverId: v.id("servers"),
+
+		messageId: v.id("messages"),
+		userId: v.id("users"),
+		emoji: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.messageId)
+		if (!message) throw new Error("Message not found")
+
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: message.channelId })
+
+		return await ctx.db.patch(args.messageId, {
+			reactions: [...message.reactions, { userId: args.userId, emoji: args.emoji }],
+		})
+	},
+})
+
+export const deleteReaction = userMutation({
+	args: {
+		serverId: v.id("servers"),
+
+		id: v.id("messages"),
+		emoji: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.id)
+		if (!message) throw new Error("Message not found")
+
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: message.channelId })
+
+		const newReactions = message.reactions.filter(
+			(reaction) => !(reaction.emoji === args.emoji && reaction.userId === ctx.user.id),
+		)
+
+		if (newReactions.length === message.reactions.length) {
+			throw new Error("You do not have permission to delete this reaction")
+		}
+
+		return await ctx.db.patch(args.id, {
+			reactions: newReactions,
 		})
 	},
 })
