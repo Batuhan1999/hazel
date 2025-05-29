@@ -26,7 +26,7 @@ export function ChatTopbar() {
 
 	return (
 		<div class="flex h-16 items-center justify-between gap-2 border-b bg-sidebar p-3">
-			<Show when={channel()} fallback={<p>Channel not found...</p>}>
+			<Show when={channel()}>
 				{(channel) => (
 					<>
 						<div class="flex items-center gap-2">

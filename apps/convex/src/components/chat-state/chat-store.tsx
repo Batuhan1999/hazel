@@ -1,5 +1,5 @@
 import type { Id } from "convex-hazel/_generated/dataModel"
-import { type JSX, createContext, createEffect, splitProps, useContext } from "solid-js"
+import { type JSX, Show, createContext, createEffect, splitProps, useContext } from "solid-js"
 import { createStore } from "solid-js/store"
 
 interface ChatStore extends InputChatStore {
@@ -42,9 +42,16 @@ export const ChatContext = createContext<ReturnType<typeof createChatStore> | un
 
 export const ChatProvider = (props: { children: JSX.Element } & InputChatStore) => {
 	const [childProps, restProps] = splitProps(props, ["children"])
-	const chatStore$ = createChatStore(restProps)
 
-	return <ChatContext.Provider value={chatStore$}>{childProps.children}</ChatContext.Provider>
+	return (
+		<Show when={props.channelId} keyed>
+			{(channelId) => {
+				const chatStore$ = createChatStore({ ...restProps, channelId })
+
+				return <ChatContext.Provider value={chatStore$}>{childProps.children}</ChatContext.Provider>
+			}}
+		</Show>
+	)
 }
 
 export const useChat = () => {
