@@ -98,6 +98,8 @@ export function createPaginatedQuery<Query extends PaginatedQueryReference>(
 	const skip = args === "skip"
 	const argsObject = skip ? {} : args
 	const convexClient = useConvex()
+
+	// @ts-expect-error Internal API
 	const logger = convexClient.logger
 
 	const createInitialState = (): PaginatedQueryState => {

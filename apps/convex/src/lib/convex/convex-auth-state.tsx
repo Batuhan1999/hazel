@@ -16,9 +16,7 @@ export type ConvexAuthState = {
 	isAuthenticated: Accessor<boolean>
 }
 
-const ConvexAuthContext: Context<Accessor<ConvexAuthState> | undefined> = createContext<
-	Accessor<ConvexAuthState> | undefined
->()
+const ConvexAuthContext = createContext<ConvexAuthState | undefined>()
 
 export function useConvexAuth(): ConvexAuthState {
 	const authContext = useContext(ConvexAuthContext)
@@ -29,7 +27,7 @@ export function useConvexAuth(): ConvexAuthState {
 				"the `convex/solid` module loaded in your project.",
 		)
 	}
-	return authContext()
+	return authContext
 }
 
 export function ConvexProviderWithAuth(props: {
@@ -93,10 +91,10 @@ export function ConvexProviderWithAuth(props: {
 	const isLoading = createMemo(() => isConvexAuthenticated() === null)
 	const isAuthenticated = createMemo(() => authState().isAuthenticated() && (isConvexAuthenticated() ?? false))
 
-	const authContextValue = createMemo(() => ({
+	const authContextValue = {
 		isLoading: isLoading,
 		isAuthenticated: isAuthenticated,
-	}))
+	}
 
 	return (
 		<ConvexAuthContext.Provider value={authContextValue}>
