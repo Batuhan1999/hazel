@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { userMutation, userQuery } from "./middleware/withUser"
 
 import { asyncMap } from "convex-helpers"
+import type { Id } from "./_generated/dataModel"
 
 export const getChannels = userQuery({
 	args: {
@@ -10,7 +11,7 @@ export const getChannels = userQuery({
 	handler: async (ctx, args) => {
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
@@ -107,7 +108,7 @@ export const getPublicChannels = userQuery({
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -122,7 +123,7 @@ export const getUnjoinedPublicChannels = userQuery({
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -146,13 +147,7 @@ export const createChannel = userMutation({
 		serverId: v.id("servers"),
 
 		name: v.string(),
-		type: v.union(
-			v.literal("public"),
-			v.literal("private"),
-			v.literal("thread"),
-			v.literal("direct"),
-			v.literal("single"),
-		),
+		type: v.union(v.literal("public"), v.literal("private"), v.literal("thread")),
 		userIds: v.optional(v.array(v.id("users"))),
 		parentChannelId: v.optional(v.id("channels")),
 	},
@@ -185,6 +180,58 @@ export const createChannel = userMutation({
 				})
 			})
 		}
+
+		return channelId
+	},
+})
+
+export function createParticipantHash(userIds: Id<"users">[]) {
+	return userIds.sort().join(":")
+}
+
+export const creatDmChannel = userMutation({
+	args: {
+		serverId: v.id("servers"),
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		const participantHash = createParticipantHash([args.userId, ctx.user.id])
+
+		const existingChannel = await ctx.db
+			.query("channels")
+			.withIndex("by_serverId_and_participantHash", (q) =>
+				q.eq("serverId", args.serverId).eq("participantHash", participantHash),
+			)
+			.first()
+
+		if (existingChannel) {
+			return existingChannel._id
+		}
+
+		const channelId = await ctx.db.insert("channels", {
+			serverId: args.serverId,
+			name: "Direct Message",
+			type: "single",
+			participantHash,
+			updatedAt: Date.now(),
+		})
+
+		await Promise.all([
+			ctx.db.insert("channelMembers", {
+				channelId,
+				userId: ctx.user.id,
+				joinedAt: Date.now(),
+				isHidden: false,
+				isMuted: false,
+			}),
+			ctx.db.insert("channelMembers", {
+				channelId,
+				userId: args.userId,
+				joinedAt: Date.now(),
+				isHidden: false,
+				isMuted: false,
+			}),
+		])
 
 		return channelId
 	},

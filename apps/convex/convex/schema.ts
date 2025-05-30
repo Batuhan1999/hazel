@@ -26,9 +26,12 @@ export default defineSchema({
 		serverId: v.id("servers"),
 		parentChannelId: v.optional(v.id("channels")),
 
+		// This is a hash based on all participant ids in the channel (should be Single an Direct only)
+		participantHash: v.optional(v.string()),
+
 		updatedAt: v.number(),
 		deletedAt: v.optional(v.number()),
-	}).index("by_serverId", ["serverId"]),
+	}).index("by_serverId_and_participantHash", ["serverId", "participantHash"]),
 	users: defineTable({
 		displayName: v.string(),
 		tag: v.string(),
