@@ -28,17 +28,17 @@
 		"vitest": "^3.1.4"
 	},
 	"dependencies": {
-		"@ark-ui/solid": "^5.9.2",
-		"@tanstack/router-plugin": "^1.120.11",
+		"@ark-ui/solid": "^5.11.0",
+		"@tanstack/router-plugin": "^1.120.13",
 		"@tanstack/solid-form": "^1.12.0",
-		"@tanstack/solid-router": "^1.120.10",
-		"@tanstack/solid-router-devtools": "^1.120.10",
+		"@tanstack/solid-router": "^1.120.13",
+		"@tanstack/solid-router-devtools": "^1.120.13",
 		"clerk-solidjs": "^2.0.10",
 		"convex": "^1.24.3",
 		"convex-helpers": "^0.1.89",
 		"solid-js": "^1.9.7",
 		"tailwind-merge": "^3.3.0",
 		"tailwind-variants": "^1.0.0",
-		"virtua": "^0.41.2"
+		"virtua": "^0.41.3"
 	}
 }
