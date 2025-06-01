@@ -8,7 +8,7 @@ export const getFriends = userQuery({
 			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
 			.collect()
 
-		return friends
+		return friends.filter((f) => f._id !== ctx.user.id)
 	},
 })
 
