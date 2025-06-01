@@ -35,17 +35,17 @@ export const update = userMutation({
 			.unique()
 
 		if (existing) {
-			const patch: Partial<Doc<"presence">> = { data }
-			if (existing.present === false) {
-				patch.present = true
-				patch.latestJoin = Date.now()
-			}
-			await ctx.db.patch(existing._id, {
+			const patch: Partial<Doc<"presence">> = {
 				data: {
 					...data,
 					user: ctx.user.doc,
 				},
-			})
+			}
+			if (existing.present === false) {
+				patch.present = true
+				patch.latestJoin = Date.now()
+			}
+			await ctx.db.patch(existing._id, patch)
 		} else {
 			await ctx.db.insert("presence", {
 				user,
