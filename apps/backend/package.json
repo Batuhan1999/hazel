@@ -4,7 +4,8 @@
 	"description": "",
 	"scripts": {
 		"dev": "convex dev",
-		"setup": "convex dev --until-success"
+		"setup": "convex dev --until-success",
+		"convex:deploy": "npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd='cd ../web && bun run build' "
 	},
 	"dependencies": {
 		"convex": "^1.24.6",
