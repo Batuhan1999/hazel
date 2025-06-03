@@ -19,6 +19,8 @@ const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
 	unsavedChangesWarning: false,
 })
 
+console.log("CONVEX_URL:", process.env.EXPO_PUBLIC_CONVEX_URL)
+
 export default function RootLayout() {
 	const colorScheme = useColorScheme()
 	const [loaded] = useFonts({
@@ -30,13 +32,17 @@ export default function RootLayout() {
 		return null
 	}
 
+	console.log("LOADED")
+
 	return (
-		<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-			<ClerkProvider tokenCache={tokenCache}>
+		<ClerkProvider tokenCache={tokenCache}>
+			<ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
 				<ClerkLoaded>
+					<Text>Loading...</Text>
 					<ConvexProviderWithClerk useAuth={useAuth} client={convex}>
 						<Stack>
 							<Stack.Screen name="(home)" options={{ headerShown: false }} />
+							<Stack.Screen name="(auth)" options={{ headerShown: false }} />
 							<Stack.Screen name="+not-found" />
 						</Stack>
 						<StatusBar style="auto" />
@@ -45,7 +51,7 @@ export default function RootLayout() {
 				<ClerkLoading>
 					<Text>Loading...</Text>
 				</ClerkLoading>
-			</ClerkProvider>
-		</ThemeProvider>
+			</ThemeProvider>
+		</ClerkProvider>
 	)
 }

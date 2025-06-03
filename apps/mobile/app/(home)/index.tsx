@@ -7,6 +7,8 @@ import { Text, View } from "react-native"
 export default function Page() {
 	const { user } = useUser()
 
+	console.log("USER:", user)
+
 	return (
 		<View>
 			<SignedIn>
