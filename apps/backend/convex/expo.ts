@@ -3,7 +3,7 @@ import { v } from "convex/values"
 import { components } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
 import { internalMutation } from "./_generated/server"
-import { accountMutation } from "./middleware/withAccount"
+import { accountMutation, accountQuery } from "./middleware/withAccount"
 
 type AccountId = Id<"accounts">
 
@@ -16,6 +16,17 @@ export const recordPushNotificationToken = accountMutation({
 			userId: ctx.account.id,
 			pushToken: args.token,
 		})
+	},
+})
+
+export const getStatusForUser = accountQuery({
+	args: {},
+	handler: async (ctx) => {
+		const res = await pushNotifications.getStatusForUser(ctx, {
+			userId: ctx.account.id,
+		})
+
+		return res
 	},
 })
 
