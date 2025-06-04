@@ -2,12 +2,12 @@ import { SignOutButton } from "@/components/SignOutButton"
 import { NotificationHandler } from "@/components/notification-handler"
 import { SignedIn, SignedOut, useUser } from "@clerk/clerk-expo"
 import { Link } from "expo-router"
-import { Text, View } from "react-native"
+import { Button, Text, View } from "react-native"
+
+import * as Sentry from "@sentry/react-native"
 
 export default function Page() {
 	const { user } = useUser()
-
-	console.log("USER:", user)
 
 	return (
 		<View>
@@ -15,6 +15,13 @@ export default function Page() {
 				<Text>Hello {user?.emailAddresses[0].emailAddress}</Text>
 				<SignOutButton />
 				<NotificationHandler userId={user?.id!} />
+				<Button
+					title="Try!"
+					onPress={() => {
+						console.log("Trying to throw an error")
+						Sentry.captureException(new Error("First error"))
+					}}
+				/>
 			</SignedIn>
 			<SignedOut>
 				<Link href="/(auth)/sign-in">
