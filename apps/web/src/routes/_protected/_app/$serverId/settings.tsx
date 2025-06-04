@@ -1,9 +1,11 @@
 import { api } from "@hazel/backend/api"
 import { createFileRoute } from "@tanstack/solid-router"
-import { Show } from "solid-js"
+import { Show, createSignal } from "solid-js"
 import { Button } from "~/components/ui/button"
 import { Card } from "~/components/ui/card"
+import { SelectNative } from "~/components/ui/select-native"
 import { createQuery } from "~/lib/convex"
+import { useTheme } from "~/lib/theme"
 
 export const Route = createFileRoute("/_protected/_app/$serverId/settings")({
 	component: RouteComponent,
@@ -11,42 +13,104 @@ export const Route = createFileRoute("/_protected/_app/$serverId/settings")({
 
 function RouteComponent() {
 	const notificationStatus = createQuery(api.expo.getStatusForUser)
+	const [showOnline, setShowOnline] = createSignal(true)
+	const [videoEnabled, setVideoEnabled] = createSignal(false)
+	const [callingEnabled, setCallingEnabled] = createSignal(false)
+	const { theme, setTheme } = useTheme()
 
 	return (
-		<div>
+		<div class="space-y-4">
 			<Card>
 				<Card.Header>
 					<Card.Title>Notifications</Card.Title>
 				</Card.Header>
-				<Card.Content>
+				<Card.Content class="space-y-2">
 					<Show when={notificationStatus()} keyed>
 						{(status) => (
 							<>
-								<div class="flex grid-rows-subgrid flex-col gap-2">
-									<div class="flex items-center gap-2">
-										<div class="text-muted-foreground text-sm">
-											{status.paused ? "Paused" : "Active"}
-										</div>
-										<Button
-										// onClick={() => api.expo.pauseNotificationsForUser({})}
-										>
-											{status.paused ? "Resume" : "Pause"}
-										</Button>
-									</div>
-									<div class="flex items-center gap-2">
-										<div class="text-muted-foreground text-sm">
-											{status.hasToken ? "Registered" : "Not Registered"}
-										</div>
-										<Button
-										// onClick={() => api.expo.recordPushNotificationToken({})}
-										>
-											{status.hasToken ? "Unregister" : "Register"}
-										</Button>
-									</div>
+								<div class="flex items-center justify-between">
+									<span class="text-muted-foreground text-sm">
+										{status.paused ? "Paused" : "Active"}
+									</span>
+									<Button
+										onClick={() => api.expo.pauseNotificationsForUser({})}
+										size="small"
+									>
+										{status.paused ? "Resume" : "Pause"}
+									</Button>
+								</div>
+								<div class="flex items-center justify-between">
+									<span class="text-muted-foreground text-sm">
+										{status.hasToken ? "Registered" : "Not Registered"}
+									</span>
+									<Button
+										onClick={() => api.expo.recordPushNotificationToken({})}
+										size="small"
+									>
+										{status.hasToken ? "Unregister" : "Register"}
+									</Button>
 								</div>
 							</>
 						)}
 					</Show>
+				</Card.Content>
+			</Card>
+			<Card>
+				<Card.Header>
+					<Card.Title>Appearance</Card.Title>
+				</Card.Header>
+				<Card.Content class="max-w-xs">
+					<SelectNative
+						label="Theme"
+						value={theme()}
+						onInput={(e) => setTheme(e.currentTarget.value as any)}
+					>
+						<option value="light">Light</option>
+						<option value="dark">Dark</option>
+					</SelectNative>
+				</Card.Content>
+			</Card>
+			<Card>
+				<Card.Header>
+					<Card.Title>Privacy</Card.Title>
+				</Card.Header>
+				<Card.Content>
+					<label class="flex items-center justify-between gap-2">
+						<span>Show Online Status</span>
+						<input
+							type="checkbox"
+							checked={showOnline()}
+							onChange={() => setShowOnline(!showOnline())}
+							class="size-4"
+						/>
+					</label>
+				</Card.Content>
+			</Card>
+			<Card>
+				<Card.Header>
+					<Card.Title>Voice &amp; Video</Card.Title>
+				</Card.Header>
+				<Card.Content class="space-y-2">
+					<label class="flex items-center justify-between gap-2">
+						<span>Enable Video Chat (Coming Soon)</span>
+						<input
+							type="checkbox"
+							checked={videoEnabled()}
+							onChange={() => setVideoEnabled(!videoEnabled())}
+							disabled
+							class="size-4"
+						/>
+					</label>
+					<label class="flex items-center justify-between gap-2">
+						<span>Enable Voice Calls (Coming Soon)</span>
+						<input
+							type="checkbox"
+							checked={callingEnabled()}
+							onChange={() => setCallingEnabled(!callingEnabled())}
+							disabled
+							class="size-4"
+						/>
+					</label>
 				</Card.Content>
 			</Card>
 		</div>

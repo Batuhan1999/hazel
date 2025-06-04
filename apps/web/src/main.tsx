@@ -15,6 +15,9 @@ import { Toaster } from "./components/ui/toaster"
 import { ConvexSolidClient } from "./lib/convex"
 import { ConvexProviderWithClerk } from "./lib/convex-clerk"
 import { NotificationManager } from "./lib/notification-manager"
+import { ThemeProvider, applyInitialTheme } from "./lib/theme"
+
+applyInitialTheme()
 
 const router = createRouter({
 	routeTree,
@@ -51,17 +54,19 @@ const InnerProviders = () => {
 
 function App() {
 	return (
-		<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
-			<Suspense>
-				<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-					<Toaster />
-					<InnerProviders />
-					<Show when={import.meta.env.DEV}>
-						<FpsCounter />
-					</Show>
-				</ConvexProviderWithClerk>
-			</Suspense>
-		</ClerkProvider>
+		<ThemeProvider>
+			<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+				<Suspense>
+					<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+						<Toaster />
+						<InnerProviders />
+						<Show when={import.meta.env.DEV}>
+							<FpsCounter />
+						</Show>
+					</ConvexProviderWithClerk>
+				</Suspense>
+			</ClerkProvider>
+		</ThemeProvider>
 	)
 }
 
