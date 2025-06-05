@@ -15,7 +15,8 @@
 				"useImportType": "error"
 			},
 			"complexity": {
-				"useArrowFunction": "error"
+				"useArrowFunction": "error",
+				"noBannedTypes": "warn"
 			},
 			"a11y": {
 				"noSvgWithoutTitle": "off"

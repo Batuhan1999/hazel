@@ -1,8 +1,18 @@
 import type { Doc, Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
-import { type JSX, Show, createContext, createEffect, createMemo, splitProps, useContext } from "solid-js"
+import { useQuery } from "@tanstack/solid-query"
+import {
+	type Accessor,
+	type JSX,
+	Show,
+	createContext,
+	createEffect,
+	createMemo,
+	splitProps,
+	useContext,
+} from "solid-js"
 import { createStore } from "solid-js/store"
-import { createQuery } from "~/lib/convex"
+import { convexQuery } from "~/lib/convex-query"
 
 interface ChatStore extends InputChatStore {
 	replyToMessageId: Id<"messages"> | null
@@ -47,35 +57,32 @@ const createChatStore = (props: InputChatStore) => {
 
 export const ChatContext = createContext<ReturnType<typeof createChatStore> | undefined>()
 
-export const ChatProvider = (props: { children: JSX.Element } & Omit<InputChatStore, "channel">) => {
-	const [childProps, restProps] = splitProps(props, ["children"])
+export const ChatProvider = (props: {
+	children: JSX.Element
+	serverId: Accessor<Id<"servers">>
+	channelId: Accessor<Id<"channels">>
+}) => {
+	const [childProps] = splitProps(props, ["children"])
+
+	const channelQuery = useQuery(() =>
+		convexQuery(api.channels.getChannel, {
+			channelId: props.channelId(),
+			serverId: props.serverId(),
+		}),
+	)
 
 	const params = createMemo(() => ({
-		serverId: props.serverId,
-		channelId: props.channelId,
+		serverId: props.serverId(),
+		channelId: props.channelId(),
 	}))
 
 	return (
 		<Show when={params()} keyed>
 			{(params) => {
-				const channel = createQuery(api.channels.getChannel, {
-					channelId: props.channelId,
-					serverId: props.serverId,
-				})
 				const chatStore$ = createChatStore({
-					...restProps,
-					channel: undefined,
+					channel: channelQuery.data,
 					channelId: params.channelId,
 					serverId: params.serverId,
-				})
-
-				createEffect(() => {
-					const currChannel = channel()
-
-					if (currChannel) {
-						chatStore$.setState("channel", currChannel)
-						return
-					}
 				})
 
 				return <ChatContext.Provider value={chatStore$}>{childProps.children}</ChatContext.Provider>

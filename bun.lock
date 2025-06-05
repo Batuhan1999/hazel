@@ -76,6 +76,7 @@
         "@hazel/backend": "workspace:*",
         "@tanstack/router-plugin": "1.121.0-alpha.22",
         "@tanstack/solid-form": "^1.12.1",
+        "@tanstack/solid-query": "^5.80.6",
         "@tanstack/solid-router": "1.121.0-alpha.22",
         "@tanstack/solid-router-devtools": "1.121.0-alpha.22",
         "arktype": "^2.1.20",
@@ -874,7 +875,7 @@
 
     "@tanstack/history": ["@tanstack/history@1.121.0-alpha.1", "", {}, "sha512-/nKiPTyUIqSlCS0hGOL/hjQUI/TJ/i5w+dAFdgq0bhhiGpLvv4s/SAxbHb+/6Sm1WGkule6+taaRamDmrK3SYQ=="],
 
-    "@tanstack/query-core": ["@tanstack/query-core@5.79.0", "", {}, "sha512-s+epTqqLM0/TbJzMAK7OEhZIzh63P9sWz5HEFc5XHL4FvKQXQkcjI8F3nee+H/xVVn7mrP610nVXwOytTSYd0w=="],
+    "@tanstack/query-core": ["@tanstack/query-core@5.80.6", "", {}, "sha512-nl7YxT/TAU+VTf+e2zTkObGTyY8YZBMnbgeA1ee66lIVqzKlYursAII6z5t0e6rXgwUMJSV4dshBTNacNpZHbQ=="],
 
     "@tanstack/router-core": ["@tanstack/router-core@1.121.0-alpha.22", "", { "dependencies": { "@tanstack/history": "1.121.0-alpha.1", "@tanstack/store": "^0.7.0", "tiny-invariant": "^1.3.3" } }, "sha512-j7+uqm3IuaHxquD6oDKAYnSCTmZ4PGHqFPAjNBZmEEZ8N/e2TQoroLSUpOqC+7MXQKXPIMCaa9MCrAJj2YTYXg=="],
 
@@ -890,7 +891,7 @@
 
     "@tanstack/solid-form": ["@tanstack/solid-form@1.12.1", "", { "dependencies": { "@tanstack/form-core": "1.12.1", "@tanstack/solid-store": "^0.7.1" }, "peerDependencies": { "solid-js": "^1.6.0" } }, "sha512-wEB0LDUAiFJz3kwrvmkACFFYWOK4fmJf549u0TKoPOkYknj9FOvEw36eOo6Z9ugEjaibtuG9Tyz9drUG8NVj5A=="],
 
-    "@tanstack/solid-query": ["@tanstack/solid-query@5.79.0", "", { "dependencies": { "@tanstack/query-core": "5.79.0" }, "peerDependencies": { "solid-js": "^1.6.0" } }, "sha512-5bRp75FsXjqqr6t/q+xgoFsPLG4gdH+aZkGwhrODffmgh0xZalNbmEEclsA7cPIiq6KtHMqxYJpNX/LVehFRVw=="],
+    "@tanstack/solid-query": ["@tanstack/solid-query@5.80.6", "", { "dependencies": { "@tanstack/query-core": "5.80.6" }, "peerDependencies": { "solid-js": "^1.6.0" } }, "sha512-fmq1dHoZsEMsd0mYk9y9Lukp7156xgrjgrKifpPFcCw9rsT8WLewvgrm2Ap5DmeZgs/xoHK7rBmR1bU1NfPteQ=="],
 
     "@tanstack/solid-router": ["@tanstack/solid-router@1.121.0-alpha.22", "", { "dependencies": { "@solid-devtools/logger": "^0.9.4", "@solid-primitives/refs": "^1.0.8", "@solidjs/meta": "^0.29.4", "@tanstack/history": "1.121.0-alpha.1", "@tanstack/router-core": "1.121.0-alpha.22", "@tanstack/solid-store": "^0.7.0", "jsesc": "^3.0.2", "tiny-invariant": "^1.3.3", "tiny-warning": "^1.0.3" }, "peerDependencies": { "solid-js": "^1.9.5" } }, "sha512-As+RDcRVlM4fG61lDloWHF02ptCENHXyBmBpoufdZTr1yVJW3m4kXM+Xqud2XUE2BlIbdMjR01NuxkI8+CqKag=="],
 
@@ -3254,6 +3255,8 @@
 
     "chromium-edge-launcher/mkdirp": ["mkdirp@1.0.4", "", { "bin": { "mkdirp": "bin/cmd.js" } }, "sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw=="],
 
+    "clerk-solidjs/@tanstack/solid-query": ["@tanstack/solid-query@5.79.0", "", { "dependencies": { "@tanstack/query-core": "5.79.0" }, "peerDependencies": { "solid-js": "^1.6.0" } }, "sha512-5bRp75FsXjqqr6t/q+xgoFsPLG4gdH+aZkGwhrODffmgh0xZalNbmEEclsA7cPIiq6KtHMqxYJpNX/LVehFRVw=="],
+
     "clipboardy/is-wsl": ["is-wsl@3.1.0", "", { "dependencies": { "is-inside-container": "^1.0.0" } }, "sha512-UcVfVfaK4Sc4m7X3dUSoHoozQGBEFeDC+zVo06t98xe8CzHSZZBekNXH+tu0NalHolcJ/QAGqS46Hef7QXBIMw=="],
 
     "cliui/strip-ansi": ["strip-ansi@6.0.1", "", { "dependencies": { "ansi-regex": "^5.0.1" } }, "sha512-Y38VPSHcqkFrCpFnQ9vuSXmquuv5oXOKpGeT6aGrr3o3Gc9AlVa6JBfUSOCnbxGGZF+/0ooI7KrPuUSztUdU5A=="],
@@ -3659,6 +3662,8 @@
     "boxen/wrap-ansi/strip-ansi": ["strip-ansi@7.1.0", "", { "dependencies": { "ansi-regex": "^6.0.1" } }, "sha512-iq6eVVI64nQQTRYq2KtEg2d2uU7LElhTJwsH4YzIHZshxlgZms/wIc4VoDQTlG/IvVIrBKG06CrZnp0qv7hkcQ=="],
 
     "c12/chokidar/readdirp": ["readdirp@4.1.2", "", {}, "sha512-GDhwkLfywWL2s6vEjyhri+eXmfH6j1L7JE27WhqLeYzoh/A3DBaYGEj2H/HFZCn/kMfim73FXxEJTw06WtxQwg=="],
+
+    "clerk-solidjs/@tanstack/solid-query/@tanstack/query-core": ["@tanstack/query-core@5.79.0", "", {}, "sha512-s+epTqqLM0/TbJzMAK7OEhZIzh63P9sWz5HEFc5XHL4FvKQXQkcjI8F3nee+H/xVVn7mrP610nVXwOytTSYd0w=="],
 
     "colorspace/color/color-convert": ["color-convert@1.9.3", "", { "dependencies": { "color-name": "1.1.3" } }, "sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg=="],
 

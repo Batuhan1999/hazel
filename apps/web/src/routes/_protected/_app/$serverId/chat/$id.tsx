@@ -19,8 +19,11 @@ export const Route = createFileRoute("/_protected/_app/$serverId/chat/$id")({
 function Root() {
 	const params = Route.useParams()
 
+	const serverId = createMemo(() => params().serverId as Id<"servers">)
+	const channelId = createMemo(() => params().id as Id<"channels">)
+
 	return (
-		<ChatProvider channelId={params().id as Id<"channels">} serverId={params().serverId as Id<"servers">}>
+		<ChatProvider channelId={channelId} serverId={serverId}>
 			<RouteComponent />
 		</ChatProvider>
 	)

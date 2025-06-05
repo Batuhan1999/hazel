@@ -3,11 +3,16 @@ import { api } from "@hazel/backend/api"
 
 import { Outlet, createFileRoute, redirect } from "@tanstack/solid-router"
 import { Sidebar } from "~/components/ui/sidebar"
+import { convexQuery } from "~/lib/convex-query"
 import { removeCurrentServerId, setCurrentServerId } from "~/lib/helpers/localstorage"
 import { AppSidebar } from "./-components/app-sidebar"
 
 export const Route = createFileRoute("/_protected/_app/$serverId")({
 	component: RouteComponent,
+	loader: ({ context: { queryClient }, params }) =>
+		queryClient.ensureQueryData(
+			convexQuery(api.channels.getChannels, { serverId: params.serverId as Id<"servers"> }),
+		),
 	beforeLoad: async ({ context, params }) => {
 		const server = await context.convex
 			.query(api.servers.getServerForUser, {

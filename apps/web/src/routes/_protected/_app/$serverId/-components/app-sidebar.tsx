@@ -1,6 +1,6 @@
 import { Link, useParams } from "@tanstack/solid-router"
 import { useAuth } from "clerk-solidjs"
-import { type Accessor, Index, Match, Switch, createMemo, createSignal } from "solid-js"
+import { type Accessor, Index, Match, Switch, createEffect, createMemo, createSignal } from "solid-js"
 import { IconHashtag } from "~/components/icons/hashtag"
 
 import { IconPlusSmall } from "~/components/icons/plus-small"
@@ -22,8 +22,10 @@ import { IconSignOut } from "~/components/ui/signout"
 
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
+import { useQuery } from "@tanstack/solid-query"
 import type { FunctionReturnType } from "convex/server"
-import { createMutation, createQuery } from "~/lib/convex"
+import { createMutation } from "~/lib/convex"
+import { convexQuery } from "~/lib/convex-query"
 import { cn } from "~/lib/utils"
 import { CreateChannelForm } from "./create-channel-form"
 import { CreateDmDialog } from "./create-dm-dialog"
@@ -39,12 +41,10 @@ export const AppSidebar = (props: SidebarProps) => {
 	const params = useParams({ from: "/_protected/_app/$serverId" })
 	const serverId = createMemo(() => params().serverId as Id<"servers">)
 
-	const channels = createQuery(api.channels.getChannels, {
-		serverId: serverId(),
-	})
+	const channelsQuery = useQuery(() => convexQuery(api.channels.getChannels, { serverId: serverId() }))
 
-	const serverChannels = createMemo(() => channels()?.serverChannels || [])
-	const dmChannels = createMemo(() => channels()?.dmChannels || [])
+	const serverChannels = createMemo(() => channelsQuery.data?.serverChannels || [])
+	const dmChannels = createMemo(() => channelsQuery.data?.dmChannels || [])
 
 	const [createChannelModalOpen, setCreateChannelModalOpen] = createSignal(false)
 
@@ -213,9 +213,9 @@ interface DmChannelLinkProps {
 }
 
 const DmChannelLink = (props: DmChannelLinkProps) => {
-	const me = createQuery(api.me.getUser, {
-		serverId: props.serverId(),
-	})
+	const meQuery = useQuery(() => ({
+		...convexQuery(api.me.getUser, { serverId: props.serverId() }),
+	}))
 
 	const params = createMemo(() => ({
 		serverId: props.serverId(),
@@ -225,7 +225,7 @@ const DmChannelLink = (props: DmChannelLinkProps) => {
 	const updateChannelPreferences = createMutation(api.channels.updateChannelPreferences)
 
 	const filteredMembers = createMemo(() =>
-		props.channel().members.filter((member) => member.userId !== me()?._id),
+		props.channel().members.filter((member) => member.userId !== meQuery.data?._id),
 	)
 
 	return (
