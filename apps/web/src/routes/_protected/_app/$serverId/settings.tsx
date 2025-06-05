@@ -19,7 +19,7 @@ function RouteComponent() {
 	const { theme, setTheme } = useTheme()
 
 	return (
-		<div class="space-y-4">
+		<div class="space-y-4 px-4 py-2">
 			<Card>
 				<Card.Header>
 					<Card.Title>Notifications</Card.Title>
