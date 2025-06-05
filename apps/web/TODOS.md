@@ -19,6 +19,8 @@
 - Improve typing presence todo less calls
 - Fix Test Setup
 
+- Integrate with Tanstack Table for basic creaetQUery etc
+
 - Rework presence with convex component https://github.com/get-convex/presence, probably need to fork to a typing indicator...
 
 - Improve mobile app UI and add settings in both web + mobile to mute Notifications
