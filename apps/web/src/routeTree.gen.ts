@@ -18,6 +18,7 @@ import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as ProtectedAppLayoutRouteImport } from './routes/_protected/_app/layout'
 import { Route as ProtectedOnboardingIndexRouteImport } from './routes/_protected/onboarding/index'
 import { Route as ProtectedAppIndexRouteImport } from './routes/_protected/_app/index'
+import { Route as ProtectedAppVideoRouteImport } from './routes/_protected/_app/video'
 import { Route as ProtectedAppServerIdLayoutRouteImport } from './routes/_protected/_app/$serverId/layout'
 import { Route as ProtectedAppServerIdIndexRouteImport } from './routes/_protected/_app/$serverId/index'
 import { Route as ProtectedAppServerIdSettingsRouteImport } from './routes/_protected/_app/$serverId/settings'
@@ -64,6 +65,12 @@ const ProtectedOnboardingIndexRoute =
 const ProtectedAppIndexRoute = ProtectedAppIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => ProtectedAppLayoutRoute,
+} as any)
+
+const ProtectedAppVideoRoute = ProtectedAppVideoRouteImport.update({
+  id: '/video',
+  path: '/video',
   getParentRoute: () => ProtectedAppLayoutRoute,
 } as any)
 
@@ -153,6 +160,13 @@ declare module '@tanstack/solid-router' {
       path: '/$serverId'
       fullPath: '/$serverId'
       preLoaderRoute: typeof ProtectedAppServerIdLayoutRouteImport
+      parentRoute: typeof ProtectedAppLayoutRouteImport
+    }
+    '/_protected/_app/video': {
+      id: '/_protected/_app/video'
+      path: '/video'
+      fullPath: '/video'
+      preLoaderRoute: typeof ProtectedAppVideoRouteImport
       parentRoute: typeof ProtectedAppLayoutRouteImport
     }
     '/_protected/_app/': {
@@ -247,11 +261,13 @@ const ProtectedAppServerIdLayoutRouteWithChildren =
 
 interface ProtectedAppLayoutRouteChildren {
   ProtectedAppServerIdLayoutRoute: typeof ProtectedAppServerIdLayoutRouteWithChildren
+  ProtectedAppVideoRoute: typeof ProtectedAppVideoRoute
   ProtectedAppIndexRoute: typeof ProtectedAppIndexRoute
 }
 
 const ProtectedAppLayoutRouteChildren: ProtectedAppLayoutRouteChildren = {
   ProtectedAppServerIdLayoutRoute: ProtectedAppServerIdLayoutRouteWithChildren,
+  ProtectedAppVideoRoute: ProtectedAppVideoRoute,
   ProtectedAppIndexRoute: ProtectedAppIndexRoute,
 }
 
@@ -277,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
   '/$serverId': typeof ProtectedAppServerIdLayoutRouteWithChildren
+  '/video': typeof ProtectedAppVideoRoute
   '/': typeof ProtectedAppIndexRoute
   '/onboarding': typeof ProtectedOnboardingIndexRoute
   '/$serverId/billing': typeof ProtectedAppServerIdBillingRoute
@@ -290,6 +307,7 @@ export interface FileRoutesByTo {
   '': typeof ProtectedLayoutRouteWithChildren
   '/sign-in': typeof AuthSignInRoute
   '/sign-up': typeof AuthSignUpRoute
+  '/video': typeof ProtectedAppVideoRoute
   '/': typeof ProtectedAppIndexRoute
   '/onboarding': typeof ProtectedOnboardingIndexRoute
   '/$serverId/billing': typeof ProtectedAppServerIdBillingRoute
@@ -307,6 +325,7 @@ export interface FileRoutesById {
   '/_auth/sign-in': typeof AuthSignInRoute
   '/_auth/sign-up': typeof AuthSignUpRoute
   '/_protected/_app/$serverId': typeof ProtectedAppServerIdLayoutRouteWithChildren
+  '/_protected/_app/video': typeof ProtectedAppVideoRoute
   '/_protected/_app/': typeof ProtectedAppIndexRoute
   '/_protected/onboarding/': typeof ProtectedOnboardingIndexRoute
   '/_protected/_app/$serverId/billing': typeof ProtectedAppServerIdBillingRoute
@@ -323,6 +342,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/sign-up'
     | '/$serverId'
+    | '/video'
     | '/'
     | '/onboarding'
     | '/$serverId/billing'
@@ -335,6 +355,7 @@ export interface FileRouteTypes {
     | ''
     | '/sign-in'
     | '/sign-up'
+    | '/video'
     | '/'
     | '/onboarding'
     | '/$serverId/billing'
@@ -350,6 +371,7 @@ export interface FileRouteTypes {
     | '/_auth/sign-in'
     | '/_auth/sign-up'
     | '/_protected/_app/$serverId'
+    | '/_protected/_app/video'
     | '/_protected/_app/'
     | '/_protected/onboarding/'
     | '/_protected/_app/$serverId/billing'
@@ -403,6 +425,7 @@ export const routeTree = rootRoute
       "parent": "/_protected",
       "children": [
         "/_protected/_app/$serverId",
+        "/_protected/_app/video",
         "/_protected/_app/"
       ]
     },
@@ -424,6 +447,10 @@ export const routeTree = rootRoute
         "/_protected/_app/$serverId/chat/$id",
         "/_protected/_app/$serverId/profile/$id"
       ]
+    },
+    "/_protected/_app/video": {
+      "filePath": "_protected/_app/video.tsx",
+      "parent": "/_protected/_app"
     },
     "/_protected/_app/": {
       "filePath": "_protected/_app/index.tsx",

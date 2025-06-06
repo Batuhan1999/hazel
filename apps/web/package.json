@@ -24,6 +24,7 @@
 		"vitest": "^3.2.2"
 	},
 	"dependencies": {
+		"@100mslive/hms-video-store": "^0.12.35",
 		"@ark-ui/solid": "^5.12.0",
 		"@bigmistqke/solid-contenteditable": "^0.0.11",
 		"@convex-dev/expo-push-notifications": "^0.2.4",

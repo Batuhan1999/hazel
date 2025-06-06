@@ -17,6 +17,8 @@
 - Improve typing presence todo less calls
 - Move all mutations to tanstack query
 
+- Improve Rerenders of chat
+
 
 
 - Rework presence with convex component https://github.com/get-convex/presence, probably need to fork to a typing indicator...
