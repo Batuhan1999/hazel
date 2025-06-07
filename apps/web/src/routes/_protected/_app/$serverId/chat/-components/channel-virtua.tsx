@@ -79,34 +79,28 @@ export function ChannelVirtua(props: {
 		)
 	})
 
-	const processedMessages = mapArray(
-		() => messages,
-		(message, index) => {
-			const timeThreshold = 5 * 60 * 1000
+	const processedMessages = createMemo(() => {
+		const timeThreshold = 5 * 60 * 1000 // 5 minutes
+		const sourceMessages = messages
 
-			const isGroupStart = createMemo(() => {
-				const prevMessage = index() > 0 ? messages[index() - 1] : null
-				if (!prevMessage) return true
+		return sourceMessages.map((message, index) => {
+			const prevMessage = index > 0 ? sourceMessages[index - 1] : null
+			const nextMessage = index < sourceMessages.length - 1 ? sourceMessages[index + 1] : null
 
-				const timeDiff = message._creationTime - prevMessage._creationTime
-				return !(
-					message.authorId === prevMessage.authorId &&
-					timeDiff < timeThreshold &&
-					!prevMessage.replyToMessageId
-				)
-			})
+			const isGroupStart =
+				!prevMessage ||
+				message.authorId !== prevMessage.authorId ||
+				message._creationTime - prevMessage._creationTime >= timeThreshold ||
+				prevMessage.replyToMessageId != null
 
-			const isGroupEnd = createMemo(() => {
-				const nextMessage = index() < messages.length - 1 ? messages[index() + 1] : null
-				if (!nextMessage) return true
-
-				const timeDiff = nextMessage._creationTime - message._creationTime
-				return !(message.authorId === nextMessage.authorId && timeDiff < timeThreshold)
-			})
+			const isGroupEnd =
+				!nextMessage ||
+				message.authorId !== nextMessage.authorId ||
+				nextMessage._creationTime - message._creationTime >= timeThreshold
 
 			return { message, isGroupStart, isGroupEnd }
-		},
-	)
+		})
+	})
 
 	const [shouldStickToBottom, setShouldStickToBottom] = createSignal(true)
 	const [vlistRef, setVlistRef] = createSignal<VListHandle | undefined>(undefined)
@@ -128,7 +122,7 @@ export function ChannelVirtua(props: {
 				class="flex-1"
 				// overscan={15}
 				shift
-				itemSize={50}
+				itemSize={70}
 				data={processedMessages()}
 				ref={setVlistRef}
 				onScroll={async (offset) => {
@@ -149,8 +143,8 @@ export function ChannelVirtua(props: {
 				{(item) => (
 					<ChatMessage
 						message={() => item.message}
-						isGroupStart={item.isGroupStart}
-						isGroupEnd={item.isGroupEnd}
+						isGroupStart={() => item.isGroupStart}
+						isGroupEnd={() => item.isGroupEnd}
 						isFirstNewMessage={() =>
 							item.message._id === channelQuery.data?.currentUser?.lastSeenMessageId
 						}

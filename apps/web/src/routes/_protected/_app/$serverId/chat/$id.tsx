@@ -53,6 +53,7 @@ function RouteComponent() {
 			<ChatTopbar />
 			<div class="flex flex-1 overflow-hidden">
 				<div class="flex min-w-0 flex-1 flex-col">
+					{/* <ChannelVirtua channelId={channelId} serverId={serverId} isThread={false} /> */}
 					<ChannelWithoutVirtua channelId={channelId} serverId={serverId} isThread={false} />
 				</div>
 
