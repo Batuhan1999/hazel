@@ -12,7 +12,7 @@ import {
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/solid-query"
-import { createEffect, createSignal, onCleanup } from "solid-js"
+import { createEffect, onCleanup } from "solid-js"
 import { createStore, reconcile } from "solid-js/store"
 import { toaster } from "~/components/ui/toaster"
 import { convexQuery } from "../convex-query"
@@ -107,7 +107,11 @@ export function useCallManager(props: { serverId: Id<"servers"> }) {
 
 			setStore("isConnected", !!selectIsConnectedToRoom(store))
 
-			setStore("peers", selectPeers(store))
+			const peers = selectPeers(store)
+
+			console.log("peers", peers)
+
+			setStore("peers", peers)
 
 			const screensharingPeers = selectPeersScreenSharing(store)
 
@@ -118,6 +122,7 @@ export function useCallManager(props: { serverId: Id<"servers"> }) {
 		})
 
 		onCleanup(() => {
+			leaveCall()
 			unsubscribe()
 		})
 	})
