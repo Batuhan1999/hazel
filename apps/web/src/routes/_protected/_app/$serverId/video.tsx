@@ -1,8 +1,13 @@
-import { type HMSPeer, selectVideoTrackByID } from "@100mslive/hms-video-store"
+import {
+	type HMSPeer,
+	type HMSSpeaker,
+	selectSpeakers,
+	selectVideoTrackByID,
+} from "@100mslive/hms-video-store"
 import { Toggle } from "@ark-ui/solid"
 import type { Id } from "@hazel/backend"
 import { createFileRoute } from "@tanstack/solid-router"
-import { For, Show, createSignal, onMount } from "solid-js"
+import { For, Show, createSignal, onCleanup, onMount } from "solid-js"
 import { Button, buttonVariants } from "~/components/ui/button"
 import { TextField } from "~/components/ui/text-field"
 import { hmsActions, hmsStore, useCallManager } from "~/lib/hms/use-video-manager"
@@ -20,6 +25,7 @@ function RouteComponent() {
 		setLocalAudio,
 		setLocalVideo,
 		localAudioEnabled,
+		toggleScreenShare,
 		localVideoEnabled,
 	} = useCallManager({ serverId: params().serverId as Id<"servers"> })
 	const [roomCode, setRoomCode] = createSignal("ahf-hxjo-caw")
@@ -109,6 +115,9 @@ function RouteComponent() {
 						On Video
 					</Show>
 				</Toggle.Root>
+				<Button onClick={toggleScreenShare} disabled={!isConnected()}>
+					Screenshare
+				</Button>
 
 				<Button intent="destructive" onClick={leaveCall} disabled={!isConnected()}>
 					Leave Call
@@ -119,6 +128,7 @@ function RouteComponent() {
 }
 
 const VideoComponent = (props: { peer: HMSPeer }) => {
+	const [isSpeaking, setIsSpeaking] = createSignal(false)
 	let videoElement: HTMLVideoElement | undefined
 	onMount(() => {
 		hmsStore.subscribe((track) => {
@@ -131,9 +141,26 @@ const VideoComponent = (props: { peer: HMSPeer }) => {
 				hmsActions.detachVideo(track.id, videoElement)
 			}
 		}, selectVideoTrackByID(props.peer.videoTrack))
+
+		const unsubscribeSpeakers = hmsStore.subscribe((speakers: Record<string, HMSSpeaker>) => {
+			const currentPeerSpeakerInfo = speakers[props.peer.id]
+			if (currentPeerSpeakerInfo && currentPeerSpeakerInfo.audioLevel > 5) {
+				// Threshold can be adjusted
+				setIsSpeaking(true)
+			} else {
+				setIsSpeaking(false)
+			}
+		}, selectSpeakers)
+
+		onCleanup(() => {
+			unsubscribeSpeakers()
+		})
 	})
 	return (
-		<div class="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-muted">
+		<div
+			class="relative flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-muted"
+			classList={{ "ring-2 ring-green-500": isSpeaking() }}
+		>
 			<div class="absolute inset-0 flex items-center justify-center text-muted-foreground">
 				{props.peer.name}
 			</div>

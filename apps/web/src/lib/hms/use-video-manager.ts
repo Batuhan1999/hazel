@@ -3,6 +3,7 @@ import {
 	HMSReactiveStore,
 	selectIsConnectedToRoom,
 	selectIsLocalAudioEnabled,
+	selectIsLocalScreenShared,
 	selectIsLocalVideoEnabled,
 	selectPeers,
 } from "@100mslive/hms-video-store"
@@ -55,6 +56,15 @@ export function useCallManager(props: { serverId: Id<"servers"> }) {
 		}
 	}
 
+	const toggleScreenShare = async () => {
+		try {
+			const isScreenShareEnabled = hmsStore.getState(selectIsLocalScreenShared)
+			await hmsActions.setScreenShareEnabled(!isScreenShareEnabled)
+		} catch (error) {
+			console.error("Error toggling screen share:", error)
+		}
+	}
+
 	const leaveCall = async () => {
 		try {
 			await hmsActions.leave()
@@ -81,7 +91,6 @@ export function useCallManager(props: { serverId: Id<"servers"> }) {
 
 	createEffect(() => {
 		const unsubscribe = hmsStore.subscribe((store) => {
-			console.log(store)
 			setIsConnected(!!selectIsConnectedToRoom(store))
 
 			setLocalAudioEnabled(selectIsLocalAudioEnabled(store))
@@ -104,6 +113,7 @@ export function useCallManager(props: { serverId: Id<"servers"> }) {
 
 		setLocalAudio,
 		localAudioEnabled,
+		toggleScreenShare,
 
 		localVideoEnabled,
 		setLocalVideo,
