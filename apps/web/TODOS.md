@@ -1,6 +1,12 @@
 - Add convex client tests to our sdk
 - Move Pinned Message back to separate table
 
+
+# Chat 
+- Add inline code highlighting
+# Chat Input 
+- Fix Code block highltighting + inline
+
 # Features
 - File uploads with convex
 - Readd last read message
@@ -12,9 +18,13 @@
 - Add Invite Link
 
 # Fixes
+- Closing Image Dialog rerenders/refetches the whole page
+
 
 
 # Improvements 
+
+
 
 - Delete Notification after it was seen (maybe just a simple cron cleanup job)
 - Move all mutations to tanstack query
