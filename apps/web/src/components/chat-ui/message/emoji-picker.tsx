@@ -60,13 +60,9 @@ let EMOJI_GROUP_DATA: EmojiGroupData[] | undefined
 export async function loadEmojiData(): Promise<EmojiData> {
 	if (!EMOJI_DATA) {
 		const response = await fetch(EMOJI_KEY)
-		// The raw data is a record where the key is the emoji, but the value object
-		// doesn't contain the emoji character itself.
 		const rawData = (await response.json()) as Record<string, Omit<Emoji, "emoji">>
 
 		const processedData: EmojiData = {}
-		// We iterate over the raw data to add the `emoji` property to each object,
-		// making it conform to our `Emoji` interface.
 		for (const emojiChar in rawData) {
 			if (Object.prototype.hasOwnProperty.call(rawData, emojiChar)) {
 				processedData[emojiChar] = {
@@ -83,7 +79,6 @@ export async function loadEmojiData(): Promise<EmojiData> {
 export async function loadEmojiGroupData(): Promise<EmojiGroupData[]> {
 	if (!EMOJI_GROUP_DATA) {
 		const response = await fetch(GROUP_DATA_KEY)
-
 		EMOJI_GROUP_DATA = (await response.json()) as EmojiGroupData[]
 	}
 	return EMOJI_GROUP_DATA
@@ -228,7 +223,6 @@ export function EmojiPicker(props: EmojiPickerProps) {
 	const [search, setSearch] = createSignal("")
 	const [skinTone, setSkinTone] = createSignal<EmojiSkinTone>()
 	const [recents, setRecents] = createSignal<string[]>([])
-	const [activeCategory, setActiveCategory] = createSignal<string>(RECENTS_SLUG)
 
 	// Load recents from localStorage on mount
 	onMount(() => {
@@ -240,51 +234,38 @@ export function EmojiPicker(props: EmojiPickerProps) {
 		}
 	})
 
-	// Memoized Derived State
-	const categories = createMemo(() => {
-		const groups = groupsData()
-		if (!groups) return [RECENTS_SLUG]
-		return [RECENTS_SLUG, ...groups.map((g) => g.slug)]
-	})
-
-	const categoryDetails = createMemo(() => {
-		const details: Record<string, { name: string; icon: string }> = {
-			[RECENTS_SLUG]: { name: "Recently Used", icon: "🕘" },
-		}
-		// biome-ignore lint/complexity/noForEach: <explanation>
-		groupsData()?.forEach((g) => {
-			details[g.slug] = { name: g.name, icon: g.emojis[0]?.emoji || "❓" }
-		})
-		return details
-	})
-
-	const filteredEmojis = createMemo<Emoji[]>(() => {
+	// Memoized Derived State for different views
+	const searchResults = createMemo<Emoji[]>(() => {
 		const allEmojis = allEmojisData()
-		const groups = groupsData()
 		const term = search().toLowerCase().trim()
 
+		if (term.length < 2 || !allEmojis) return []
+
+		const termForSlug = term.replace(/ /g, "_")
+		return Object.values(allEmojis).filter((e) => e.name.includes(term) || e.slug.includes(termForSlug))
+	})
+
+	const displayGroups = createMemo<EmojiGroupData[]>(() => {
+		const allEmojis = allEmojisData()
+		const groups = groupsData()
 		if (!allEmojis || !groups) return []
 
-		if (term.length > 1) {
-			const termForSlug = term.replace(/ /g, "_")
-			return Object.values(allEmojis).filter(
-				(e) => e.name.includes(term) || e.slug.includes(termForSlug),
-			)
+		const recentEmojis = recents()
+			.map((emojiChar) => allEmojis[emojiChar])
+			.filter(Boolean) as Emoji[]
+
+		const recentGroup: EmojiGroupData = {
+			name: "Recently Used",
+			slug: RECENTS_SLUG,
+			emojis: recentEmojis,
 		}
 
-		if (activeCategory() === RECENTS_SLUG) {
-			return recents()
-				.map((emojiChar) => allEmojis[emojiChar])
-				.filter(Boolean) as Emoji[]
-		}
-
-		const activeGroup = groups.find((g) => g.slug === activeCategory())
-		return activeGroup ? activeGroup.emojis : []
+		return [recentGroup, ...groups]
 	})
 
 	// Event Handlers
 	function updateRecents(emoji: Emoji) {
-		const next = [emoji.emoji, ...recents().filter((e) => e !== emoji.emoji)].slice(0, 32) // Store up to 32 recents
+		const next = [emoji.emoji, ...recents().filter((e) => e !== emoji.emoji)].slice(0, 32)
 		setRecents(next)
 		try {
 			localStorage.setItem(RECENTS_KEY, JSON.stringify(next))
@@ -295,7 +276,7 @@ export function EmojiPicker(props: EmojiPickerProps) {
 
 	function handleSelect(emoji: Emoji) {
 		const components = componentsData()
-		if (!components) return
+		if (!components || !allEmojisData()) return
 
 		const skinToneComponent = getSkinToneComponent(components, skinTone())
 		const finalEmoji = getEmojiWithSkinTone(allEmojisData()!, emoji, skinToneComponent)
@@ -306,7 +287,7 @@ export function EmojiPicker(props: EmojiPickerProps) {
 	}
 
 	const { active, setActive, onKeyDown } = createList({
-		items: () => filteredEmojis().map((e) => e.slug),
+		items: () => searchResults().map((e) => e.slug),
 		orientation: "horizontal",
 		handleTab: true,
 	})
@@ -320,82 +301,116 @@ export function EmojiPicker(props: EmojiPickerProps) {
 					value={search()}
 					onInput={(e) => setSearch(e.currentTarget.value)}
 					suffix={<IconSearch class="mr-2 size-4 text-muted-foreground" />}
+					role="searchbox"
+					aria-label="Search emojis"
 					onKeyDown={(e) => {
 						if (e.key === "Enter") {
 							const emojiSlug = active()
 							if (emojiSlug === null) return
 
-							const emoji = filteredEmojis().find((e) => e.slug === emojiSlug)
-							handleSelect(emoji!)
+							const emoji = searchResults().find((e) => e.slug === emojiSlug)
+							if (emoji) handleSelect(emoji)
 						} else if (e.key === "Escape") {
 							setSearch("")
 						} else {
 							onKeyDown(e)
 						}
 					}}
+					onFocus={() => setActive(searchResults()[0]?.slug)}
+					onBlur={() => setActive(null)}
 					autofocus
 					class="flex-grow"
 				/>
 				<SkinToneSelector value={skinTone()} onChange={setSkinTone} />
 			</div>
 
-			{/* Category Tabs */}
-			<div class="flex flex-nowrap items-center gap-1 overflow-x-auto border-b p-2">
-				<For each={categories()}>
-					{(slug) => (
-						<button
-							type="button"
-							title={categoryDetails()[slug]?.name}
-							class="flex-shrink-0 rounded-md p-1.5 text-xl leading-none hover:bg-accent data-[active=true]:bg-muted"
-							data-active={activeCategory() === slug}
-							onClick={() => {
-								setSearch("")
-								setActiveCategory(slug)
-							}}
-						>
-							{categoryDetails()[slug]?.icon}
-						</button>
-					)}
-				</For>
-			</div>
-
-			{/* Emoji Grid */}
-			<div class="h-60 overflow-y-auto p-2">
+			{/* Emoji Display Area */}
+			<div class="relative h-72 overflow-y-auto p-2">
 				<Show
 					when={!allEmojisData.loading}
 					fallback={<p class="py-4 text-center text-muted-foreground text-sm">Loading Emojis...</p>}
 				>
-					<Show
-						when={filteredEmojis().length > 0}
-						fallback={
-							<p class="py-4 text-center text-muted-foreground text-sm">No emojis found</p>
-						}
-					>
-						<div class="grid grid-cols-8 gap-1">
-							<For each={filteredEmojis()}>
-								{(item) => (
-									// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
-									<div
-										role="option"
-										tabindex="0"
-										aria-selected={active() === item.slug}
-										onMouseMove={() => setActive(item.slug)}
-										class="rounded p-1 text-2xl leading-none hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-										classList={{
-											"bg-accent": active() === item.slug,
-										}}
-										onClick={() => handleSelect(item)}
-									>
-										{getEmojiWithSkinTone(
-											allEmojisData()!,
-											item,
-											getSkinToneComponent(componentsData()!, skinTone()),
+					<Switch>
+						{/* Search Results View */}
+						<Match when={search().length > 1}>
+							<Show
+								when={searchResults().length > 0}
+								fallback={
+									<p class="py-4 text-center text-muted-foreground text-sm">
+										No emojis found
+									</p>
+								}
+							>
+								<div class="grid grid-cols-8 gap-1">
+									<For each={searchResults()}>
+										{(item) => (
+											// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+											<div
+												role="option"
+												tabindex="0"
+												aria-selected={active() === item.slug}
+												onMouseMove={() => setActive(item.slug)}
+												class="rounded p-1 text-2xl leading-none hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+												classList={{
+													"bg-accent": active() === item.slug,
+												}}
+												onClick={() => handleSelect(item)}
+											>
+												{getEmojiWithSkinTone(
+													allEmojisData()!,
+													item,
+													getSkinToneComponent(componentsData()!, skinTone()),
+												)}
+											</div>
 										)}
-									</div>
+									</For>
+								</div>
+							</Show>
+						</Match>
+
+						{/* Grouped Browse View */}
+						<Match when={search().length <= 1}>
+							<For each={displayGroups()}>
+								{(group) => (
+									<Show when={group.emojis.length > 0}>
+										<div class="sticky top-0 z-10 flex items-center gap-2 rounded-md bg-background px-1 py-1.5 font-medium text-muted-foreground text-sm">
+											<span class="text-base">
+												{group.slug === RECENTS_SLUG ? "🕘" : group.emojis[0]?.emoji}
+											</span>
+											<span>{group.name}</span>
+										</div>
+										<div class="grid grid-cols-8 gap-1 py-2">
+											<For each={group.emojis}>
+												{(item) => (
+													// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
+													<div
+														role="option"
+														tabindex="0"
+														aria-selected={active() === item.slug}
+														onMouseMove={() => setActive(item.slug)}
+														class="rounded p-1 text-2xl leading-none hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+														classList={{
+															"bg-accent": active() === item.slug,
+														}}
+														onClick={() => handleSelect(item)}
+													>
+														{getEmojiWithSkinTone(
+															allEmojisData()!,
+															item,
+															getSkinToneComponent(
+																componentsData()!,
+																skinTone(),
+															),
+														)}
+													</div>
+												)}
+											</For>
+										</div>
+									</Show>
 								)}
 							</For>
-						</div>
-					</Show>
+						</Match>
+					</Switch>
 				</Show>
 			</div>
 		</div>
