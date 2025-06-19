@@ -13,6 +13,7 @@ import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/solid-query"
 import { createMutation, insertAtTop } from "~/lib/convex"
 import { convexQuery } from "~/lib/convex-query"
+import { useHotkey, useLayer } from "~/lib/hotkey-manager"
 import { useChat } from "../chat-state/chat-store"
 import { setElementAnchorAndFocus } from "../markdown-input/utils"
 
@@ -324,6 +325,18 @@ export function FloatingBar() {
 		clearAttachments,
 	} = useFileAttachment()
 
+	useLayer("chat-input", 200)
+
+	useHotkey("chat-input", {
+		key: "Enter",
+		shift: false,
+		description: "Submit message",
+		preventDefault: true,
+		handler: () => {
+			queueMicrotask(() => handleSubmit(state.inputText))
+		},
+	})
+
 	const [editorRef, setEditorRef] = createSignal<HTMLDivElement>()
 
 	createGlobalEditorFocus({ editorRef })
@@ -403,12 +416,6 @@ export function FloatingBar() {
 					value={() => state.inputText}
 					onValueChange={(value) => {
 						setState("inputText", value)
-					}}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" && !e.shiftKey) {
-							e.preventDefault()
-							queueMicrotask(() => handleSubmit(state.inputText))
-						}
 					}}
 				/>
 

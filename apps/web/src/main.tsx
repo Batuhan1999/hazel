@@ -25,6 +25,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 // import { createEffect, onCleanup } from "solid-js"
 
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools"
+import { HotkeyProvider } from "./lib/hotkey-manager"
 
 applyInitialTheme()
 
@@ -122,13 +123,15 @@ function App() {
 			<ThemeProvider>
 				<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
 					<Suspense fallback={<div>Loading...</div>}>
-						<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
-							<Toaster />
-							<InnerProviders />
-							<Show when={import.meta.env.DEV}>
-								<FpsCounter />
-							</Show>
-						</ConvexProviderWithClerk>
+						<HotkeyProvider>
+							<ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+								<Toaster />
+								<InnerProviders />
+								<Show when={import.meta.env.DEV}>
+									<FpsCounter />
+								</Show>
+							</ConvexProviderWithClerk>
+						</HotkeyProvider>
 					</Suspense>
 				</ClerkProvider>
 			</ThemeProvider>
