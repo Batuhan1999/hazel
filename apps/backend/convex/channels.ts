@@ -1,56 +1,68 @@
-import { v } from "convex/values"
-import { asyncMap } from "convex-helpers"
-import type { Id } from "./_generated/dataModel"
-import { userMutation, userQuery } from "./middleware/withUser"
+import type { Id as IdType } from "@hazel/backend"
+import { Id } from "confect-plus/server"
+import { Effect, Option, Schema } from "effect"
+import { ConfectQueryCtx, ConfectMutationCtx } from "./confect"
+import { userMutation, userQuery } from "./middleware/withUserEffect"
 
 export const getChannels = userQuery({
-	args: {
-		serverId: v.id("servers"),
-		favoriteFilter: v.optional(v.object({ favorite: v.boolean() })),
-	},
-	handler: async (ctx, args) => {
-		const channels = await ctx.db
+	args: Schema.Struct({
+		favoriteFilter: Schema.optional(Schema.Struct({ favorite: Schema.Boolean })),
+	}),
+	returns: Schema.Struct({
+		dmChannels: Schema.Array(Schema.Any),
+		serverChannels: Schema.Array(Schema.Any),
+	}),
+	handler: Effect.fn(function* ({ favoriteFilter, userData, serverId }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const channels = yield* ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", serverId))
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
-		const channelsWithMembers = await asyncMap(channels, async (channel) => {
-			const channelMembers = await ctx.db
-				.query("channelMembers")
-				.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channel._id))
-				.collect()
+		const channelsWithMembers = yield* Effect.forEach(
+			channels,
+			Effect.fn(function* (channel) {
+				const channelMembers = yield* ctx.db
+					.query("channelMembers")
+					.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channel._id))
+					.collect()
 
-			const currentUser = channelMembers.find((member) => member.userId === ctx.user.id)
+				const currentUser = channelMembers.find((member) => member.userId === userData.user._id)
 
-			if (!currentUser) return null
+				if (!currentUser) return null
 
-			const members = await asyncMap(channelMembers, async (member) => {
-				const user = await ctx.db.get(member.userId)
+				const membersWithUsers = yield* Effect.forEach(
+					channelMembers,
+					Effect.fn(function* (member) {
+						const userOption = yield* ctx.db.get(member.userId)
 
-				if (!user) return null
+						if (Option.isNone(userOption)) return null
+
+						return {
+							...member,
+							user: userOption.value,
+						}
+					}),
+				)
 
 				return {
-					...member,
-					user,
+					...channel,
+					members: membersWithUsers.filter((member) => member !== null),
+					isMuted: currentUser?.isMuted || false,
+					isHidden: currentUser?.isHidden || false,
+					isFavorite: currentUser?.isFavorite || false,
+					currentUser,
 				}
-			})
-
-			return {
-				...channel,
-				members: members.filter((member) => member !== null),
-				isMuted: currentUser?.isMuted || false,
-				isHidden: currentUser?.isHidden || false,
-				isFavorite: currentUser?.isFavorite || false,
-				currentUser,
-			}
-		})
+			}),
+		)
 
 		const filteredChannels = channelsWithMembers
 			.filter((channel) => channel !== null)
 			.filter((channel) =>
-				args.favoriteFilter
-					? args.favoriteFilter.favorite
+				favoriteFilter
+					? favoriteFilter.favorite
 						? channel.currentUser?.isFavorite
 						: !channel.currentUser?.isFavorite
 					: true,
@@ -67,120 +79,139 @@ export const getChannels = userQuery({
 			dmChannels,
 			serverChannels,
 		}
-	},
+	}),
 })
 
 export const getChannel = userQuery({
-	args: {
-		channelId: v.id("channels"),
-		serverId: v.id("servers"),
-	},
-	handler: async (ctx, args) => {
-		const channel = await ctx.db.get(args.channelId)
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Any,
+	handler: Effect.fn(function* ({ channelId, userData, serverId }) {
+		const ctx = yield* ConfectQueryCtx
 
-		if (!channel) throw new Error("Channel not found")
+		const channelOption = yield* ctx.db.get(channelId)
 
-		const channelMembers = await ctx.db
-			.query("channelMembers")
-			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", args.channelId))
-			.collect()
-
-		const currentUser = channelMembers.find((member) => member.userId === ctx.user.id)
-
-		if (!currentUser) {
-			throw new Error("You are not a member of this channel")
+		if (Option.isNone(channelOption)) {
+			return yield* Effect.fail(new Error("Channel not found"))
 		}
 
-		const members = await asyncMap(channelMembers, async (member) => {
-			const user = await ctx.db.get(member.userId)
+		const channel = channelOption.value
 
-			if (!user) return null
+		const channelMembers = yield* ctx.db
+			.query("channelMembers")
+			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channelId))
+			.collect()
 
-			return {
-				...member,
-				user,
-			}
-		})
+		const currentUser = channelMembers.find((member) => member.userId === userData.user._id)
+
+		if (!currentUser) {
+			return yield* Effect.fail(new Error("You are not a member of this channel"))
+		}
+
+		const membersWithUsers = yield* Effect.forEach(
+			channelMembers,
+			Effect.fn(function* (member) {
+				const userOption = yield* ctx.db.get(member.userId)
+
+				if (Option.isNone(userOption)) return null
+
+				return {
+					...member,
+					user: userOption.value,
+				}
+			}),
+		)
 
 		const channelWithMembers = {
 			...channel,
-			members: members.filter((member) => member !== null),
+			members: membersWithUsers.filter((member) => member !== null),
 			isMuted: currentUser?.isMuted || false,
 			isHidden: currentUser?.isHidden || false,
 			currentUser,
 		}
 
 		return channelWithMembers
-	},
+	}),
 })
 
 export const getPublicChannels = userQuery({
-	args: {
-		serverId: v.id("servers"),
-	},
-	handler: async (ctx, args) => {
-		const publicChannels = await ctx.db
+	args: Schema.Struct({}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ serverId }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const publicChannels = yield* ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", serverId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
 		return publicChannels
-	},
+	}),
 })
 
 export const getUnjoinedPublicChannels = userQuery({
-	args: {
-		serverId: v.id("servers"),
-	},
-	handler: async (ctx, args) => {
-		const publicChannels = await ctx.db
+	args: Schema.Struct({}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ serverId, userData }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const publicChannels = yield* ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", serverId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
-		const channelsWithMembers = await asyncMap(publicChannels, async (channel) => {
-			const channelMembers = await ctx.db
-				.query("channelMembers")
-				.withIndex("by_channelIdAndUserId", (q) =>
-					q.eq("channelId", channel._id).eq("userId", ctx.user.id),
-				)
-				.first()
+		const channelsWithMembers = yield* Effect.forEach(
+			publicChannels,
+			Effect.fn(function* (channel) {
+				const channelMemberOption = yield* ctx.db
+					.query("channelMembers")
+					.withIndex("by_channelIdAndUserId", (q) =>
+						q.eq("channelId", channel._id).eq("userId", userData.user._id),
+					)
+					.first()
 
-			if (!channelMembers) return channel
+				if (Option.isNone(channelMemberOption)) return channel
 
-			return null
-		})
+				return null
+			}),
+		)
 
 		return channelsWithMembers.filter((channel) => channel !== null)
-	},
+	}),
 })
 
 export const createChannel = userMutation({
-	args: {
-		serverId: v.id("servers"),
+	args: Schema.Struct({
+		name: Schema.String,
+		type: Schema.Union(
+			Schema.Literal("public"),
+			Schema.Literal("private"),
+			Schema.Literal("thread"),
+			Schema.Literal("direct"),
+		),
+		userIds: Schema.optional(Schema.Array(Id.Id("users"))),
+		parentChannelId: Schema.optional(Id.Id("channels")),
+		threadMessageId: Schema.optional(Id.Id("messages")),
+	}),
+	returns: Id.Id("channels"),
+	handler: Effect.fn(function* ({ name, type, userIds, parentChannelId, threadMessageId, userData, serverId }) {
+		const ctx = yield* ConfectMutationCtx
 
-		name: v.string(),
-		type: v.union(v.literal("public"), v.literal("private"), v.literal("thread"), v.literal("direct")),
-		userIds: v.optional(v.array(v.id("users"))),
-		parentChannelId: v.optional(v.id("channels")),
-
-		threadMessageId: v.optional(v.id("messages")),
-	},
-	handler: async (ctx, args) => {
-		const channelId = await ctx.db.insert("channels", {
-			name: args.name,
-			serverId: args.serverId,
-			type: args.type,
-			parentChannelId: args.parentChannelId,
+		const channelId = yield* ctx.db.insert("channels", {
+			name,
+			serverId,
+			type,
+			parentChannelId,
 			updatedAt: Date.now(),
 			pinnedMessages: [],
 		})
 
-		await ctx.db.insert("channelMembers", {
+		yield* ctx.db.insert("channelMembers", {
 			channelId,
-			userId: ctx.user.id,
+			userId: userData.user._id,
 			joinedAt: Date.now(),
 			isHidden: false,
 			isMuted: false,
@@ -188,58 +219,65 @@ export const createChannel = userMutation({
 			notificationCount: 0,
 		})
 
-		if (args.userIds) {
+		if (userIds) {
 			// TODO: Validate that user can add userIds to channel?
-			await asyncMap(args.userIds, async (userId) => {
-				await ctx.db.insert("channelMembers", {
-					channelId,
-					userId: userId,
-					joinedAt: Date.now(),
-					isHidden: false,
-					isMuted: false,
-					isFavorite: false,
-					notificationCount: 0,
-				})
-			})
+			yield* Effect.forEach(
+				userIds,
+				Effect.fn(function* (userId) {
+					yield* ctx.db.insert("channelMembers", {
+						channelId,
+						userId,
+						joinedAt: Date.now(),
+						isHidden: false,
+						isMuted: false,
+						isFavorite: false,
+						notificationCount: 0,
+					})
+				}),
+			)
 		}
 
-		if (args.type === "thread") {
-			if (!args.threadMessageId) throw new Error("Thread message id is required")
+		if (type === "thread") {
+			if (!threadMessageId) {
+				return yield* Effect.fail(new Error("Thread message id is required"))
+			}
 
-			await ctx.db.patch(args.threadMessageId, {
+			yield* ctx.db.patch(threadMessageId, {
 				threadChannelId: channelId,
 			})
 		}
 
 		return channelId
-	},
+	}),
 })
 
-function createParticipantHash(userIds: Id<"users">[]) {
+function createParticipantHash(userIds: IdType<"users">[]) {
 	return userIds.sort().join(":")
 }
 
 export const creatDmChannel = userMutation({
-	args: {
-		serverId: v.id("servers"),
-		userId: v.id("users"),
-	},
-	handler: async (ctx, args) => {
-		const participantHash = createParticipantHash([args.userId, ctx.user.id])
+	args: Schema.Struct({
+		userId: Id.Id("users"),
+	}),
+	returns: Id.Id("channels"),
+	handler: Effect.fn(function* ({ userId, userData, serverId }) {
+		const ctx = yield* ConfectMutationCtx
 
-		const existingChannel = await ctx.db
+		const participantHash = createParticipantHash([userId, userData.user._id])
+
+		const existingChannelOption = yield* ctx.db
 			.query("channels")
 			.withIndex("by_serverId_and_participantHash", (q) =>
-				q.eq("serverId", args.serverId).eq("participantHash", participantHash),
+				q.eq("serverId", serverId).eq("participantHash", participantHash),
 			)
 			.first()
 
-		if (existingChannel) {
-			return existingChannel._id
+		if (Option.isSome(existingChannelOption)) {
+			return existingChannelOption.value._id
 		}
 
-		const channelId = await ctx.db.insert("channels", {
-			serverId: args.serverId,
+		const channelId = yield* ctx.db.insert("channels", {
+			serverId,
 			name: "Direct Message",
 			type: "single",
 			participantHash,
@@ -247,10 +285,10 @@ export const creatDmChannel = userMutation({
 			pinnedMessages: [],
 		})
 
-		await Promise.all([
+		yield* Effect.all([
 			ctx.db.insert("channelMembers", {
 				channelId,
-				userId: ctx.user.id,
+				userId: userData.user._id,
 				joinedAt: Date.now(),
 				isHidden: false,
 				isMuted: false,
@@ -259,7 +297,7 @@ export const creatDmChannel = userMutation({
 			}),
 			ctx.db.insert("channelMembers", {
 				channelId,
-				userId: args.userId,
+				userId,
 				joinedAt: Date.now(),
 				isHidden: false,
 				isMuted: false,
@@ -269,71 +307,94 @@ export const creatDmChannel = userMutation({
 		])
 
 		return channelId
-	},
+	}),
 })
 
 export const leaveChannel = userMutation({
-	args: {
-		serverId: v.id("servers"),
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		const channelMember = await ctx.db
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ channelId, userData }) {
+		const ctx = yield* ConfectMutationCtx
+
+		const channelMemberOption = yield* ctx.db
 			.query("channelMembers")
 			.withIndex("by_channelIdAndUserId", (q) =>
-				q.eq("channelId", args.channelId).eq("userId", ctx.user.id),
+				q.eq("channelId", channelId).eq("userId", userData.user._id),
 			)
 			.first()
 
-		if (!channelMember) throw new Error("You are not a member of this channel")
+		if (Option.isNone(channelMemberOption)) {
+			return yield* Effect.fail(new Error("You are not a member of this channel"))
+		}
 
-		await ctx.db.delete(channelMember._id)
-	},
+		yield* ctx.db.delete(channelMemberOption.value._id)
+
+		return null
+	}),
 })
 
 export const joinChannel = userMutation({
-	args: {
-		serverId: v.id("servers"),
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		const channelMember = await ctx.db
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ channelId, userData }) {
+		const ctx = yield* ConfectMutationCtx
+
+		const channelMemberOption = yield* ctx.db
 			.query("channelMembers")
 			.withIndex("by_channelIdAndUserId", (q) =>
-				q.eq("channelId", args.channelId).eq("userId", ctx.user.id),
+				q.eq("channelId", channelId).eq("userId", userData.user._id),
 			)
 			.first()
 
-		if (channelMember) throw new Error("You are already a member of this channel")
+		if (Option.isSome(channelMemberOption)) {
+			return yield* Effect.fail(new Error("You are already a member of this channel"))
+		}
 
-		await ctx.db.insert("channelMembers", {
-			userId: ctx.user.id,
-			channelId: args.channelId,
+		yield* ctx.db.insert("channelMembers", {
+			userId: userData.user._id,
+			channelId,
 			joinedAt: Date.now(),
 			isHidden: false,
 			isMuted: false,
 			isFavorite: false,
 			notificationCount: 0,
 		})
-	},
+
+		return null
+	}),
 })
 
 export const updateChannelPreferences = userMutation({
-	args: {
-		serverId: v.id("servers"),
-		channelId: v.id("channels"),
-		isMuted: v.optional(v.boolean()),
-		isHidden: v.optional(v.boolean()),
-		isFavorite: v.optional(v.boolean()),
-	},
-	handler: async (ctx, { serverId, channelId, ...args }) => {
-		const channelMember = await ctx.db
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+		isMuted: Schema.optional(Schema.Boolean),
+		isHidden: Schema.optional(Schema.Boolean),
+		isFavorite: Schema.optional(Schema.Boolean),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ channelId, isMuted, isHidden, isFavorite, userData }) {
+		const ctx = yield* ConfectMutationCtx
+
+		const channelMemberOption = yield* ctx.db
 			.query("channelMembers")
-			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channelId).eq("userId", ctx.user.id))
+			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channelId).eq("userId", userData.user._id))
 			.first()
 
-		if (!channelMember) throw new Error("You are not a member of this channel")
+		if (Option.isNone(channelMemberOption)) {
+			return yield* Effect.fail(new Error("You are not a member of this channel"))
+		}
 
-		await ctx.db.patch(channelMember._id, args)
-	},
+		const updateData: Record<string, any> = {}
+		if (isMuted !== undefined) updateData.isMuted = isMuted
+		if (isHidden !== undefined) updateData.isHidden = isHidden
+		if (isFavorite !== undefined) updateData.isFavorite = isFavorite
+
+		yield* ctx.db.patch(channelMemberOption.value._id, updateData)
+
+		return null
+	}),
 })
