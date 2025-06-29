@@ -102,7 +102,7 @@ export const confectSchema = defineSchema({
 			targetedResourceId: Schema.optional(Schema.Union(Id.Id("channels"), Id.Id("servers"))),
 			resourceId: Schema.optional(Schema.Union(Id.Id("messages"))),
 		}),
-	).index("by_accountId", ["accountId"]),
+	).index("by_accountId_targetedResourceId", ["accountId", "targetedResourceId"]),
 	typingIndicators: defineTable(
 		Schema.Struct({
 			channelId: Id.Id("channels"),

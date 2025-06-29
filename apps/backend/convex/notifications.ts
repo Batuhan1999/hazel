@@ -1,4 +1,6 @@
 import { v } from "convex/values"
+import { asyncMap } from "convex-helpers"
+import { Account } from "./lib/activeRecords/account"
 import { userMutation } from "./middleware/withUser"
 
 export const setNotifcationAsRead = userMutation({
@@ -13,6 +15,15 @@ export const setNotifcationAsRead = userMutation({
 			.first()
 
 		if (!channelMember) throw new Error("You are not a member of this channel")
+
+		const notifications = await ctx.db
+			.query("notifications")
+			.withIndex("by_accountId_targetedResourceId", (q) =>
+				q.eq("accountId", ctx.user.accountId).eq("targetedResourceId", channelId),
+			)
+			.collect()
+
+		await asyncMap(notifications, async (notification) => ctx.db.delete(notification._id))
 
 		await ctx.db.patch(channelMember._id, { notificationCount: 0, lastSeenMessageId: undefined })
 	},
