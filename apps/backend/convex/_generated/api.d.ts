@@ -25,6 +25,7 @@ import type * as lib_utils from "../lib/utils.js";
 import type * as me from "../me.js";
 import type * as messages from "../messages.js";
 import type * as middleware_withAccount from "../middleware/withAccount.js";
+import type * as middleware_withAccountEffect from "../middleware/withAccountEffect.js";
 import type * as middleware_withUser from "../middleware/withUser.js";
 import type * as middleware_withUserEffect from "../middleware/withUserEffect.js";
 import type * as notifications from "../notifications.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   me: typeof me;
   messages: typeof messages;
   "middleware/withAccount": typeof middleware_withAccount;
+  "middleware/withAccountEffect": typeof middleware_withAccountEffect;
   "middleware/withUser": typeof middleware_withUser;
   "middleware/withUserEffect": typeof middleware_withUserEffect;
   notifications: typeof notifications;

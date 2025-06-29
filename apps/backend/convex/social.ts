@@ -1,25 +1,33 @@
-import { userQuery } from "./middleware/withUser"
+import { Effect, Schema } from "effect"
+import { ConfectQueryCtx } from "./confect"
+import { userQuery } from "./middleware/withUserEffect"
 
 export const getFriends = userQuery({
-	args: {},
-	handler: async (ctx, args) => {
-		const friends = await ctx.db
+	args: Schema.Struct({}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ serverId, userData }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const friends = yield* ctx.db
 			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_server_id", (q) => q.eq("serverId", serverId))
 			.collect()
 
-		return friends.filter((f) => f._id !== ctx.user.id)
-	},
+		return friends.filter((f) => f._id !== userData.user._id)
+	}),
 })
 
 export const getMembers = userQuery({
-	args: {},
-	handler: async (ctx, args) => {
-		const friends = await ctx.db
+	args: Schema.Struct({}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ serverId }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const friends = yield* ctx.db
 			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_server_id", (q) => q.eq("serverId", serverId))
 			.collect()
 
 		return friends
-	},
+	}),
 })

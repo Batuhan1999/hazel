@@ -1,8 +1,8 @@
-import { v } from "convex/values"
+import { Id } from "confect-plus/server"
+import { Effect, Option, Schema } from "effect"
 import { internalMutation, query } from "./_generated/server"
-import { accountMutation, accountQuery } from "./middleware/withAccount"
-
-import { asyncMap } from "convex-helpers"
+import { ConfectMutationCtx, ConfectQueryCtx } from "./confect"
+import { accountMutation, accountQuery } from "./middleware/withAccountEffect"
 
 // The duration in milliseconds to consider a user as "still typing".
 // After this timeout, they will be considered to have stopped typing.
@@ -17,25 +17,30 @@ const TYPING_TIMEOUT = 5000 // 5 seconds
  * This mutation should be called from the client whenever the user types.
  */
 export const update = accountMutation({
-	args: {
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, { channelId }) => {
-		const existing = await ctx.db
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ channelId, account }) {
+		const ctx = yield* ConfectMutationCtx
+
+		const existingOption = yield* ctx.db
 			.query("typingIndicators")
-			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", ctx.account.id))
+			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", account._id))
 			.unique()
 
-		if (existing) {
-			await ctx.db.patch(existing._id, { lastTyped: Date.now() })
+		if (Option.isSome(existingOption)) {
+			yield* ctx.db.patch(existingOption.value._id, { lastTyped: Date.now() })
 		} else {
-			await ctx.db.insert("typingIndicators", {
+			yield* ctx.db.insert("typingIndicators", {
 				channelId,
-				accountId: ctx.account.id,
+				accountId: account._id,
 				lastTyped: Date.now(),
 			})
 		}
-	},
+
+		return null
+	}),
 })
 
 /**
@@ -44,48 +49,59 @@ export const update = accountMutation({
  * than the `TYPING_TIMEOUT`.
  */
 export const list = accountQuery({
-	args: {
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, { channelId }) => {
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ channelId, account }) {
+		const ctx = yield* ConfectQueryCtx
+
 		const threshold = Date.now() - TYPING_TIMEOUT
 
-		const typingIndicators = await ctx.db
+		const typingIndicators = yield* ctx.db
 			.query("typingIndicators")
 			.withIndex("by_channel_timestamp", (q) => q.eq("channelId", channelId).gt("lastTyped", threshold))
 			.collect()
 
-		const typingIndicatorsWithUsers = await asyncMap(typingIndicators, async (indicator) => {
-			if (indicator.accountId === ctx.account.id) return null
+		const typingIndicatorsWithUsers = yield* Effect.forEach(
+			typingIndicators,
+			Effect.fn(function* (indicator) {
+				if (indicator.accountId === account._id) return null
 
-			const account = await ctx.db.get(indicator.accountId)
+				const accountOption = yield* ctx.db.get(indicator.accountId)
 
-			if (!account) return null
+				if (Option.isNone(accountOption)) return null
 
-			return {
-				...indicator,
-				account,
-			}
-		})
+				return {
+					...indicator,
+					account: accountOption.value,
+				}
+			}),
+		)
 
 		return typingIndicatorsWithUsers.filter((indicator) => indicator !== null)
-	},
+	}),
 })
 
 export const stop = accountMutation({
-	args: {
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, { channelId }) => {
-		const existing = await ctx.db
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ channelId, account }) {
+		const ctx = yield* ConfectMutationCtx
+
+		const existingOption = yield* ctx.db
 			.query("typingIndicators")
-			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", ctx.account.id))
+			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", account._id))
 			.unique()
 
-		if (existing) {
-			await ctx.db.delete(existing._id)
+		if (Option.isSome(existingOption)) {
+			yield* ctx.db.delete(existingOption.value._id)
 		}
-	},
+
+		return null
+	}),
 })
 
 const STALE_TIMEOUT = 60 * 60 * 1000

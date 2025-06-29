@@ -1,73 +1,106 @@
-import { asyncMap } from "convex-helpers"
-import { v } from "convex/values"
-import { userMutation, userQuery } from "./middleware/withUser"
+import { Id } from "confect-plus/server"
+import { Effect, Option, Schema } from "effect"
+import { ConfectQueryCtx, ConfectMutationCtx } from "./confect"
+import { userMutation, userQuery } from "./middleware/withUserEffect"
 
 export const getPinnedMessages = userQuery({
-	args: {
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		await ctx.user.validateCanViewChannel({ ctx, channelId: args.channelId })
+	args: Schema.Struct({
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Array(Schema.Any),
+	handler: Effect.fn(function* ({ channelId, userData, userService }) {
+		const ctx = yield* ConfectQueryCtx
 
-		const channel = await ctx.db.get(args.channelId)
-		if (!channel) throw new Error("Channel not found")
+		yield* userService.validateCanViewChannel(ctx, userData, channelId)
 
-		const computedPinnedMessages = await asyncMap(channel.pinnedMessages, async (pinnedMessage) => {
-			const message = await ctx.db.get(pinnedMessage.messageId)
-			if (!message) return null
+		const channelOption = yield* ctx.db.get(channelId)
+		if (Option.isNone(channelOption)) {
+			return yield* Effect.fail(new Error("Channel not found"))
+		}
 
-			const messageAuthor = await ctx.db.get(message.authorId)
-			if (!messageAuthor) return null
+		const channel = channelOption.value
 
-			return {
-				...pinnedMessage,
-				channelId: args.channelId,
-				messageAuthor,
-				message,
-			}
-		})
+		const computedPinnedMessages = yield* Effect.forEach(
+			channel.pinnedMessages,
+			Effect.fn(function* (pinnedMessage) {
+				const messageOption = yield* ctx.db.get(pinnedMessage.messageId)
+				if (Option.isNone(messageOption)) return null
+
+				const message = messageOption.value
+
+				const messageAuthorOption = yield* ctx.db.get(message.authorId)
+				if (Option.isNone(messageAuthorOption)) return null
+
+				return {
+					...pinnedMessage,
+					channelId,
+					messageAuthor: messageAuthorOption.value,
+					message,
+				}
+			}),
+		)
 
 		return computedPinnedMessages.filter((pinnedMessage) => pinnedMessage !== null)
-	},
+	}),
 })
 
 export const createPinnedMessage = userMutation({
-	args: {
-		messageId: v.id("messages"),
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: args.channelId })
+	args: Schema.Struct({
+		messageId: Id.Id("messages"),
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ messageId, channelId, userData, userService }) {
+		const ctx = yield* ConfectMutationCtx
 
-		const channel = await ctx.db.get(args.channelId)
-		if (!channel) throw new Error("Channel not found")
+		yield* userService.validateIsMemberOfChannel(ctx, userData, channelId)
+
+		const channelOption = yield* ctx.db.get(channelId)
+		if (Option.isNone(channelOption)) {
+			return yield* Effect.fail(new Error("Channel not found"))
+		}
+
+		const channel = channelOption.value
 
 		const pinnedMessage = channel.pinnedMessages.find(
-			(pinnedMessage) => pinnedMessage.messageId === args.messageId,
+			(pinnedMessage) => pinnedMessage.messageId === messageId,
 		)
-		if (pinnedMessage) throw new Error("Message already pinned")
+		if (pinnedMessage) {
+			return yield* Effect.fail(new Error("Message already pinned"))
+		}
 
-		await ctx.db.patch(args.channelId, {
-			pinnedMessages: [...channel.pinnedMessages, { messageId: args.messageId, pinnedAt: Date.now() }],
+		yield* ctx.db.patch(channelId, {
+			pinnedMessages: [...channel.pinnedMessages, { messageId, pinnedAt: Date.now() }],
 		})
-	},
+
+		return null
+	}),
 })
 
 export const deletePinnedMessage = userMutation({
-	args: {
-		messageId: v.id("messages"),
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: args.channelId })
+	args: Schema.Struct({
+		messageId: Id.Id("messages"),
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ messageId, channelId, userData, userService }) {
+		const ctx = yield* ConfectMutationCtx
 
-		const channel = await ctx.db.get(args.channelId)
-		if (!channel) throw new Error("Channel not found")
+		yield* userService.validateIsMemberOfChannel(ctx, userData, channelId)
 
-		return await ctx.db.patch(args.channelId, {
+		const channelOption = yield* ctx.db.get(channelId)
+		if (Option.isNone(channelOption)) {
+			return yield* Effect.fail(new Error("Channel not found"))
+		}
+
+		const channel = channelOption.value
+
+		yield* ctx.db.patch(channelId, {
 			pinnedMessages: channel.pinnedMessages.filter(
-				(pinnedMessage) => pinnedMessage.messageId !== args.messageId,
+				(pinnedMessage) => pinnedMessage.messageId !== messageId,
 			),
 		})
-	},
+
+		return null
+	}),
 })

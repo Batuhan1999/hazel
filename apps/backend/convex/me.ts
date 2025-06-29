@@ -1,35 +1,55 @@
-import { v } from "convex/values"
-import { accountQuery } from "./middleware/withAccount"
-import { userQuery } from "./middleware/withUser"
+import { Id } from "confect-plus/server"
+import { Effect, Option, Schema } from "effect"
+import { ConfectQueryCtx } from "./confect"
+import { accountQuery } from "./middleware/withAccountEffect"
 
 export const get = accountQuery({
-	args: {},
-	handler: async (ctx) => {
-		return ctx.account.doc
-	},
+	args: Schema.Struct({}),
+	returns: Schema.Any,
+	handler: Effect.fn(function* ({ account }) {
+		return account
+	}),
 })
 
 export const getUser = accountQuery({
-	args: {
-		serverId: v.id("servers"),
-	},
-	handler: async (ctx, args) => {
-		return ctx.db
+	args: Schema.Struct({
+		serverId: Id.Id("servers"),
+	}),
+	returns: Schema.Union(Schema.Any, Schema.Null),
+	handler: Effect.fn(function* ({ serverId, account }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const userOption = yield* ctx.db
 			.query("users")
 			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.id).eq("serverId", args.serverId),
+				q.eq("accountId", account._id).eq("serverId", serverId),
 			)
 			.first()
-	},
+
+		if (Option.isNone(userOption)) {
+			return null
+		}
+
+		return userOption.value
+	}),
 })
 
 export const getLatestNotifcation = accountQuery({
-	args: {},
-	handler: async (ctx, _args) => {
-		return ctx.db
+	args: Schema.Struct({}),
+	returns: Schema.Union(Schema.Any, Schema.Null),
+	handler: Effect.fn(function* ({ account }) {
+		const ctx = yield* ConfectQueryCtx
+
+		const notificationOption = yield* ctx.db
 			.query("notifications")
-			.withIndex("by_accountId_targetedResourceId", (q) => q.eq("accountId", ctx.account.id))
+			.withIndex("by_accountId_targetedResourceId", (q) => q.eq("accountId", account._id))
 			.order("desc")
 			.first()
-	},
+
+		if (Option.isNone(notificationOption)) {
+			return null
+		}
+
+		return notificationOption.value
+	}),
 })
