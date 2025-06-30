@@ -21,7 +21,6 @@ const { queryGeneric, buildQuery, mutationGeneric, buildMutation } = makeGeneric
 type UserQueryArgs<UserConfectArgs> = UserConfectArgs & {
 	readonly userData: UserData
 	readonly identity: UserIdentity
-	readonly userService: UserService
 	readonly serverId: IdType<"servers">
 }
 
@@ -67,7 +66,6 @@ export const userQuery = <
 				const combinedArgs: UserQueryArgs<UserConfectArgs> = {
 					...mergedArgsValue,
 					userData,
-					userService,
 					identity: userIdentity.value,
 					serverId: mergedArgsValue.serverId,
 				}
@@ -81,7 +79,6 @@ export const userQuery = <
 // Improved types for userMutation
 type UserMutationArgs<UserConfectArgs> = UserConfectArgs & {
 	readonly userData: UserData
-	readonly userService: UserService
 	readonly identity: UserIdentity
 	readonly serverId: IdType<"servers">
 }
@@ -132,7 +129,6 @@ export const userMutation = <
 				const combinedArgs: UserMutationArgs<UserConfectArgs> = {
 					...mergedArgsValue,
 					userData,
-					userService,
 					identity: userIdentity.value,
 					serverId: mergedArgsValue.serverId,
 				}

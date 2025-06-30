@@ -1,77 +1,36 @@
-import { Id } from "confect-plus/server"
-import { Effect, Option, Schema } from "effect"
-import { ConfectQueryCtx, ConfectMutationCtx } from "./confect"
-import { accountMutation } from "./middleware/withAccountEffect"
-import { userQuery } from "./middleware/withUserEffect"
+import { v } from "convex/values"
+import { accountMutation } from "./middleware/withAccount"
+import { userQuery } from "./middleware/withUser"
 
 export const getUsers = userQuery({
-	args: Schema.Struct({}),
-	returns: Schema.Array(Schema.Any),
-	handler: Effect.fn(function* ({ serverId }) {
-		const ctx = yield* ConfectQueryCtx
-
-		return yield* ctx.db
+	args: {},
+	handler: async (ctx, args) => {
+		return await ctx.db
 			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", serverId))
+			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
 			.collect()
-	}),
+	},
 })
 
 export const getUser = userQuery({
-	args: Schema.Struct({
-		userId: Id.Id("users"),
-	}),
-	returns: Schema.Any,
-	handler: Effect.fn(function* ({ userId, serverId }) {
-		const ctx = yield* ConfectQueryCtx
-
-		const userOption = yield* ctx.db.get(userId)
-
-		if (Option.isNone(userOption)) {
-			return yield* Effect.fail(new Error("User not found"))
-		}
-
-		const user = userOption.value
-
-		if (user.serverId !== serverId) {
-			return yield* Effect.fail(new Error("User not found"))
-		}
-
+	args: {
+		userId: v.id("users"),
+	},
+	handler: async (ctx, args) => {
+		const user = await ctx.db.get(args.userId)
+		if (!user) throw new Error("User not found")
+		if (user.serverId !== args.serverId) throw new Error("User not found")
 		return user
-	}),
+	},
 })
 
 export const createUser = accountMutation({
-	args: Schema.Struct({
-		serverId: Id.Id("servers"),
-		role: Schema.Union(Schema.Literal("member"), Schema.Literal("admin"), Schema.Literal("owner")),
-	}),
-	returns: Id.Id("users"),
-	handler: Effect.fn(function* ({ serverId, role, account }) {
-		const ctx = yield* ConfectMutationCtx
-
+	args: {
+		serverId: v.id("servers"),
+		role: v.union(v.literal("member"), v.literal("admin"), v.literal("owner")),
+	},
+	handler: async (ctx, args) => {
 		// TODO: Add validation here
-		// Check if user already exists for this server
-		const existingUserOption = yield* ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) => q.eq("accountId", account._id))
-			.filter((q) => q.eq(q.field("serverId"), serverId))
-			.unique()
-
-		if (Option.isSome(existingUserOption)) {
-			return yield* Effect.fail(new Error("User already exists"))
-		}
-
-		return yield* ctx.db.insert("users", {
-			accountId: account._id,
-			serverId,
-			displayName: account.displayName,
-			tag: account.displayName,
-			avatarUrl: account.avatarUrl,
-			role,
-			status: "online",
-			joinedAt: Date.now(),
-			lastSeen: Date.now(),
-		})
-	}),
+		return await ctx.account.createUserFromAccount({ ctx, serverId: args.serverId })
+	},
 })

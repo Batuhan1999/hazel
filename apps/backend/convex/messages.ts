@@ -1,273 +1,215 @@
-import { Id } from "confect-plus/server"
-import { Effect, Option, Schema } from "effect"
+import { paginationOptsValidator } from "convex/server"
+import { v } from "convex/values"
+import { asyncMap } from "convex-helpers"
 import { internal } from "./_generated/api"
-import { ConfectMutationCtx, ConfectQueryCtx } from "./confect"
-import { userMutation, userQuery } from "./middleware/withUserEffect"
+import { userMutation, userQuery } from "./middleware/withUser"
 
 export const getMessage = userQuery({
-	args: Schema.Struct({
-		channelId: Id.Id("channels"),
-		id: Id.Id("messages"),
-	}),
-	returns: Schema.Any,
-	handler: Effect.fn(function* ({ channelId, id, userData, userService }) {
-		const ctx = yield* ConfectQueryCtx
+	args: {
+		serverId: v.id("servers"),
+		channelId: v.id("channels"),
+		id: v.id("messages"),
+	},
+	handler: async (ctx, args) => {
+		await ctx.user.validateCanViewChannel({ ctx, channelId: args.channelId })
 
-		yield* userService.validateCanViewChannel(ctx, userData, channelId)
+		const message = await ctx.db.get(args.id)
+		if (!message) throw new Error("Message not found")
 
-		const messageOption = yield* ctx.db.get(id)
-		if (Option.isNone(messageOption)) {
-			return yield* Effect.fail(new Error("Message not found"))
-		}
-
-		const message = messageOption.value
-
-		const messageAuthorOption = yield* ctx.db.get(message.authorId)
-		if (Option.isNone(messageAuthorOption)) {
-			return yield* Effect.fail(new Error("Message author not found"))
-		}
+		const messageAuthor = await ctx.db.get(message.authorId)
+		if (!messageAuthor) throw new Error("Message author not found")
 
 		return {
 			...message,
-			author: messageAuthorOption.value,
+			author: messageAuthor,
 		}
-	}),
+	},
 })
 
 export const getMessages = userQuery({
-	args: Schema.Struct({
-		channelId: Id.Id("channels"),
-		paginationOpts: Schema.Any, // TODO: Create proper schema for pagination
-	}),
-	returns: Schema.Any,
-	handler: Effect.fn(function* ({ channelId, paginationOpts, userData, userService }) {
-		const ctx = yield* ConfectQueryCtx
+	args: {
+		serverId: v.id("servers"),
+		channelId: v.id("channels"),
+		paginationOpts: paginationOptsValidator,
+	},
+	handler: async (ctx, args) => {
+		const channel = await ctx.db.get(args.channelId)
+		if (!channel) throw new Error("Channel not found")
 
-		const channelOption = yield* ctx.db.get(channelId)
-		if (Option.isNone(channelOption)) {
-			return yield* Effect.fail(new Error("Channel not found"))
-		}
+		await ctx.user.validateCanViewChannel({ ctx, channelId: args.channelId })
 
-		yield* userService.validateCanViewChannel(ctx, userData, channelId)
-
-		const messages = yield* ctx.db
+		const messages = await ctx.db
 			.query("messages")
-			.withIndex("by_channelId", (q) => q.eq("channelId", channelId))
+			.withIndex("by_channelId", (q) => q.eq("channelId", args.channelId))
 			.order("desc")
-			.paginate(paginationOpts)
+			.paginate(args.paginationOpts)
 
-		const messagesWithThreadMessages = yield* Effect.forEach(
-			messages.page,
-			Effect.fn(function* (message) {
-				if (message.threadChannelId) {
-					const threadMessages = yield* ctx.db
-						.query("messages")
-						.withIndex("by_channelId", (q) => q.eq("channelId", message.threadChannelId!))
-						.collect()
+		const messagesWithThreadMessages = await asyncMap(messages.page, async (message) => {
+			if (message.threadChannelId) {
+				const threadMessages = await ctx.db
+					.query("messages")
+					.withIndex("by_channelId", (q) => q.eq("channelId", message.threadChannelId!))
+					.collect()
 
-					const threadMessagesWithAuthor = yield* Effect.forEach(
-						threadMessages,
-						Effect.fn(function* (threadMessage) {
-							const messageAuthorOption = yield* ctx.db.get(threadMessage.authorId)
-							if (Option.isNone(messageAuthorOption)) {
-								return yield* Effect.fail(new Error("Message author not found"))
-							}
-							return {
-								...threadMessage,
-								author: messageAuthorOption.value,
-							}
-						}),
-					)
-
+				const threadMessagesWithAuthor = await asyncMap(threadMessages, async (message) => {
+					const messageAuthor = await ctx.db.get(message.authorId)
+					if (!messageAuthor) throw new Error("Message author not found")
 					return {
 						...message,
-						threadMessages: threadMessagesWithAuthor,
+						author: messageAuthor,
 					}
-				}
+				})
 
 				return {
 					...message,
-					threadMessages: [],
+					threadMessages: threadMessagesWithAuthor,
 				}
-			}),
-		)
+			}
 
-		const messagesWithAuthor = yield* Effect.forEach(
-			messagesWithThreadMessages,
-			Effect.fn(function* (message) {
-				const messageAuthorOption = yield* ctx.db.get(message.authorId)
+			return {
+				...message,
+				threadMessages: [],
+			}
+		})
 
-				// TODO: This should not happen when user is deleted we should give all messages to a default user
-				if (Option.isNone(messageAuthorOption)) {
-					return yield* Effect.fail(new Error("Message author not found"))
-				}
+		const messagesWithAuthor = await asyncMap(messagesWithThreadMessages, async (message) => {
+			const messageAuthor = await ctx.db.get(message.authorId)
 
-				return {
-					...message,
-					author: messageAuthorOption.value,
-				}
-			}),
-		)
+			// TODO: This should not happen when user is deleted we should give all messages to a default user
+			if (!messageAuthor) throw new Error("Message author not found")
+
+			return {
+				...message,
+				author: messageAuthor,
+			}
+		})
 
 		return {
 			...messages,
 			page: messagesWithAuthor,
 		}
-	}),
+	},
 })
 
 export const createMessage = userMutation({
-	args: Schema.Struct({
-		content: Schema.String,
-		channelId: Id.Id("channels"),
-		threadChannelId: Schema.optional(Id.Id("channels")),
-		replyToMessageId: Schema.optional(Id.Id("messages")),
-		attachedFiles: Schema.Array(Schema.String),
-	}),
-	returns: Id.Id("messages"),
-	handler: Effect.fn(function* ({
-		content,
-		channelId,
-		threadChannelId,
-		replyToMessageId,
-		attachedFiles,
-		userData,
-		userService,
-	}) {
-		const ctx = yield* ConfectMutationCtx
+	args: {
+		serverId: v.id("servers"),
 
-		if (content.trim() === "") {
-			return yield* Effect.fail(new Error("Message content cannot be empty"))
+		content: v.string(),
+		channelId: v.id("channels"),
+		threadChannelId: v.optional(v.id("channels")),
+		replyToMessageId: v.optional(v.id("messages")),
+		attachedFiles: v.array(v.string()),
+	},
+	handler: async (ctx, args) => {
+		if (args.content.trim() === "") {
+			throw new Error("Message content cannot be empty")
 		}
 
-		yield* userService.validateIsMemberOfChannel(ctx, userData, channelId)
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: args.channelId })
 
-		const messageId = yield* ctx.db.insert("messages", {
-			channelId,
-			content,
-			threadChannelId,
-			authorId: userData.user._id,
-			replyToMessageId,
-			attachedFiles,
+		const messageId = await ctx.db.insert("messages", {
+			channelId: args.channelId,
+			content: args.content,
+			threadChannelId: args.threadChannelId,
+			authorId: ctx.user.id,
+			replyToMessageId: args.replyToMessageId,
+			attachedFiles: args.attachedFiles,
 			updatedAt: Date.now(),
 			reactions: [],
 		})
 
 		// TODO: This should be a database trigger
-		yield* ctx.scheduler.runAfter(0, internal.background.index.sendNotification, {
-			channelId,
-			accountId: userData.account._id,
-			messageId,
-			userId: userData.user._id,
+		await ctx.scheduler.runAfter(0, internal.background.index.sendNotification, {
+			channelId: args.channelId,
+			accountId: ctx.user.doc.accountId,
+			messageId: messageId,
+			userId: ctx.user.id,
 		})
 
 		return messageId
-	}),
+	},
 })
 
 export const updateMessage = userMutation({
-	args: Schema.Struct({
-		id: Id.Id("messages"),
-		content: Schema.String,
-	}),
-	returns: Schema.Null,
-	handler: Effect.fn(function* ({ id, content, userData, userService }) {
-		const ctx = yield* ConfectMutationCtx
+	args: {
+		serverId: v.id("servers"),
 
-		yield* userService.validateOwnsMessage(ctx, userData, id)
+		id: v.id("messages"),
+		content: v.string(),
+	},
+	handler: async (ctx, args) => {
+		await ctx.user.validateOwnsMessage({ ctx, messageId: args.id })
 
-		yield* ctx.db.patch(id, {
-			content,
+		await ctx.db.patch(args.id, {
+			content: args.content,
 		})
-
-		return null
-	}),
+	},
 })
 
 export const deleteMessage = userMutation({
-	args: Schema.Struct({
-		id: Id.Id("messages"),
-	}),
-	returns: Schema.Null,
-	handler: Effect.fn(function* ({ id, userData, userService }) {
-		const ctx = yield* ConfectMutationCtx
+	args: {
+		serverId: v.id("servers"),
 
-		yield* userService.validateOwnsMessage(ctx, userData, id)
+		id: v.id("messages"),
+	},
+	handler: async (ctx, args) => {
+		await ctx.user.validateOwnsMessage({ ctx, messageId: args.id })
 
-		yield* ctx.db.delete(id)
-
-		return null
-	}),
+		await ctx.db.delete(args.id)
+	},
 })
 
 export const createReaction = userMutation({
-	args: Schema.Struct({
-		messageId: Id.Id("messages"),
-		emoji: Schema.String,
-	}),
-	returns: Schema.Null,
-	handler: Effect.fn(function* ({ messageId, emoji, userData, userService }) {
-		const ctx = yield* ConfectMutationCtx
+	args: {
+		serverId: v.id("servers"),
 
-		const messageOption = yield* ctx.db.get(messageId)
-		if (Option.isNone(messageOption)) {
-			return yield* Effect.fail(new Error("Message not found"))
-		}
+		messageId: v.id("messages"),
+		emoji: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.messageId)
+		if (!message || message.deletedAt) throw new Error("Message not found")
 
-		const message = messageOption.value
-
-		if (message.deletedAt) {
-			return yield* Effect.fail(new Error("Message not found"))
-		}
-
-		yield* userService.validateIsMemberOfChannel(ctx, userData, message.channelId)
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: message.channelId })
 
 		if (
 			message.reactions.some(
-				(reaction) => reaction.userId === userData.user._id && reaction.emoji === emoji,
+				(reaction) => reaction.userId === ctx.user.id && reaction.emoji === args.emoji,
 			)
 		) {
-			return yield* Effect.fail(new Error("You have already reacted to this message"))
+			throw new Error("You have already reacted to this message")
 		}
 
-		yield* ctx.db.patch(messageId, {
-			reactions: [...message.reactions, { userId: userData.user._id, emoji }],
+		return await ctx.db.patch(args.messageId, {
+			reactions: [...message.reactions, { userId: ctx.user.id, emoji: args.emoji }],
 		})
-
-		return null
-	}),
+	},
 })
 
 export const deleteReaction = userMutation({
-	args: Schema.Struct({
-		id: Id.Id("messages"),
-		emoji: Schema.String,
-	}),
-	returns: Schema.Null,
-	handler: Effect.fn(function* ({ id, emoji, userData, userService }) {
-		const ctx = yield* ConfectMutationCtx
+	args: {
+		serverId: v.id("servers"),
 
-		const messageOption = yield* ctx.db.get(id)
-		if (Option.isNone(messageOption)) {
-			return yield* Effect.fail(new Error("Message not found"))
-		}
+		id: v.id("messages"),
+		emoji: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const message = await ctx.db.get(args.id)
+		if (!message) throw new Error("Message not found")
 
-		const message = messageOption.value
-
-		yield* userService.validateIsMemberOfChannel(ctx, userData, message.channelId)
+		await ctx.user.validateIsMemberOfChannel({ ctx, channelId: message.channelId })
 
 		const newReactions = message.reactions.filter(
-			(reaction) => !(reaction.emoji === emoji && reaction.userId === userData.user._id),
+			(reaction) => !(reaction.emoji === args.emoji && reaction.userId === ctx.user.id),
 		)
 
 		if (newReactions.length === message.reactions.length) {
-			return yield* Effect.fail(new Error("You do not have permission to delete this reaction"))
+			throw new Error("You do not have permission to delete this reaction")
 		}
 
-		yield* ctx.db.patch(id, {
+		return await ctx.db.patch(args.id, {
 			reactions: newReactions,
 		})
-
-		return null
-	}),
+	},
 })
