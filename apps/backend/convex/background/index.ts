@@ -1,7 +1,7 @@
-import { internalMutation } from "@hazel/backend/server"
-import { v } from "convex/values"
-import { asyncMap } from "convex-helpers"
-import { api, internal } from "../_generated/api"
+import { Id } from "confect-plus/server"
+import { Effect, Option, Schema } from "effect"
+import { internal } from "../_generated/api"
+import { ConfectMutationCtx, internalMutation } from "../confect"
 
 const markdownToPlainText = (markdown: string): string => {
 	if (!markdown) return ""
@@ -49,84 +49,101 @@ const markdownToPlainText = (markdown: string): string => {
 }
 
 export const sendNotification = internalMutation({
-	args: {
-		userId: v.id("users"),
-		messageId: v.id("messages"),
-		accountId: v.id("accounts"),
-		channelId: v.id("channels"),
-	},
-	handler: async (ctx, args) => {
-		const message = await ctx.db.get(args.messageId)
-		if (!message) return
+	args: Schema.Struct({
+		userId: Id.Id("users"),
+		messageId: Id.Id("messages"),
+		accountId: Id.Id("accounts"),
+		channelId: Id.Id("channels"),
+	}),
+	returns: Schema.Null,
+	handler: Effect.fn(function* ({ userId, messageId, channelId }) {
+		const ctx = yield* ConfectMutationCtx
 
-		const author = await ctx.db.get(message.authorId)
-		if (!author) return
-		const channel = await ctx.db.get(args.channelId)
-		if (!channel) return
+		const messageOption = yield* ctx.db.get(messageId)
+		if (Option.isNone(messageOption)) return null
 
-		const server = await ctx.db.get(channel.serverId)
-		if (!server) return
+		const message = messageOption.value
 
-		const channelMembers = await ctx.db
+		const authorOption = yield* ctx.db.get(message.authorId)
+		if (Option.isNone(authorOption)) return null
+		const author = authorOption.value
+
+		const channelOption = yield* ctx.db.get(channelId)
+		if (Option.isNone(channelOption)) return null
+		const channel = channelOption.value
+
+		const serverOption = yield* ctx.db.get(channel.serverId)
+		if (Option.isNone(serverOption)) return null
+		const server = serverOption.value
+
+		const channelMembers = yield* ctx.db
 			.query("channelMembers")
-			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", args.channelId))
+			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channelId))
 			.collect()
 
 		const filteredChannelMembers = channelMembers.filter(
-			(member) => !member.isMuted && member.userId !== args.userId,
+			(member) => !member.isMuted && member.userId !== userId,
 		)
 
-		await asyncMap(filteredChannelMembers, async (member) => {
-			const user = await ctx.db.get(member.userId)
-			if (!user) return
-			const account = await ctx.db.get(user.accountId)
+		yield* Effect.forEach(
+			filteredChannelMembers,
+			Effect.fn(function* (member) {
+				const userOption = yield* ctx.db.get(member.userId)
+				if (Option.isNone(userOption)) return
 
-			if (!account) return
+				const user = userOption.value
+				const accountOption = yield* ctx.db.get(user.accountId)
+				if (Option.isNone(accountOption)) return
 
-			await ctx.db.insert("notifications", {
-				accountId: account._id,
-				targetedResourceId: args.channelId,
-				resourceId: args.messageId,
-			})
-		})
+				const account = accountOption.value
 
-		const onlineUsers = await ctx.runQuery(internal.presence.listRoom, {
-			roomId: args.channelId,
+				yield* ctx.db.insert("notifications", {
+					accountId: account._id,
+					targetedResourceId: channelId,
+					resourceId: messageId,
+				})
+			}),
+		)
+
+		const onlineUsers = yield* ctx.runQuery(internal.presence.listRoom, {
+			roomId: channelId,
 			onlineOnly: true,
 		})
 
-		await asyncMap(filteredChannelMembers, async (member) => {
-			if (!onlineUsers.find((user) => user.userId === member.userId)) return
+		yield* Effect.forEach(
+			filteredChannelMembers,
+			Effect.fn(function* (member) {
+				if (!onlineUsers.find((user: any) => user.userId === member.userId)) return
 
-			await ctx.db.patch(member._id, {
-				notificationCount: member.notificationCount + 1,
-				lastSeenMessageId: member.lastSeenMessageId ?? message._id,
-			})
+				yield* ctx.db.patch(member._id, {
+					notificationCount: member.notificationCount + 1,
+					lastSeenMessageId: member.lastSeenMessageId ?? message._id,
+				})
 
-			const user = await ctx.db.get(member.userId)
+				const userOption = yield* ctx.db.get(member.userId)
+				if (Option.isNone(userOption)) return
 
-			if (!user) {
-				return
-			}
+				const user = userOption.value
+				const accountOption = yield* ctx.db.get(user.accountId)
+				if (Option.isNone(accountOption)) return
 
-			const account = await ctx.db.get(user.accountId)
+				const account = accountOption.value
 
-			if (!account) {
-				return
-			}
+				const title =
+					channel.type === "single" || channel.type === "direct"
+						? `${author.displayName}`
+						: `${author.displayName} (#${channel.name}, ${server.name})`
 
-			const title =
-				channel.type === "single" || channel.type === "direct"
-					? `${author.displayName}`
-					: `${author.displayName} (#${channel.name}, ${server.name})`
+				const plainTextContent = markdownToPlainText(message.content)
 
-			const plainTextContent = markdownToPlainText(message.content)
+				yield* ctx.scheduler.runAfter(0, internal.expo.sendPushNotification, {
+					title: title,
+					to: account._id,
+					body: plainTextContent,
+				})
+			}),
+		)
 
-			await ctx.scheduler.runAfter(0, internal.expo.sendPushNotification, {
-				title: title,
-				to: account._id,
-				body: plainTextContent,
-			})
-		})
-	},
+		return null
+	}),
 })
