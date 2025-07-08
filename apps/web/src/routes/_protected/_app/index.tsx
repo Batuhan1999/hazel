@@ -1,39 +1,46 @@
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/solid-query"
-import { Link, createFileRoute, useNavigate } from "@tanstack/solid-router"
-import { For, createEffect } from "solid-js"
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/solid-router"
+import { useAuth } from "authkit-solidjs"
+import { For } from "solid-js"
 import { Card } from "~/components/ui/card"
 import { convexQuery } from "~/lib/convex-query"
-import { getCurrentServerId } from "~/lib/helpers/localstorage"
 
 export const Route = createFileRoute("/_protected/_app/")({
 	component: App,
-})
+	beforeLoad: async ({ context }) => {
+		await context.convex.awaitAuth()
 
-function App() {
-	const navigate = useNavigate()
-	const serversQuery = useQuery(() => convexQuery(api.servers.getServersForUser, {}))
+		const res = await context.convex.query(api.me.getOrganization, {})
 
-	createEffect(() => {
-		if (serversQuery.data?.length === 0) {
-			navigate({
-				to: "/onboarding",
+		if (res.directive === "redirect") {
+			throw redirect({
+				to: res.to,
 			})
 		}
-	})
 
-	createEffect(() => {
-		const savedServerId = getCurrentServerId()
-
-		if (savedServerId) {
-			navigate({
+		if (res.directive === "success") {
+			throw redirect({
 				to: "/$serverId",
 				params: {
-					serverId: savedServerId,
+					serverId: res.data._id,
 				},
 			})
 		}
-	})
+	},
+})
+
+function App() {
+	const _navigate = useNavigate()
+	const serversQuery = useQuery(() => convexQuery(api.servers.getServersForUser, {}))
+
+	// createEffect(() => {
+	// 	if (serversQuery.data?.length === 0) {
+	// 		navigate({
+	// 			to: "/onboarding",
+	// 		})
+	// 	}
+	// })
 
 	return (
 		<main class="container mx-auto flex w-full py-14">

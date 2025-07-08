@@ -55,11 +55,36 @@ export const getServersForUser = accountQuery({
 		const servers = await Promise.all(
 			serverMembers.map(async (member) => {
 				const server = await ctx.db.get(member.serverId)
-				return server!
+				return server
 			}),
 		)
 
-		return servers
+		return servers.filter((server) => server !== null)
+	},
+})
+
+export const getServerFromOrganization = accountQuery({
+	args: {
+		organizationId: v.id("organizations"),
+	},
+	handler: async (ctx, args) => {
+		const server = await ctx.db
+			.query("servers")
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", args.organizationId))
+			.first()
+
+		if (!server) return null
+
+		const serverMember = await ctx.db
+			.query("users")
+			.withIndex("by_accountId_serverId", (q) =>
+				q.eq("accountId", ctx.account.doc._id).eq("serverId", server?._id),
+			)
+			.first()
+
+		if (!serverMember) return null
+
+		return server
 	},
 })
 
@@ -69,16 +94,17 @@ export const createServer = accountMutation({
 		imageUrl: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
+		const organizationId = ctx.identity.organizationId as string | undefined
+
+		if (!organizationId) {
+			throw new Error("You must be part of an organization to create a server")
+		}
+
 		const serverId = await ctx.db.insert("servers", {
 			name: args.name,
 			imageUrl: args.imageUrl,
+			organizationId: organizationId,
 			updatedAt: Date.now(),
-		})
-
-		const user = await ctx.account.createUserFromAccount({ ctx, serverId })
-
-		await ctx.db.patch(serverId, {
-			creatorId: user,
 		})
 
 		await ctx.db.insert("channels", {

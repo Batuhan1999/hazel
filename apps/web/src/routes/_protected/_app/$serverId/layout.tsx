@@ -3,10 +3,10 @@ import { api } from "@hazel/backend/api"
 
 import { useQuery, useQueryClient } from "@tanstack/solid-query"
 import { createFileRoute, Outlet } from "@tanstack/solid-router"
+import { useAuth } from "authkit-solidjs"
 import { createEffect, Suspense } from "solid-js"
 import { CommandBar } from "~/components/command-bar/command-bar"
 import { Sidebar } from "~/components/ui/sidebar"
-import { ConvexProvider } from "~/lib/convex"
 import { PresenceProvider } from "~/lib/convex-presence"
 import { convexQuery } from "~/lib/convex-query"
 import { removeCurrentServerId, setCurrentServerId } from "~/lib/helpers/localstorage"
@@ -31,6 +31,7 @@ function RouteComponent() {
 	const queryClient = useQueryClient()
 	const params = Route.useParams()
 	const navigate = Route.useNavigate()
+
 	const serverQuery = useQuery(() =>
 		convexQuery(api.servers.getServerForUser, { serverId: params().serverId as Id<"servers"> }),
 	)
@@ -65,11 +66,11 @@ function RouteComponent() {
 		}
 
 		if (!serverQuery.data || serverQuery.error) {
-			removeCurrentServerId()
 			throw navigate({
 				to: "/",
 			})
 		}
+
 		setCurrentServerId(serverQuery.data._id)
 	})
 

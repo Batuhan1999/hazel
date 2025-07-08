@@ -1,5 +1,4 @@
 import { defineSchema, defineTable, Id } from "@rjdellecese/confect/server"
-import { v } from "convex/values"
 import { Schema } from "effect"
 
 export const confectSchema = defineSchema({
@@ -8,12 +7,12 @@ export const confectSchema = defineSchema({
 			name: Schema.String,
 			imageUrl: Schema.optional(Schema.String),
 
-			creatorId: Schema.optional(Id.Id("users")),
+			organizationId: Schema.String,
 
 			updatedAt: Schema.Number,
 			deletedAt: Schema.optional(Schema.Number),
 		}),
-	),
+	).index("by_organizationId", ["organizationId"]),
 	channels: defineTable(
 		Schema.Struct({
 			name: Schema.String,

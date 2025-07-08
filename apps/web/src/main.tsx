@@ -8,7 +8,6 @@ import { routeTree } from "./routeTree.gen"
 import "./styles/root.css"
 import "./styles/toast.css"
 
-import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister"
 import { QueryClient, QueryClientProvider } from "@tanstack/solid-query"
 import { SolidQueryDevtools } from "@tanstack/solid-query-devtools"
 import { AuthKitProvider, useAuth } from "authkit-solidjs"
@@ -31,10 +30,6 @@ applyInitialTheme()
 const convex = new ConvexSolidClient(import.meta.env.VITE_CONVEX_URL)
 
 const convexQueryClient = new ConvexQueryClient(convex)
-
-const _persister = createSyncStoragePersister({
-	storage: localStorage,
-})
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -61,6 +56,7 @@ const router = createRouter({
 	context: {
 		convex: convex,
 		queryClient,
+		authClient: undefined!,
 	},
 	defaultErrorComponent: (err) => {
 		console.error(err)
@@ -93,19 +89,15 @@ declare module "@tanstack/solid-router" {
 }
 
 const InnerProviders = () => {
-	// createEffect(() => {
-	// 	const [unsubscribe] = persistQueryClient({
-	// 		queryClient,
-	// 		persister,
-	// 		maxAge: 1000 * 60 * 60 * 24,
-	// 	})
-
-	// 	onCleanup(() => {
-	// 		unsubscribe()
-	// 	})
-	// })
-
-	return <RouterProvider router={router} context={{}} />
+	const auth = useAuth()
+	return (
+		<RouterProvider
+			router={router}
+			context={{
+				authClient: auth,
+			}}
+		/>
+	)
 }
 
 function App() {
