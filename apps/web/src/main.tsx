@@ -90,6 +90,7 @@ declare module "@tanstack/solid-router" {
 
 const InnerProviders = () => {
 	const auth = useAuth()
+
 	return (
 		<RouterProvider
 			router={router}
