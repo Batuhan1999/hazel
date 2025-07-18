@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
+@plugin "tailwindcss-react-aria-components";
+
+
+
+@import "./typography.css";
+@import "./theme.css";
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
