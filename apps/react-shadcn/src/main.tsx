@@ -5,7 +5,7 @@ import ReactDOM from "react-dom/client"
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen"
 
-import "./styles.css"
+import "./styles/styles.css"
 
 import { ConvexQueryClient } from "@convex-dev/react-query"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
