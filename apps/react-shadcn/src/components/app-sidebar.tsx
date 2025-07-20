@@ -1,6 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
+import { useEffect } from "react"
 import IconChatChatting1 from "./icons/IconChatChatting1"
 import IconChatChattingDuoSolid from "./icons/IconChatChattingDuoSolid"
 import IconGridDashboard01DuoSolid from "./icons/IconGridDashboard01DuoSolid"
@@ -137,9 +138,13 @@ export const AppSidebar = () => {
 }
 
 const ActiveServer = () => {
-	const serverQuery = useQuery(convexQuery(api.servers.getCurrentServer, {}))
+	const { data } = useQuery(convexQuery(api.me.getOrganization, {}))
 
-	console.log(serverQuery.data)
+	useEffect(() => {
+		if (data?.directive === "redirect") {
+			console.log("TODO redirect to onboarding")
+		}
+	}, [data?.directive])
 
-	return <div className="font-semibold text-foreground text-lg">{serverQuery.data?.name}</div>
+	return <div className="font-semibold text-foreground text-lg">{data?.data?.name}</div>
 }

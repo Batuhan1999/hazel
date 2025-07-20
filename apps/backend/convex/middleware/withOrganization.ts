@@ -33,8 +33,8 @@ export const organizationServerQuery = customQuery(query, {
 		// Check if user is a member of the organization
 		const organizationMembership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", organization._id).eq("accountId", account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", organization._id).eq("userId", account.doc._id),
 			)
 			.first()
 
@@ -42,33 +42,11 @@ export const organizationServerQuery = customQuery(query, {
 			throw new Error("You are not a member of this organization")
 		}
 
-		const server = await ctx.db
-			.query("servers")
-			.withIndex("by_organizationId", (q) => q.eq("organizationId", organization._id))
-			.first()
-
-		if (!server) {
-			throw new Error("No server found for this organization")
-		}
-
-		const serverMember = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", account.doc._id).eq("serverId", server._id),
-			)
-			.first()
-
-		if (!serverMember) {
-			throw new Error("You are not a member of this server")
-		}
-
 		return {
 			ctx: {
 				...ctx,
 				account,
 				identity,
-				server,
-				serverId: server._id as Id<"servers">,
 				organization,
 				organizationId: organization._id as Id<"organizations">,
 				organizationMembership,
@@ -108,8 +86,8 @@ export const organizationServerMutation = customMutation(mutation, {
 		// Check if user is a member of the organization
 		const organizationMembership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", organization._id).eq("accountId", account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", organization._id).eq("userId", account.doc._id),
 			)
 			.first()
 
@@ -117,33 +95,11 @@ export const organizationServerMutation = customMutation(mutation, {
 			throw new Error("You are not a member of this organization")
 		}
 
-		const server = await ctx.db
-			.query("servers")
-			.withIndex("by_organizationId", (q) => q.eq("organizationId", organization._id))
-			.first()
-
-		if (!server) {
-			throw new Error("No server found for this organization")
-		}
-
-		const serverMember = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", account.doc._id).eq("serverId", server._id),
-			)
-			.first()
-
-		if (!serverMember) {
-			throw new Error("You are not a member of this server")
-		}
-
 		return {
 			ctx: {
 				...ctx,
 				account,
 				identity,
-				server,
-				serverId: server._id as Id<"servers">,
 				organization,
 				organizationId: organization._id as Id<"organizations">,
 				organizationMembership,

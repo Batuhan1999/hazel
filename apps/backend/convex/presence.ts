@@ -21,11 +21,11 @@ export const list = query({
 })
 
 export const get = internalQuery({
-	args: { roomId: v.string(), accountId: v.id("accounts") },
-	handler: async (ctx, { roomId, accountId }) => {
+	args: { roomId: v.string(), userId: v.id("users") },
+	handler: async (ctx, { roomId, userId }) => {
 		const roomMembers = await presence.list(ctx, roomId)
 
-		return roomMembers.find((member) => member.userId === accountId)
+		return roomMembers.find((member) => member.userId === userId)
 	},
 })
 

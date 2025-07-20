@@ -1,28 +1,36 @@
 import type { Doc, Id } from "@hazel/backend"
 import type { MutationCtx, QueryCtx } from "@hazel/backend/server"
 import type { UserIdentity } from "convex/server"
-import { Account } from "./account"
 
 export type GenericContext = QueryCtx | MutationCtx
 
 export class User {
 	private constructor(
 		private readonly user: Doc<"users">,
-		private readonly account: Account,
+		private readonly organizationMembership?: Doc<"organizationMembers">,
 	) {}
 
-	static async fromIdentity(ctx: GenericContext, identity: UserIdentity, serverId: Id<"servers">) {
-		const account = await Account.fromIdentity(ctx, identity)
-
+	static async fromIdentity(ctx: GenericContext, identity: UserIdentity, organizationId?: Id<"organizations">) {
+		// Find user by externalId (from WorkOS)
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_accountId_serverId", (q) => q.eq("accountId", account.id))
-			.filter((q) => q.eq(q.field("serverId"), serverId))
+			.withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
 			.unique()
 
 		if (!user) throw new Error("User not found")
 
-		return new User(user, account)
+		// If organizationId is provided, get membership
+		let membership: Doc<"organizationMembers"> | undefined
+		if (organizationId) {
+			membership = await ctx.db
+				.query("organizationMembers")
+				.withIndex("by_organizationId_userId", (q) => 
+					q.eq("organizationId", organizationId).eq("userId", user._id)
+				)
+				.unique() || undefined
+		}
+
+		return new User(user, membership)
 	}
 
 	public async isMemberOfChannel(args: { ctx: GenericContext; channelId: Id<"channels"> }) {
@@ -86,7 +94,11 @@ export class User {
 		return this.user._id
 	}
 
-	public get accountId(): Id<"accounts"> {
-		return this.account.id
+	public get membership(): Doc<"organizationMembers"> | undefined {
+		return this.organizationMembership
+	}
+
+	public get role(): string | undefined {
+		return this.organizationMembership?.role
 	}
 }

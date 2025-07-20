@@ -1,6 +1,6 @@
 import { v } from "convex/values"
 import { accountQuery } from "./middleware/withAccount"
-import { organizationServerQuery } from "./middleware/withOrganizationServer"
+import { organizationServerQuery } from "./middleware/withOrganization"
 
 export const get = accountQuery({
 	args: {},
@@ -12,18 +12,7 @@ export const get = accountQuery({
 export const getCurrentUser = organizationServerQuery({
 	args: {},
 	handler: async (ctx) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
-
-		return user
+		return ctx.account.doc
 	},
 })
 
@@ -49,58 +38,72 @@ export const getOrganization = accountQuery({
 			} as const
 		}
 
-		const server = await ctx.db
-			.query("servers")
-			.withIndex("by_organizationId", (q) => q.eq("organizationId", organization._id))
-			.first()
-
-		if (!server)
-			return {
-				directive: "redirect",
-				to: "/onboarding",
-			} as const
-
-		const serverMember = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", server?._id),
+		// Check if user is a member of this organization
+		const membership = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", organization._id).eq("userId", ctx.account.doc._id),
 			)
 			.first()
 
-		if (!serverMember)
+		if (!membership) {
 			return {
 				directive: "redirect",
 				to: "/sign-in",
 			} as const
+		}
 
 		return {
 			directive: "success",
-			data: server,
+			data: organization,
 		} as const
 	},
 })
 
 export const getUser = accountQuery({
 	args: {
-		serverId: v.id("servers"),
+		organizationId: v.id("organizations"),
 	},
 	handler: async (ctx, args) => {
-		return ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.id).eq("serverId", args.serverId),
+		// Check if current user is a member of the organization
+		const membership = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", ctx.account.id),
 			)
 			.first()
+
+		return membership ? ctx.account.doc : null
 	},
 })
 
 export const getLatestNotifcation = accountQuery({
 	args: {},
 	handler: async (ctx, _args) => {
-		return ctx.db
-			.query("notifications")
-			.withIndex("by_accountId_targetedResourceId", (q) => q.eq("accountId", ctx.account.id))
-			.order("desc")
-			.first()
+		// Get all organization memberships for the user
+		const memberships = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_userId", (q) => q.eq("userId", ctx.account.id))
+			.collect()
+
+		if (memberships.length === 0) return null
+
+		// Get notifications for any of the user's memberships
+		const notifications = await Promise.all(
+			memberships.map((membership) =>
+				ctx.db
+					.query("notifications")
+					.withIndex("by_memberId_targetedResourceId", (q) => q.eq("memberId", membership._id))
+					.order("desc")
+					.first(),
+			),
+		)
+
+		// Return the most recent notification
+		return (
+			notifications
+				.filter((n) => n !== null)
+				.sort((a, b) => (b?._creationTime || 0) - (a?._creationTime || 0))[0] || null
+		)
 	},
 })

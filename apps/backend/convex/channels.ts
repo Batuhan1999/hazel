@@ -1,7 +1,7 @@
 import { v } from "convex/values"
 import { asyncMap } from "convex-helpers"
 import type { Id } from "./_generated/dataModel"
-import { organizationServerMutation, organizationServerQuery } from "./middleware/withOrganizationServer"
+import { organizationServerMutation, organizationServerQuery } from "./middleware/withOrganization"
 import { userMutation, userQuery } from "./middleware/withUser"
 
 export const getChannelForOrganization = organizationServerQuery({
@@ -11,18 +11,9 @@ export const getChannelForOrganization = organizationServerQuery({
 	handler: async (ctx, args) => {
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		// Check if user is member of channel
 		const channelMembers = await ctx.db
@@ -63,20 +54,11 @@ export const getChannelsForOrganization = organizationServerQuery({
 		favoriteFilter: v.optional(v.object({ favorite: v.boolean() })),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", ctx.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
@@ -123,26 +105,25 @@ export const getChannelsForOrganization = organizationServerQuery({
 		const dmChannels = filteredChannels.filter(
 			(channel) => channel.type !== "private" && channel.type !== "public",
 		)
-		const serverChannels = filteredChannels.filter(
+		const organizationChannels = filteredChannels.filter(
 			(channel) => channel.type === "private" || channel.type === "public",
 		)
 
 		return {
 			dmChannels,
-			serverChannels,
+			organizationChannels,
 		}
 	},
 })
 
 export const getChannels = userQuery({
 	args: {
-		serverId: v.id("servers"),
 		favoriteFilter: v.optional(v.object({ favorite: v.boolean() })),
 	},
 	handler: async (ctx, args) => {
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
@@ -190,13 +171,13 @@ export const getChannels = userQuery({
 		const dmChannels = filteredChannels.filter(
 			(channel) => channel.type !== "private" && channel.type !== "public",
 		)
-		const serverChannels = filteredChannels.filter(
+		const organizationChannels = filteredChannels.filter(
 			(channel) => channel.type === "private" || channel.type === "public",
 		)
 
 		return {
 			dmChannels,
-			serverChannels,
+			organizationChannels,
 		}
 	},
 })
@@ -204,7 +185,6 @@ export const getChannels = userQuery({
 export const getChannel = userQuery({
 	args: {
 		channelId: v.id("channels"),
-		serverId: v.id("servers"),
 	},
 	handler: async (ctx, args) => {
 		const channel = await ctx.db.get(args.channelId)
@@ -247,12 +227,11 @@ export const getChannel = userQuery({
 
 export const getPublicChannels = userQuery({
 	args: {
-		serverId: v.id("servers"),
 	},
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -263,20 +242,11 @@ export const getPublicChannels = userQuery({
 export const getUnjoinedPublicChannelsForOrganization = organizationServerQuery({
 	args: {},
 	handler: async (ctx) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", ctx.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -299,12 +269,11 @@ export const getUnjoinedPublicChannelsForOrganization = organizationServerQuery(
 
 export const getUnjoinedPublicChannels = userQuery({
 	args: {
-		serverId: v.id("servers"),
 	},
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", args.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -331,20 +300,11 @@ export const createChannelForOrganization = organizationServerMutation({
 		type: v.union(v.literal("public"), v.literal("private")),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channelId = await ctx.db.insert("channels", {
 			name: args.name,
-			serverId: ctx.serverId,
+			organizationId: ctx.organizationId,
 			type: args.type,
 			updatedAt: Date.now(),
 			pinnedMessages: [],
@@ -367,7 +327,6 @@ export const createChannelForOrganization = organizationServerMutation({
 
 export const createChannel = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		name: v.string(),
 		type: v.union(v.literal("public"), v.literal("private"), v.literal("thread"), v.literal("direct")),
@@ -379,7 +338,7 @@ export const createChannel = userMutation({
 	handler: async (ctx, args) => {
 		const channelId = await ctx.db.insert("channels", {
 			name: args.name,
-			serverId: args.serverId,
+			organizationId: args.organizationId,
 			type: args.type,
 			parentChannelId: args.parentChannelId,
 			updatedAt: Date.now(),
@@ -432,21 +391,12 @@ export const createDmChannelForOrganization = organizationServerMutation({
 		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		// Check if DM channel already exists
 		const existingChannel = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) => q.eq("serverId", ctx.serverId))
+			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
 			.filter((q) => q.eq(q.field("type"), "dm"))
 			.collect()
 
@@ -467,7 +417,7 @@ export const createDmChannelForOrganization = organizationServerMutation({
 
 		// Create new DM channel
 		const channelId = await ctx.db.insert("channels", {
-			serverId: ctx.serverId,
+			organizationId: ctx.organizationId,
 			name: "Direct Message",
 			type: "single",
 			updatedAt: Date.now(),
@@ -501,7 +451,6 @@ export const createDmChannelForOrganization = organizationServerMutation({
 
 export const creatDmChannel = userMutation({
 	args: {
-		serverId: v.id("servers"),
 		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
@@ -509,8 +458,8 @@ export const creatDmChannel = userMutation({
 
 		const existingChannel = await ctx.db
 			.query("channels")
-			.withIndex("by_serverId_and_participantHash", (q) =>
-				q.eq("serverId", args.serverId).eq("participantHash", participantHash),
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", args.organizationId).eq("participantHash", participantHash),
 			)
 			.first()
 
@@ -519,7 +468,7 @@ export const creatDmChannel = userMutation({
 		}
 
 		const channelId = await ctx.db.insert("channels", {
-			serverId: args.serverId,
+			organizationId: args.organizationId,
 			name: "Direct Message",
 			type: "single",
 			participantHash,
@@ -557,20 +506,11 @@ export const leaveChannelForOrganization = organizationServerMutation({
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
 		const channelMember = await ctx.db
 			.query("channelMembers")
@@ -589,7 +529,6 @@ export const leaveChannelForOrganization = organizationServerMutation({
 
 export const leaveChannel = userMutation({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, args) => {
@@ -611,20 +550,11 @@ export const joinChannelForOrganization = organizationServerMutation({
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
 		const existingMember = await ctx.db
 			.query("channelMembers")
@@ -651,7 +581,6 @@ export const joinChannelForOrganization = organizationServerMutation({
 
 export const joinChannel = userMutation({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, args) => {
@@ -684,16 +613,7 @@ export const updateChannelPreferencesForOrganization = organizationServerMutatio
 		isFavorite: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
+		const user = ctx.account.doc
 
 		const channelMember = await ctx.db
 			.query("channelMembers")
@@ -716,13 +636,12 @@ export const updateChannelPreferencesForOrganization = organizationServerMutatio
 
 export const updateChannelPreferences = userMutation({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 		isMuted: v.optional(v.boolean()),
 		isHidden: v.optional(v.boolean()),
 		isFavorite: v.optional(v.boolean()),
 	},
-	handler: async (ctx, { serverId, channelId, ...args }) => {
+	handler: async (ctx, { channelId, ...args }) => {
 		const channelMember = await ctx.db
 			.query("channelMembers")
 			.withIndex("by_channelIdAndUserId", (q) => q.eq("channelId", channelId).eq("userId", ctx.user.id))

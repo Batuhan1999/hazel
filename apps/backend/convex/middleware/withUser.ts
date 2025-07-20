@@ -4,7 +4,7 @@ import { User } from "../lib/activeRecords/user"
 import { customMutation, customQuery } from "../lib/customFunctions"
 
 export const userQuery = customQuery(query, {
-	args: { serverId: v.id("servers") },
+	args: { organizationId: v.id("organizations") },
 	input: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity()
 
@@ -12,14 +12,14 @@ export const userQuery = customQuery(query, {
 			throw new Error("Not authenticated")
 		}
 
-		const user = await User.fromIdentity(ctx, identity, args.serverId)
+		const user = await User.fromIdentity(ctx, identity, args.organizationId)
 
 		return { ctx: { ...ctx, user, identity }, args }
 	},
 })
 
 export const userMutation = customMutation(mutation, {
-	args: { serverId: v.id("servers") },
+	args: { organizationId: v.id("organizations") },
 	input: async (ctx, args) => {
 		const identity = await ctx.auth.getUserIdentity()
 
@@ -27,7 +27,7 @@ export const userMutation = customMutation(mutation, {
 			throw new Error("Not authenticated")
 		}
 
-		const user = await User.fromIdentity(ctx, identity, args.serverId)
+		const user = await User.fromIdentity(ctx, identity, args.organizationId)
 
 		return { ctx: { ...ctx, user, identity }, args }
 	},

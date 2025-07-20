@@ -2,7 +2,7 @@ import { paginationOptsValidator } from "convex/server"
 import { v } from "convex/values"
 import { asyncMap } from "convex-helpers"
 import { internal } from "./_generated/api"
-import { organizationServerMutation, organizationServerQuery } from "./middleware/withOrganizationServer"
+import { organizationServerMutation, organizationServerQuery } from "./middleware/withOrganization"
 import { userMutation, userQuery } from "./middleware/withUser"
 
 export const getMessageForOrganization = organizationServerQuery({
@@ -11,21 +11,10 @@ export const getMessageForOrganization = organizationServerQuery({
 		id: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
-
 		// Validate user can view the channel
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
 		const message = await ctx.db.get(args.id)
 		if (!message) throw new Error("Message not found")
@@ -42,7 +31,6 @@ export const getMessageForOrganization = organizationServerQuery({
 
 export const getMessage = userQuery({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 		id: v.id("messages"),
 	},
@@ -70,18 +58,15 @@ export const getMessagesForOrganization = organizationServerQuery({
 	handler: async (ctx, args) => {
 		const user = await ctx.db
 			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
 			.first()
 
 		if (!user) {
-			throw new Error("User not found in this server")
+			throw new Error("User not found in this organization")
 		}
 
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
 		// Validate user can view the channel
 		// TODO: Add proper channel permission check here
@@ -128,7 +113,6 @@ export const getMessagesForOrganization = organizationServerQuery({
 
 export const getMessages = userQuery({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 		paginationOpts: paginationOptsValidator,
 	},
@@ -204,21 +188,10 @@ export const createMessageForOrganization = organizationServerMutation({
 			throw new Error("Message content cannot be empty")
 		}
 
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
-
-		// Validate channel belongs to this server
+		// Validate channel belongs to this organization
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) throw new Error("Channel not found")
-		if (channel.serverId !== ctx.serverId) throw new Error("Channel not in this server")
+		if (channel.organizationId !== ctx.organizationId) throw new Error("Channel not in this organization")
 
 		// TODO: Add proper channel membership validation
 
@@ -226,7 +199,7 @@ export const createMessageForOrganization = organizationServerMutation({
 			channelId: args.channelId,
 			content: args.content,
 			threadChannelId: args.threadChannelId,
-			authorId: user._id,
+			authorId: ctx.account.doc._id,
 			replyToMessageId: args.replyToMessageId,
 			attachedFiles: args.attachedFiles,
 			updatedAt: Date.now(),
@@ -236,9 +209,8 @@ export const createMessageForOrganization = organizationServerMutation({
 		// TODO: This should be a database trigger
 		await ctx.scheduler.runAfter(0, internal.background.index.sendNotification, {
 			channelId: args.channelId,
-			accountId: user.accountId,
 			messageId: messageId,
-			userId: user._id,
+			userId: ctx.account.doc._id,
 		})
 
 		return messageId
@@ -247,7 +219,6 @@ export const createMessageForOrganization = organizationServerMutation({
 
 export const createMessage = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		content: v.string(),
 		channelId: v.id("channels"),
@@ -276,7 +247,6 @@ export const createMessage = userMutation({
 		// TODO: This should be a database trigger
 		await ctx.scheduler.runAfter(0, internal.background.index.sendNotification, {
 			channelId: args.channelId,
-			accountId: ctx.user.doc.accountId,
 			messageId: messageId,
 			userId: ctx.user.id,
 		})
@@ -287,7 +257,6 @@ export const createMessage = userMutation({
 
 export const updateMessage = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		id: v.id("messages"),
 		content: v.string(),
@@ -303,7 +272,6 @@ export const updateMessage = userMutation({
 
 export const deleteMessage = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		id: v.id("messages"),
 	},
@@ -316,7 +284,6 @@ export const deleteMessage = userMutation({
 
 export const createReaction = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		messageId: v.id("messages"),
 		emoji: v.string(),
@@ -343,7 +310,6 @@ export const createReaction = userMutation({
 
 export const deleteReaction = userMutation({
 	args: {
-		serverId: v.id("servers"),
 
 		id: v.id("messages"),
 		emoji: v.string(),

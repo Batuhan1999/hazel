@@ -1,61 +1,90 @@
-import { organizationServerQuery } from "./middleware/withOrganizationServer"
+import { organizationServerQuery } from "./middleware/withOrganization"
 import { userQuery } from "./middleware/withUser"
 
 export const getFriendsForOrganization = organizationServerQuery({
 	args: {},
 	handler: async (ctx) => {
-		const user = await ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) =>
-				q.eq("accountId", ctx.account.doc._id).eq("serverId", ctx.serverId),
-			)
-			.first()
-
-		if (!user) {
-			throw new Error("User not found in this server")
-		}
-
-		const friends = await ctx.db
-			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", ctx.serverId))
+		// Get all members of the organization
+		const members = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", ctx.organizationId))
+			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
-		return friends.filter((f) => f._id !== user._id)
+		// Get user details for each member
+		const users = await Promise.all(
+			members.map(async (member) => {
+				const user = await ctx.db.get(member.userId)
+				return user
+			})
+		)
+
+		return users.filter((u) => u !== null && u._id !== ctx.account.doc._id)
 	},
 })
 
 export const getFriends = userQuery({
 	args: {},
 	handler: async (ctx, args) => {
-		const friends = await ctx.db
-			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
+		// Get all members of the organization
+		const members = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", args.organizationId))
+			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
-		return friends.filter((f) => f._id !== ctx.user.id)
+		// Get user details for each member
+		const users = await Promise.all(
+			members.map(async (member) => {
+				const user = await ctx.db.get(member.userId)
+				return user
+			})
+		)
+
+		return users.filter((u) => u !== null && u._id !== ctx.user.id)
 	},
 })
 
 export const getMembers = userQuery({
 	args: {},
 	handler: async (ctx, args) => {
-		const friends = await ctx.db
-			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", args.serverId))
+		// Get all members of the organization
+		const members = await ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", args.organizationId))
+			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
-		return friends
+		// Get user details for each member
+		const users = await Promise.all(
+			members.map(async (member) => {
+				const user = await ctx.db.get(member.userId)
+				return user ? { ...user, role: member.role } : null
+			})
+		)
+
+		return users.filter((u) => u !== null)
 	},
 })
 
 export const getMembersForOrganization = organizationServerQuery({
 	args: {},
 	handler: async (ctx) => {
+		// Get all members of the organization
 		const members = await ctx.db
-			.query("users")
-			.withIndex("by_server_id", (q) => q.eq("serverId", ctx.serverId))
+			.query("organizationMembers")
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", ctx.organizationId))
+			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
-		return members
+		// Get user details for each member
+		const users = await Promise.all(
+			members.map(async (member) => {
+				const user = await ctx.db.get(member.userId)
+				return user ? { ...user, role: member.role } : null
+			})
+		)
+
+		return users.filter((u) => u !== null)
 	},
 })

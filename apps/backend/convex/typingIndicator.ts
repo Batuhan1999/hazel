@@ -2,6 +2,7 @@ import { v } from "convex/values"
 import { asyncMap } from "convex-helpers"
 import { internalMutation, query } from "./_generated/server"
 import { accountMutation, accountQuery } from "./middleware/withAccount"
+import { userMutation, userQuery } from "./middleware/withUser"
 
 // The duration in milliseconds to consider a user as "still typing".
 // After this timeout, they will be considered to have stopped typing.
@@ -15,14 +16,17 @@ const TYPING_TIMEOUT = 5000 // 5 seconds
  *
  * This mutation should be called from the client whenever the user types.
  */
-export const update = accountMutation({
+export const update = userMutation({
 	args: {
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, { channelId }) => {
+		const membership = ctx.user.membership
+		if (!membership) throw new Error("User not a member of this organization")
+		
 		const existing = await ctx.db
 			.query("typingIndicators")
-			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", ctx.account.id))
+			.withIndex("by_memberId", (q) => q.eq("channelId", channelId).eq("memberId", membership._id))
 			.unique()
 
 		if (existing) {
@@ -30,7 +34,7 @@ export const update = accountMutation({
 		} else {
 			await ctx.db.insert("typingIndicators", {
 				channelId,
-				accountId: ctx.account.id,
+				memberId: membership._id,
 				lastTyped: Date.now(),
 			})
 		}
@@ -42,12 +46,13 @@ export const update = accountMutation({
  * This query filters out users whose `lastTyped` timestamp is older
  * than the `TYPING_TIMEOUT`.
  */
-export const list = accountQuery({
+export const list = userQuery({
 	args: {
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, { channelId }) => {
 		const threshold = Date.now() - TYPING_TIMEOUT
+		const membership = ctx.user.membership
 
 		const typingIndicators = await ctx.db
 			.query("typingIndicators")
@@ -55,15 +60,19 @@ export const list = accountQuery({
 			.collect()
 
 		const typingIndicatorsWithUsers = await asyncMap(typingIndicators, async (indicator) => {
-			if (indicator.accountId === ctx.account.id) return null
+			if (membership && indicator.memberId === membership._id) return null
 
-			const account = await ctx.db.get(indicator.accountId)
-
-			if (!account) return null
+			// Get member details
+			const orgMember = await ctx.db.get(indicator.memberId)
+			if (!orgMember) return null
+			
+			// Get user details
+			const user = await ctx.db.get(orgMember.userId)
+			if (!user) return null
 
 			return {
 				...indicator,
-				account,
+				user,
 			}
 		})
 
@@ -71,14 +80,17 @@ export const list = accountQuery({
 	},
 })
 
-export const stop = accountMutation({
+export const stop = userMutation({
 	args: {
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, { channelId }) => {
+		const membership = ctx.user.membership
+		if (!membership) throw new Error("User not a member of this organization")
+		
 		const existing = await ctx.db
 			.query("typingIndicators")
-			.withIndex("by_accountId", (q) => q.eq("channelId", channelId).eq("accountId", ctx.account.id))
+			.withIndex("by_memberId", (q) => q.eq("channelId", channelId).eq("memberId", membership._id))
 			.unique()
 
 		if (existing) {

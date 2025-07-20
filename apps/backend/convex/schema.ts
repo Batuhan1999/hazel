@@ -32,7 +32,7 @@ export const confectSchema = defineSchema({
 		}),
 	)
 		.index("by_organizationId", ["organizationId"])
-		.index("by_auserId", ["userId"])
+		.index("by_userId", ["userId"])
 		.index("by_organizationId_userId", ["organizationId", "userId"]),
 	channels: defineTable(
 		Schema.Struct({

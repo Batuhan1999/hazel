@@ -3,52 +3,47 @@ import type { MutationCtx } from "@hazel/backend/server"
 import type { UserIdentity } from "convex/server"
 import type { GenericContext } from "./user"
 
+// This class now represents a User from the users table
 export class Account {
-	private constructor(public readonly doc: Doc<"accounts">) {}
+	private constructor(public readonly doc: Doc<"users">) {}
 
 	public get id() {
 		return this.doc._id
 	}
 
 	static async fromIdentity(ctx: GenericContext, identity: UserIdentity) {
-		const account = await ctx.db
-			.query("accounts")
-			.withIndex("bg_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+		// Find user by externalId (from WorkOS)
+		const user = await ctx.db
+			.query("users")
+			.withIndex("by_externalId", (q) => q.eq("externalId", identity.subject))
 			.unique()
 
-		if (!account) throw new Error("Account not found")
+		if (!user) throw new Error("User not found")
 
-		return new Account(account)
+		return new Account(user)
 	}
 
-	public async validateCanViewAccount(args: { ctx: GenericContext; accountId: Id<"accounts"> }) {
-		if (args.accountId !== this.id) {
-			throw new Error("You do not have permission to view this account")
+	public async validateCanViewUser(args: { ctx: GenericContext; userId: Id<"users"> }) {
+		if (args.userId !== this.id) {
+			throw new Error("You do not have permission to view this user")
 		}
 	}
 
-	public async createUserFromAccount(args: { ctx: MutationCtx; serverId: Id<"servers"> }) {
-		const user = await args.ctx.db
-			.query("users")
-			.withIndex("by_accountId_serverId", (q) => q.eq("accountId", this.id))
-			.filter((q) => q.eq(q.field("serverId"), args.serverId))
+	public async createOrganizationMembership(args: { ctx: MutationCtx; organizationId: Id<"organizations">; role?: string }) {
+		const membership = await args.ctx.db
+			.query("organizationMembers")
+			.withIndex("by_organizationId_userId", (q) => 
+				q.eq("organizationId", args.organizationId).eq("userId", this.id)
+			)
 			.unique()
 
-		if (user) throw new Error("User already exists")
+		if (membership) throw new Error("User is already a member of this organization")
 
-		return await args.ctx.db.insert("users", {
-			accountId: this.id,
-			serverId: args.serverId,
-
-			displayName: this.doc.displayName,
-			tag: this.doc.displayName,
-			avatarUrl: this.doc.avatarUrl,
-
-			role: "member",
-			status: "online",
-
+		return await args.ctx.db.insert("organizationMembers", {
+			organizationId: args.organizationId,
+			userId: this.id,
+			role: args.role || "member",
 			joinedAt: Date.now(),
-			lastSeen: Date.now(),
 		})
 	}
 }

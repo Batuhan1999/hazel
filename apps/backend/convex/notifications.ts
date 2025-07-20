@@ -5,7 +5,6 @@ import { userMutation } from "./middleware/withUser"
 
 export const setNotifcationAsRead = userMutation({
 	args: {
-		serverId: v.id("servers"),
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, { channelId }) => {
@@ -16,10 +15,14 @@ export const setNotifcationAsRead = userMutation({
 
 		if (!channelMember) throw new Error("You are not a member of this channel")
 
+		// Get the user's membership in this organization
+		const membership = ctx.user.membership
+		if (!membership) throw new Error("User not a member of this organization")
+		
 		const notifications = await ctx.db
 			.query("notifications")
-			.withIndex("by_accountId_targetedResourceId", (q) =>
-				q.eq("accountId", ctx.user.accountId).eq("targetedResourceId", channelId),
+			.withIndex("by_memberId_targetedResourceId", (q) =>
+				q.eq("memberId", membership._id).eq("targetedResourceId", channelId),
 			)
 			.collect()
 

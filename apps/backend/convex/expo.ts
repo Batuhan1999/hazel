@@ -5,9 +5,9 @@ import type { Id } from "./_generated/dataModel"
 import { internalMutation } from "./_generated/server"
 import { accountMutation, accountQuery } from "./middleware/withAccount"
 
-type AccountId = Id<"accounts">
+type UserId = Id<"users">
 
-const pushNotifications = new PushNotifications<AccountId>(components.pushNotifications)
+const pushNotifications = new PushNotifications<UserId>(components.pushNotifications)
 
 export const recordPushNotificationToken = accountMutation({
 	args: { token: v.string() },
@@ -31,7 +31,7 @@ export const getStatusForUser = accountQuery({
 })
 
 export const sendPushNotification = internalMutation({
-	args: { title: v.string(), body: v.optional(v.string()), to: v.id("accounts") },
+	args: { title: v.string(), body: v.optional(v.string()), to: v.id("users") },
 	handler: async (ctx, args) => {
 		const pushId = await pushNotifications.sendPushNotification(ctx, {
 			userId: args.to,

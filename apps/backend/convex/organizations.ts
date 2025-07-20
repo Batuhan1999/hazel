@@ -1,5 +1,5 @@
 import { v } from "convex/values"
-import { mutation, query } from "./_generated/server"
+import { internalQuery, mutation, query } from "./_generated/server"
 import { accountMutation, accountQuery } from "./middleware/withAccount"
 
 export const create = accountMutation({
@@ -7,7 +7,6 @@ export const create = accountMutation({
 		name: v.string(),
 		slug: v.string(),
 		logoUrl: v.optional(v.string()),
-		plan: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
 		// Check if slug is already taken
@@ -26,15 +25,12 @@ export const create = accountMutation({
 			name: args.name,
 			slug: args.slug,
 			logoUrl: args.logoUrl,
-			plan: args.plan || "free",
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
 		})
 
 		// Add creator as owner
 		await ctx.db.insert("organizationMembers", {
 			organizationId,
-			accountId: ctx.account.doc._id,
+			userId: ctx.account.doc._id,
 			role: "owner",
 			joinedAt: Date.now(),
 		})
@@ -59,8 +55,8 @@ export const update = accountMutation({
 		// Check if user has permission to update organization
 		const membership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", args.organizationId).eq("accountId", ctx.account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", ctx.account.doc._id),
 			)
 			.first()
 
@@ -90,8 +86,8 @@ export const listMembers = accountQuery({
 		// Check if user is a member of the organization
 		const membership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", args.organizationId).eq("accountId", ctx.account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", ctx.account.doc._id),
 			)
 			.first()
 
@@ -106,18 +102,18 @@ export const listMembers = accountQuery({
 			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
-		// Get account details for each member
+		// Get user details for each member
 		const memberDetails = await Promise.all(
 			members.map(async (member) => {
-				const account = await ctx.db.get(member.accountId)
+				const user = await ctx.db.get(member.userId)
 				return {
 					...member,
-					account,
+					user,
 				}
 			}),
 		)
 
-		return memberDetails.filter((m) => m.account !== null)
+		return memberDetails.filter((m) => m.user !== null)
 	},
 })
 
@@ -131,8 +127,8 @@ export const inviteMember = accountMutation({
 		// Check if user has permission to invite members
 		const membership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", args.organizationId).eq("accountId", ctx.account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", ctx.account.doc._id),
 			)
 			.first()
 
@@ -157,14 +153,14 @@ export const inviteMember = accountMutation({
 export const removeMember = accountMutation({
 	args: {
 		organizationId: v.id("organizations"),
-		accountId: v.id("accounts"),
+		userId: v.id("users"),
 	},
 	handler: async (ctx, args) => {
 		// Check if user has permission to remove members
 		const currentUserMembership = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", args.organizationId).eq("accountId", ctx.account.doc._id),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", ctx.account.doc._id),
 			)
 			.first()
 
@@ -175,8 +171,8 @@ export const removeMember = accountMutation({
 		// Find the member to remove
 		const memberToRemove = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_accountId", (q) =>
-				q.eq("organizationId", args.organizationId).eq("accountId", args.accountId),
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", args.userId),
 			)
 			.first()
 
@@ -224,7 +220,7 @@ export const getUserOrganizations = accountQuery({
 		// Get all organization memberships for the current user
 		const memberships = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_accountId", (q) => q.eq("accountId", ctx.account.doc._id))
+			.withIndex("by_userId", (q) => q.eq("userId", ctx.account.doc._id))
 			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 
@@ -243,5 +239,13 @@ export const getUserOrganizations = accountQuery({
 		)
 
 		return organizations.filter((org) => org !== null)
+	},
+})
+
+// Internal query to get all organizations (for sync purposes)
+export const getAllOrganizations = internalQuery({
+	args: {},
+	handler: async (ctx) => {
+		return await ctx.db.query("organizations").collect()
 	},
 })

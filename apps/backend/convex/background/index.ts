@@ -52,7 +52,6 @@ export const sendNotification = internalMutation({
 	args: {
 		userId: v.id("users"),
 		messageId: v.id("messages"),
-		accountId: v.id("accounts"),
 		channelId: v.id("channels"),
 	},
 	handler: async (ctx, args) => {
@@ -64,8 +63,8 @@ export const sendNotification = internalMutation({
 		const channel = await ctx.db.get(args.channelId)
 		if (!channel) return
 
-		const server = await ctx.db.get(channel.serverId)
-		if (!server) return
+		const organization = await ctx.db.get(channel.organizationId)
+		if (!organization) return
 
 		const channelMembers = await ctx.db
 			.query("channelMembers")
@@ -79,12 +78,19 @@ export const sendNotification = internalMutation({
 		await asyncMap(filteredChannelMembers, async (member) => {
 			const user = await ctx.db.get(member.userId)
 			if (!user) return
-			const account = await ctx.db.get(user.accountId)
-
-			if (!account) return
+			
+			// Find the user's organization membership
+			const orgMember = await ctx.db
+				.query("organizationMembers")
+				.withIndex("by_organizationId_userId", (q) => 
+					q.eq("organizationId", organization._id).eq("userId", user._id)
+				)
+				.first()
+			
+			if (!orgMember) return
 
 			await ctx.db.insert("notifications", {
-				accountId: account._id,
+				memberId: orgMember._id,
 				targetedResourceId: args.channelId,
 				resourceId: args.messageId,
 			})
@@ -109,22 +115,16 @@ export const sendNotification = internalMutation({
 				return
 			}
 
-			const account = await ctx.db.get(user.accountId)
-
-			if (!account) {
-				return
-			}
-
 			const title =
 				channel.type === "single" || channel.type === "direct"
-					? `${author.displayName}`
-					: `${author.displayName} (#${channel.name}, ${server.name})`
+					? `${author.firstName} ${author.lastName}`
+					: `${author.firstName} ${author.lastName} (#${channel.name}, ${organization.name})`
 
 			const plainTextContent = markdownToPlainText(message.content)
 
 			await ctx.scheduler.runAfter(0, internal.expo.sendPushNotification, {
 				title: title,
-				to: account._id,
+				to: user._id,
 				body: plainTextContent,
 			})
 		})
