@@ -1,59 +1,75 @@
+import { useNavigate } from "@tanstack/react-router"
 import { Container, HelpCircle, LayersTwo01, LogOut01, Settings01, User01 } from "@untitledui/icons"
+import { useAuth } from "@workos-inc/authkit-react"
 import { Button as AriaButton } from "react-aria-components"
 import { Avatar } from "~/components/base/avatar/avatar"
 import { AvatarLabelGroup } from "~/components/base/avatar/avatar-label-group"
 import { Dropdown } from "~/components/base/dropdown/dropdown"
 import { cx } from "~/utils/cx"
 
-export const NavUser = () => (
-	<Dropdown.Root>
-		<AriaButton
-			className={({ isPressed, isFocusVisible }) =>
-				cx(
-					"group relative inline-flex cursor-pointer rounded-full outline-focus-ring",
-					(isPressed || isFocusVisible) && "outline-2 outline-offset-2",
-				)
-			}
-		>
-			<Avatar
-				alt="Olivia Rhye"
-				src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-				size="sm"
-			/>
-		</AriaButton>
+export const NavUser = () => {
+	const { user, signOut } = useAuth()
 
-		<Dropdown.Popover>
-			<div className="flex gap-3 border-secondary border-b p-3">
-				<AvatarLabelGroup
-					size="md"
-					src="https://www.untitledui.com/images/avatars/olivia-rhye?fm=webp&q=80"
-					status="online"
-					title="Olivia Rhye"
-					subtitle="olivia@untitledui.com"
+	const navigate = useNavigate()
+
+	return (
+		<Dropdown.Root>
+			<AriaButton
+				className={({ isPressed, isFocusVisible }) =>
+					cx(
+						"group relative inline-flex cursor-pointer rounded-full outline-focus-ring",
+						(isPressed || isFocusVisible) && "outline-2 outline-offset-2",
+					)
+				}
+			>
+				<Avatar
+					alt={`${user?.firstName} ${user?.lastName}`}
+					src={user?.profilePictureUrl}
+					size="sm"
 				/>
-			</div>
-			<Dropdown.Menu>
-				<Dropdown.Section>
-					<Dropdown.Item addon="⌘K->P" icon={User01}>
-						View profile
-					</Dropdown.Item>
-					<Dropdown.Item addon="⌘S" icon={Settings01}>
-						Settings
-					</Dropdown.Item>
-				</Dropdown.Section>
-				<Dropdown.Separator />
-				<Dropdown.Section>
-					<Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
-					<Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
-					<Dropdown.Item icon={Container}>API</Dropdown.Item>
-				</Dropdown.Section>
-				<Dropdown.Separator />
-				<Dropdown.Section>
-					<Dropdown.Item addon="⌥⇧Q" icon={LogOut01}>
-						Log out
-					</Dropdown.Item>
-				</Dropdown.Section>
-			</Dropdown.Menu>
-		</Dropdown.Popover>
-	</Dropdown.Root>
-)
+			</AriaButton>
+
+			<Dropdown.Popover>
+				<div className="flex gap-3 border-secondary border-b p-3">
+					<AvatarLabelGroup
+						size="md"
+						src={user?.profilePictureUrl}
+						status="online"
+						title={`${user?.firstName} ${user?.lastName}`}
+						subtitle={user?.email}
+					/>
+				</div>
+				<Dropdown.Menu>
+					<Dropdown.Section>
+						<Dropdown.Item addon="⌘K->P" icon={User01}>
+							View profile
+						</Dropdown.Item>
+						<Dropdown.Item
+							addon="⌘S"
+							onAction={() => {
+								navigate({
+									to: "/app/settings",
+								})
+							}}
+							icon={Settings01}
+						>
+							Settings
+						</Dropdown.Item>
+					</Dropdown.Section>
+					<Dropdown.Separator />
+					<Dropdown.Section>
+						<Dropdown.Item icon={LayersTwo01}>Changelog</Dropdown.Item>
+						<Dropdown.Item icon={HelpCircle}>Support</Dropdown.Item>
+						<Dropdown.Item icon={Container}>API</Dropdown.Item>
+					</Dropdown.Section>
+					<Dropdown.Separator />
+					<Dropdown.Section>
+						<Dropdown.Item addon="⌥⇧Q" icon={LogOut01} onAction={signOut}>
+							Log out
+						</Dropdown.Item>
+					</Dropdown.Section>
+				</Dropdown.Menu>
+			</Dropdown.Popover>
+		</Dropdown.Root>
+	)
+}

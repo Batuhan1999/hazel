@@ -13,6 +13,7 @@ import { Route as AppLayoutRouteImport } from './routes/app/layout'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AppSettingsRouteImport } from './routes/app/settings'
 import { Route as AppNotificationsRouteImport } from './routes/app/notifications'
 import { Route as AppChatRouteImport } from './routes/app/chat'
 import { Route as AppChatIdRouteImport } from './routes/app/chat/$id'
@@ -37,6 +38,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppNotificationsRoute = AppNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/app': typeof AppLayoutRouteWithChildren
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/auth/login': typeof AuthLoginRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/auth/login': typeof AuthLoginRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -76,6 +84,7 @@ export interface FileRoutesById {
   '/app': typeof AppLayoutRouteWithChildren
   '/app/chat': typeof AppChatRouteWithChildren
   '/app/notifications': typeof AppNotificationsRoute
+  '/app/settings': typeof AppSettingsRoute
   '/auth/login': typeof AuthLoginRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
@@ -87,6 +96,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/chat'
     | '/app/notifications'
+    | '/app/settings'
     | '/auth/login'
     | '/app/'
     | '/app/chat/$id'
@@ -95,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/app/chat'
     | '/app/notifications'
+    | '/app/settings'
     | '/auth/login'
     | '/app'
     | '/app/chat/$id'
@@ -104,6 +115,7 @@ export interface FileRouteTypes {
     | '/app'
     | '/app/chat'
     | '/app/notifications'
+    | '/app/settings'
     | '/auth/login'
     | '/app/'
     | '/app/chat/$id'
@@ -145,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/settings': {
+      id: '/app/settings'
+      path: '/settings'
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/app/notifications': {
       id: '/app/notifications'
       path: '/notifications'
@@ -183,12 +202,14 @@ const AppChatRouteWithChildren =
 interface AppLayoutRouteChildren {
   AppChatRoute: typeof AppChatRouteWithChildren
   AppNotificationsRoute: typeof AppNotificationsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppChatRoute: AppChatRouteWithChildren,
   AppNotificationsRoute: AppNotificationsRoute,
+  AppSettingsRoute: AppSettingsRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
