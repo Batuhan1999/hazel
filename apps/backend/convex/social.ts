@@ -16,7 +16,7 @@ export const getFriendsForOrganization = organizationServerQuery({
 			members.map(async (member) => {
 				const user = await ctx.db.get(member.userId)
 				return user
-			})
+			}),
 		)
 
 		return users.filter((u) => u !== null && u._id !== ctx.account.doc._id)
@@ -38,7 +38,7 @@ export const getFriends = userQuery({
 			members.map(async (member) => {
 				const user = await ctx.db.get(member.userId)
 				return user
-			})
+			}),
 		)
 
 		return users.filter((u) => u !== null && u._id !== ctx.user.id)
@@ -60,7 +60,7 @@ export const getMembers = userQuery({
 			members.map(async (member) => {
 				const user = await ctx.db.get(member.userId)
 				return user ? { ...user, role: member.role } : null
-			})
+			}),
 		)
 
 		return users.filter((u) => u !== null)
@@ -82,7 +82,7 @@ export const getMembersForOrganization = organizationServerQuery({
 			members.map(async (member) => {
 				const user = await ctx.db.get(member.userId)
 				return user ? { ...user, role: member.role } : null
-			})
+			}),
 		)
 
 		return users.filter((u) => u !== null)

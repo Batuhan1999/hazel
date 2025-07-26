@@ -21,7 +21,6 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from "../ui/sidebar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs"
 import { ChannelItem, DmChannelLink } from "./channel-item"
 import { NavUser } from "./nav-user"
 import { SidebarFavoriteGroup } from "./sidebar-favorite-group"

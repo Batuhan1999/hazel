@@ -8,6 +8,7 @@ import { useCallback } from "react"
 import { Pressable } from "react-aria"
 import { cn } from "~/lib/utils"
 import { cx } from "~/utils/cx"
+import { Avatar } from "../base/avatar/avatar"
 import { Dropdown } from "../base/dropdown/dropdown"
 import IconHashtagStroke from "../icons/IconHashtagStroke"
 import IconMultipleCrossCancelStroke from "../icons/IconMultipleCrossCancelStroke"
@@ -16,9 +17,7 @@ import IconStar1 from "../icons/IconStar1"
 import IconThreeDotsMenuHorizontalStroke from "../icons/IconThreeDotsMenuHorizontalStroke"
 import IconVolumeMute1 from "../icons/IconVolumeMute1"
 import IconVolumeOne1 from "../icons/IconVolumeOne1"
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar"
 import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar"
-import { UserAvatar } from "../ui/user-avatar"
 
 type ChannelsResponse = FunctionReturnType<typeof api.channels.getChannelsForOrganization>
 
@@ -174,10 +173,10 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 					<div className="-space-x-4 flex items-center justify-center">
 						{channel.type === "single" && filteredMembers.length === 1 ? (
 							<div className="flex items-center justify-center gap-3">
-								<UserAvatar
-									className="size-6"
-									avatarUrl={filteredMembers[0].user.avatarUrl}
-									displayName={`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
+								<Avatar
+									size="xs"
+									src={filteredMembers[0].user.avatarUrl}
+									alt={`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
 									status={
 										userPresence.find((p) => p.userId === filteredMembers[0].user._id)
 											?.online
@@ -193,10 +192,11 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 							<div className="-space-x-4 flex items-center justify-center">
 								{filteredMembers.map((member) => (
 									<div key={member.user._id} className="inline-block">
-										<Avatar className="size-7">
-											<AvatarImage src={member.user.avatarUrl} />
-											<AvatarFallback>{member.user.firstName[0]}</AvatarFallback>
-										</Avatar>
+										<Avatar
+											className="size-7"
+											src={member.user.avatarUrl}
+											alt={member.user.firstName[0]}
+										></Avatar>
 									</div>
 								))}
 								<p className={cn("truncate", channel.isMuted && "opacity-60")}>

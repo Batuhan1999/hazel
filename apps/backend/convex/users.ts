@@ -3,13 +3,12 @@ import { accountMutation } from "./middleware/withAccount"
 import { organizationServerQuery } from "./middleware/withOrganization"
 import { userQuery } from "./middleware/withUser"
 
-export const getUsers = userQuery({
+export const getUsers = organizationServerQuery({
 	args: {},
-	handler: async (ctx, args) => {
-		// Get all members of the organization
+	handler: async (ctx) => {
 		const members = await ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId", (q) => q.eq("organizationId", args.organizationId))
+			.withIndex("by_organizationId", (q) => q.eq("organizationId", ctx.organizationId))
 			.filter((q) => q.eq(q.field("deletedAt"), undefined))
 			.collect()
 

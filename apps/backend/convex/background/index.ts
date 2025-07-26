@@ -1,7 +1,7 @@
 import { internalMutation } from "@hazel/backend/server"
 import { v } from "convex/values"
 import { asyncMap } from "convex-helpers"
-import { api, internal } from "../_generated/api"
+import { internal } from "../_generated/api"
 
 const markdownToPlainText = (markdown: string): string => {
 	if (!markdown) return ""
@@ -78,15 +78,15 @@ export const sendNotification = internalMutation({
 		await asyncMap(filteredChannelMembers, async (member) => {
 			const user = await ctx.db.get(member.userId)
 			if (!user) return
-			
+
 			// Find the user's organization membership
 			const orgMember = await ctx.db
 				.query("organizationMembers")
-				.withIndex("by_organizationId_userId", (q) => 
-					q.eq("organizationId", organization._id).eq("userId", user._id)
+				.withIndex("by_organizationId_userId", (q) =>
+					q.eq("organizationId", organization._id).eq("userId", user._id),
 				)
 				.first()
-			
+
 			if (!orgMember) return
 
 			await ctx.db.insert("notifications", {

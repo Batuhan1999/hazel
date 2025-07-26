@@ -1,7 +1,6 @@
 import { v } from "convex/values"
 import { asyncMap } from "convex-helpers"
-import { internalMutation, query } from "./_generated/server"
-import { accountMutation, accountQuery } from "./middleware/withAccount"
+import { internalMutation } from "./_generated/server"
 import { userMutation, userQuery } from "./middleware/withUser"
 
 // The duration in milliseconds to consider a user as "still typing".
@@ -23,7 +22,7 @@ export const update = userMutation({
 	handler: async (ctx, { channelId }) => {
 		const membership = ctx.user.membership
 		if (!membership) throw new Error("User not a member of this organization")
-		
+
 		const existing = await ctx.db
 			.query("typingIndicators")
 			.withIndex("by_memberId", (q) => q.eq("channelId", channelId).eq("memberId", membership._id))
@@ -65,7 +64,7 @@ export const list = userQuery({
 			// Get member details
 			const orgMember = await ctx.db.get(indicator.memberId)
 			if (!orgMember) return null
-			
+
 			// Get user details
 			const user = await ctx.db.get(orgMember.userId)
 			if (!user) return null
@@ -87,7 +86,7 @@ export const stop = userMutation({
 	handler: async (ctx, { channelId }) => {
 		const membership = ctx.user.membership
 		if (!membership) throw new Error("User not a member of this organization")
-		
+
 		const existing = await ctx.db
 			.query("typingIndicators")
 			.withIndex("by_memberId", (q) => q.eq("channelId", channelId).eq("memberId", membership._id))

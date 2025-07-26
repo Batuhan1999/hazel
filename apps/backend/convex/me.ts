@@ -1,5 +1,6 @@
 import { v } from "convex/values"
-import { accountQuery } from "./middleware/withAccount"
+import { internal } from "./_generated/api"
+import { accountMutation, accountQuery } from "./middleware/withAccount"
 import { organizationServerQuery } from "./middleware/withOrganization"
 
 export const get = accountQuery({
@@ -105,5 +106,28 @@ export const getLatestNotifcation = accountQuery({
 				.filter((n) => n !== null)
 				.sort((a, b) => (b?._creationTime || 0) - (a?._creationTime || 0))[0] || null
 		)
+	},
+})
+
+export const updateProfile = accountMutation({
+	args: {
+		firstName: v.string(),
+		lastName: v.string(),
+	},
+	handler: async (ctx, { firstName, lastName }) => {
+		// First update in WorkOS
+		await ctx.scheduler.runAfter(0, internal.workosActions.updateUser, {
+			workosUserId: ctx.account.doc.externalId,
+			firstName,
+			lastName,
+		})
+
+		// Then update in Convex
+		await ctx.db.patch(ctx.account.id, {
+			firstName,
+			lastName,
+		})
+
+		return { success: true }
 	},
 })

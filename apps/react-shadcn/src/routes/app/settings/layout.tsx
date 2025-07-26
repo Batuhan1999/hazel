@@ -1,6 +1,7 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router"
 import { SearchLg } from "@untitledui/icons"
-import { useState } from "react"
+import { WorkOsWidgets } from "@workos-inc/widgets"
+import { useEffect, useState } from "react"
 import { TabList, Tabs } from "~/components/application/tabs/tabs"
 import { Input } from "~/components/base/input/input"
 import { NativeSelect } from "~/components/base/select/select-native"
@@ -20,7 +21,22 @@ const tabs = [
 ]
 
 function RouteComponent() {
-	const [selectedTab, setSelectedTab] = useState<string>("appearance")
+	const location = useLocation()
+	const navigate = useNavigate()
+
+	// Extract the current tab from the pathname
+	const pathSegments = location.pathname.split("/")
+	const currentTab =
+		pathSegments[pathSegments.length - 1] === "settings"
+			? "appearance" // Default to appearance when at /app/settings
+			: pathSegments[pathSegments.length - 1]
+
+	const [selectedTab, setSelectedTab] = useState<string>(currentTab)
+
+	// Update selected tab when location changes
+	useEffect(() => {
+		setSelectedTab(currentTab)
+	}, [currentTab])
 
 	return (
 		<main className="min-w-0 flex-1 bg-primary pt-8 pb-12">
@@ -50,7 +66,12 @@ function RouteComponent() {
 					<div className="md:hidden">
 						<NativeSelect
 							value={selectedTab}
-							onChange={(event) => setSelectedTab(event.target.value)}
+							onChange={(event) => {
+								const tabId = event.target.value
+								navigate({
+									to: tabId === "appearance" ? "/app/settings" : `/app/settings/${tabId}`,
+								})
+							}}
 							options={tabs.map((tab) => ({ label: tab.label, value: tab.id }))}
 						/>
 					</div>
@@ -59,7 +80,12 @@ function RouteComponent() {
 						<Tabs
 							className="flex w-max items-start max-md:hidden"
 							selectedKey={selectedTab}
-							onSelectionChange={(value) => setSelectedTab(value as string)}
+							onSelectionChange={(value) => {
+								const tabId = value as string
+								navigate({
+									to: tabId === "appearance" ? "/app/settings" : `/app/settings/${tabId}`,
+								})
+							}}
 						>
 							<TabList type="button-border" className="w-full" items={tabs} />
 						</Tabs>

@@ -339,7 +339,7 @@ export const syncOrganizationMemberships = internalMutation({
 		workosOrgId: v.string(),
 		memberships: v.array(v.any()),
 	}),
-	handler: async (ctx, { organizationId, workosOrgId, memberships }) => {
+	handler: async (ctx, { organizationId, memberships }) => {
 		const results = {
 			created: 0,
 			updated: 0,

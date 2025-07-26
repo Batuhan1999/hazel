@@ -2,8 +2,8 @@ import { convexQuery } from "@convex-dev/react-query"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "../ui/sidebar"
-import { ChannelItem, DmChannelLink } from "./channel-item"
+import { ChannelItem, DmChannelLink } from "./app-sidebar/channel-item"
+import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu } from "./ui/sidebar"
 
 export const SidebarFavoriteGroup = () => {
 	const favoritedChannelsQuery = useQuery(

@@ -10,7 +10,11 @@ export class User {
 		private readonly organizationMembership?: Doc<"organizationMembers">,
 	) {}
 
-	static async fromIdentity(ctx: GenericContext, identity: UserIdentity, organizationId?: Id<"organizations">) {
+	static async fromIdentity(
+		ctx: GenericContext,
+		identity: UserIdentity,
+		organizationId?: Id<"organizations">,
+	) {
 		// Find user by externalId (from WorkOS)
 		const user = await ctx.db
 			.query("users")
@@ -22,12 +26,13 @@ export class User {
 		// If organizationId is provided, get membership
 		let membership: Doc<"organizationMembers"> | undefined
 		if (organizationId) {
-			membership = await ctx.db
-				.query("organizationMembers")
-				.withIndex("by_organizationId_userId", (q) => 
-					q.eq("organizationId", organizationId).eq("userId", user._id)
-				)
-				.unique() || undefined
+			membership =
+				(await ctx.db
+					.query("organizationMembers")
+					.withIndex("by_organizationId_userId", (q) =>
+						q.eq("organizationId", organizationId).eq("userId", user._id),
+					)
+					.unique()) || undefined
 		}
 
 		return new User(user, membership)

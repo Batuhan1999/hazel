@@ -18,7 +18,7 @@ export const setNotifcationAsRead = userMutation({
 		// Get the user's membership in this organization
 		const membership = ctx.user.membership
 		if (!membership) throw new Error("User not a member of this organization")
-		
+
 		const notifications = await ctx.db
 			.query("notifications")
 			.withIndex("by_memberId_targetedResourceId", (q) =>

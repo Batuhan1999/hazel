@@ -1,15 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { Color } from "react-aria-components"
 import { ColorField, ColorSwatch, parseColor, Radio, RadioGroup } from "react-aria-components"
 import { Dark, Light, System } from "~/components/application/modals/appearances"
+import { generateRgbShades } from "~/components/application/modals/base-components/generate-shades"
 
 import { SectionHeader } from "~/components/application/section-headers/section-headers"
 import { SectionLabel } from "~/components/application/section-headers/section-label"
 
-import { Button } from "~/components/base/buttons/button"
-import { FileTrigger } from "~/components/base/file-upload-trigger/file-upload-trigger"
 import { Form } from "~/components/base/form/form"
 import { InputBase } from "~/components/base/input/input"
 import { RadioButtonBase } from "~/components/base/radio-buttons/radio-buttons"
@@ -24,42 +23,70 @@ export const Route = createFileRoute("/app/settings/")({
 
 function AppearanceSettings() {
 	const colorSwatches = [
-		"#535862",
-		"#099250",
-		"#1570EF",
-		"#444CE7",
-		"#6938EF",
-		"#BA24D5",
-		"#DD2590",
-		"#E04F16",
+		{ hex: "#535862", name: "gray" },
+		{ hex: "#099250", name: "green" },
+		{ hex: "#1570EF", name: "blue" },
+		{ hex: "#444CE7", name: "indigo" },
+		{ hex: "#6938EF", name: "purple" },
+		{ hex: "#BA24D5", name: "fuchsia" },
+		{ hex: "#DD2590", name: "pink" },
+		{ hex: "#E04F16", name: "orange" },
 	]
 
-	const [customColor, setCustomColor] = useState<Color>(parseColor("#7F56D9"))
-	const [color, setColor] = useState<Color>(customColor)
-	const [uploadedAvatar, setUploadedAvatar] = useState<string | undefined>(
-		"https://www.untitledui.com/logos/images/ContrastAI.jpg",
-	)
+	// Get saved color from localStorage or default
+	const getSavedColor = () => {
+		try {
+			const savedColorHex = localStorage.getItem("brand-color")
+			if (savedColorHex) {
+				return parseColor(savedColorHex)
+			}
+		} catch {
+			// localStorage not available or invalid color
+		}
+		return parseColor("#7F56D9") // Default color
+	}
+
+	const [color, setColor] = useState<Color>(getSavedColor())
 
 	const { theme, setTheme } = useTheme()
 
-	const handleAvatarUpload = (files: FileList | null) => {
-		const file = files?.[0]
+	useEffect(() => {
+		// Save color to localStorage
+		try {
+			localStorage.setItem("brand-color", color.toString("hex"))
+		} catch {
+			// localStorage not available
+		}
 
-		if (!file) return
+		const existingColorSwatch = colorSwatches.find((swatch) => swatch.hex === color.toString("hex"))
+		if (existingColorSwatch) {
+			const shades = ["25", "50", "100", "200", "300", "400", "500", "600", "700", "800", "900", "950"]
 
-		console.log("File uploaded:", file)
-		setUploadedAvatar(URL.createObjectURL(file))
-	}
+			// Re-map the brand color variables to the existing primitive color variables.
+			shades.forEach((shade) =>
+				document.documentElement.style.setProperty(
+					`--color-brand-${shade}`,
+					`var(--color-${existingColorSwatch.name}-${shade})`,
+				),
+			)
+
+			return
+		}
+
+		const shades = generateRgbShades(color.toString("hex"))
+		if (!shades) return
+
+		// Set the brand color variables to the new custom color shades.
+		Object.entries(shades).forEach(([key, { r, g, b }]) =>
+			document.documentElement.style.setProperty(`--color-brand-${key}`, `rgb(${r} ${g} ${b})`),
+		)
+	}, [color])
 
 	const handleCustomColorChange = (value: Color | null) => {
 		if (!value) return
 
-		// If the custom color is already selected, update the color.
-		if (color.toString("hex") === customColor.toString("hex")) {
-			setColor(value)
-		}
-
-		setCustomColor(value)
+		// Always update the selected color when custom color changes
+		setColor(value)
 	}
 
 	const themes = [
@@ -105,32 +132,6 @@ function AppearanceSettings() {
 				<div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-8">
 					<SectionLabel.Root
 						size="sm"
-						title="Company logo"
-						description="Update your company logo."
-					/>
-
-					<div className="flex items-center gap-5">
-						<img
-							src={uploadedAvatar}
-							alt="Company logo"
-							className="size-16 rounded-2xl object-cover ring-1 ring-avatar-contrast-border ring-inset"
-						/>
-
-						<div className="flex gap-4">
-							<FileTrigger acceptedFileTypes={["image/*"]} onSelect={handleAvatarUpload}>
-								<Button size="sm" color="secondary">
-									Replace logo
-								</Button>
-							</FileTrigger>
-						</div>
-					</div>
-				</div>
-
-				<hr className="h-px w-full border-none bg-border-secondary" />
-
-				<div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(200px,280px)_1fr] lg:gap-8">
-					<SectionLabel.Root
-						size="sm"
 						title="Brand color"
 						description="Select or customize your brand color."
 					/>
@@ -139,20 +140,23 @@ function AppearanceSettings() {
 						<RadioGroup
 							aria-label="Brand color"
 							value={color?.toString("hex")}
-							onChange={(value) => setColor(parseColor(value))}
+							onChange={(value) => {
+								const newColor = parseColor(value)
+								setColor(newColor)
+							}}
 							className="flex flex-col items-start gap-4 md:flex-row md:items-center"
 						>
 							<div className="flex gap-2">
-								{colorSwatches.map((color) => (
+								{colorSwatches.map((swatch) => (
 									<Radio
-										key={color}
-										value={color}
-										aria-label={parseColor(color).getColorName("en-US")}
+										key={swatch.hex}
+										value={swatch.hex}
+										aria-label={parseColor(swatch.hex).getColorName("en-US")}
 									>
 										{({ isSelected, isFocused }) => (
 											<ColorSwatch
-												id={`color-${color}`}
-												color={color}
+												id={`color-${swatch.hex}`}
+												color={swatch.hex}
 												className={cx(
 													"-outline-offset-1 size-7 cursor-pointer rounded-full outline-1 outline-black/10",
 													(isSelected || isFocused) &&
@@ -163,49 +167,7 @@ function AppearanceSettings() {
 									</Radio>
 								))}
 							</div>
-							<Radio
-								value={customColor.toString("hex")}
-								aria-label={customColor.getColorName("en-US")}
-								className="flex shrink-0 items-center gap-3"
-							>
-								{({ isSelected, isFocused }) => (
-									<>
-										<label
-											htmlFor="custom-color-input"
-											className="font-semibold text-secondary text-sm"
-										>
-											Custom
-										</label>
-										<ColorSwatch
-											color={customColor}
-											className={cx(
-												"-outline-offset-1 size-7 shrink-0 cursor-pointer rounded-full outline-1 outline-black/10",
-												(isSelected || isFocused) &&
-													"ring-2 ring-focus-ring ring-offset-2 ring-offset-bg-primary",
-											)}
-										/>
-										<ColorField
-											className="md:hidden"
-											value={customColor}
-											onChange={handleCustomColorChange}
-										>
-											<InputBase
-												id="custom-color-input"
-												size="sm"
-												wrapperClassName="w-24"
-											/>
-										</ColorField>
-									</>
-								)}
-							</Radio>
 						</RadioGroup>
-						<ColorField
-							value={customColor}
-							onChange={handleCustomColorChange}
-							className="max-md:hidden"
-						>
-							<InputBase size="sm" wrapperClassName="w-24" />
-						</ColorField>
 					</div>
 				</div>
 

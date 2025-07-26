@@ -17,6 +17,12 @@ import { Route as AppNotificationsRouteImport } from './routes/app/notifications
 import { Route as AppChatRouteImport } from './routes/app/chat'
 import { Route as AppSettingsLayoutRouteImport } from './routes/app/settings/layout'
 import { Route as AppSettingsIndexRouteImport } from './routes/app/settings/index'
+import { Route as AppSettingsTeamRouteImport } from './routes/app/settings/team'
+import { Route as AppSettingsProfileRouteImport } from './routes/app/settings/profile'
+import { Route as AppSettingsNotificationsRouteImport } from './routes/app/settings/notifications'
+import { Route as AppSettingsIntegrationsRouteImport } from './routes/app/settings/integrations'
+import { Route as AppSettingsEmailRouteImport } from './routes/app/settings/email'
+import { Route as AppSettingsBillingRouteImport } from './routes/app/settings/billing'
 import { Route as AppChatIdRouteImport } from './routes/app/chat/$id'
 
 const AppLayoutRoute = AppLayoutRouteImport.update({
@@ -59,6 +65,37 @@ const AppSettingsIndexRoute = AppSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppSettingsLayoutRoute,
 } as any)
+const AppSettingsTeamRoute = AppSettingsTeamRouteImport.update({
+  id: '/team',
+  path: '/team',
+  getParentRoute: () => AppSettingsLayoutRoute,
+} as any)
+const AppSettingsProfileRoute = AppSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AppSettingsLayoutRoute,
+} as any)
+const AppSettingsNotificationsRoute =
+  AppSettingsNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AppSettingsLayoutRoute,
+  } as any)
+const AppSettingsIntegrationsRoute = AppSettingsIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => AppSettingsLayoutRoute,
+} as any)
+const AppSettingsEmailRoute = AppSettingsEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => AppSettingsLayoutRoute,
+} as any)
+const AppSettingsBillingRoute = AppSettingsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AppSettingsLayoutRoute,
+} as any)
 const AppChatIdRoute = AppChatIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -74,6 +111,12 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
+  '/app/settings/email': typeof AppSettingsEmailRoute
+  '/app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/app/settings/profile': typeof AppSettingsProfileRoute
+  '/app/settings/team': typeof AppSettingsTeamRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,6 +126,12 @@ export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/app': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
+  '/app/settings/email': typeof AppSettingsEmailRoute
+  '/app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/app/settings/profile': typeof AppSettingsProfileRoute
+  '/app/settings/team': typeof AppSettingsTeamRoute
   '/app/settings': typeof AppSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -95,6 +144,12 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/app/': typeof AppIndexRoute
   '/app/chat/$id': typeof AppChatIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
+  '/app/settings/email': typeof AppSettingsEmailRoute
+  '/app/settings/integrations': typeof AppSettingsIntegrationsRoute
+  '/app/settings/notifications': typeof AppSettingsNotificationsRoute
+  '/app/settings/profile': typeof AppSettingsProfileRoute
+  '/app/settings/team': typeof AppSettingsTeamRoute
   '/app/settings/': typeof AppSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -108,6 +163,12 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/app/'
     | '/app/chat/$id'
+    | '/app/settings/billing'
+    | '/app/settings/email'
+    | '/app/settings/integrations'
+    | '/app/settings/notifications'
+    | '/app/settings/profile'
+    | '/app/settings/team'
     | '/app/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -117,6 +178,12 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/app'
     | '/app/chat/$id'
+    | '/app/settings/billing'
+    | '/app/settings/email'
+    | '/app/settings/integrations'
+    | '/app/settings/notifications'
+    | '/app/settings/profile'
+    | '/app/settings/team'
     | '/app/settings'
   id:
     | '__root__'
@@ -128,6 +195,12 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/app/'
     | '/app/chat/$id'
+    | '/app/settings/billing'
+    | '/app/settings/email'
+    | '/app/settings/integrations'
+    | '/app/settings/notifications'
+    | '/app/settings/profile'
+    | '/app/settings/team'
     | '/app/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -195,6 +268,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSettingsIndexRouteImport
       parentRoute: typeof AppSettingsLayoutRoute
     }
+    '/app/settings/team': {
+      id: '/app/settings/team'
+      path: '/team'
+      fullPath: '/app/settings/team'
+      preLoaderRoute: typeof AppSettingsTeamRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
+    '/app/settings/profile': {
+      id: '/app/settings/profile'
+      path: '/profile'
+      fullPath: '/app/settings/profile'
+      preLoaderRoute: typeof AppSettingsProfileRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
+    '/app/settings/notifications': {
+      id: '/app/settings/notifications'
+      path: '/notifications'
+      fullPath: '/app/settings/notifications'
+      preLoaderRoute: typeof AppSettingsNotificationsRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
+    '/app/settings/integrations': {
+      id: '/app/settings/integrations'
+      path: '/integrations'
+      fullPath: '/app/settings/integrations'
+      preLoaderRoute: typeof AppSettingsIntegrationsRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
+    '/app/settings/email': {
+      id: '/app/settings/email'
+      path: '/email'
+      fullPath: '/app/settings/email'
+      preLoaderRoute: typeof AppSettingsEmailRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
+    '/app/settings/billing': {
+      id: '/app/settings/billing'
+      path: '/billing'
+      fullPath: '/app/settings/billing'
+      preLoaderRoute: typeof AppSettingsBillingRouteImport
+      parentRoute: typeof AppSettingsLayoutRoute
+    }
     '/app/chat/$id': {
       id: '/app/chat/$id'
       path: '/$id'
@@ -206,10 +321,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AppSettingsLayoutRouteChildren {
+  AppSettingsBillingRoute: typeof AppSettingsBillingRoute
+  AppSettingsEmailRoute: typeof AppSettingsEmailRoute
+  AppSettingsIntegrationsRoute: typeof AppSettingsIntegrationsRoute
+  AppSettingsNotificationsRoute: typeof AppSettingsNotificationsRoute
+  AppSettingsProfileRoute: typeof AppSettingsProfileRoute
+  AppSettingsTeamRoute: typeof AppSettingsTeamRoute
   AppSettingsIndexRoute: typeof AppSettingsIndexRoute
 }
 
 const AppSettingsLayoutRouteChildren: AppSettingsLayoutRouteChildren = {
+  AppSettingsBillingRoute: AppSettingsBillingRoute,
+  AppSettingsEmailRoute: AppSettingsEmailRoute,
+  AppSettingsIntegrationsRoute: AppSettingsIntegrationsRoute,
+  AppSettingsNotificationsRoute: AppSettingsNotificationsRoute,
+  AppSettingsProfileRoute: AppSettingsProfileRoute,
+  AppSettingsTeamRoute: AppSettingsTeamRoute,
   AppSettingsIndexRoute: AppSettingsIndexRoute,
 }
 

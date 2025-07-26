@@ -9,7 +9,7 @@ import { toast } from "sonner"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
 import { Button, IconButton } from "~/components/base/buttons/button"
 import { CloseButton } from "~/components/base/buttons/close-button"
-import { Input } from "~/components/base/input/input"
+import { Input, TextField } from "~/components/base/input/input"
 import { Select } from "~/components/base/select/select"
 import { IconDoorOpen, IconHashtagStroke, IconPlusStroke } from "~/components/icons"
 
@@ -22,10 +22,11 @@ type ChannelFormData = typeof channelSchema.infer
 
 const { fieldContext, formContext } = createFormHookContexts()
 
-const { useAppForm } = createFormHook({
+export const { useAppForm } = createFormHook({
 	fieldComponents: {
 		Input,
 		Select,
+		TextField,
 	},
 	formComponents: {},
 	fieldContext,

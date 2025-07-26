@@ -58,7 +58,9 @@ export const getChannelsForOrganization = organizationServerQuery({
 
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", ctx.organizationId),
+			)
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
@@ -123,7 +125,9 @@ export const getChannels = userQuery({
 	handler: async (ctx, args) => {
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
 			.filter((q) => q.neq(q.field("type"), "thread"))
 			.collect()
 
@@ -226,12 +230,13 @@ export const getChannel = userQuery({
 })
 
 export const getPublicChannels = userQuery({
-	args: {
-	},
+	args: {},
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -246,7 +251,9 @@ export const getUnjoinedPublicChannelsForOrganization = organizationServerQuery(
 
 		const channels = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", ctx.organizationId),
+			)
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -268,12 +275,13 @@ export const getUnjoinedPublicChannelsForOrganization = organizationServerQuery(
 })
 
 export const getUnjoinedPublicChannels = userQuery({
-	args: {
-	},
+	args: {},
 	handler: async (ctx, args) => {
 		const publicChannels = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", args.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", args.organizationId),
+			)
 			.filter((q) => q.eq(q.field("type"), "public"))
 			.collect()
 
@@ -327,7 +335,6 @@ export const createChannelForOrganization = organizationServerMutation({
 
 export const createChannel = userMutation({
 	args: {
-
 		name: v.string(),
 		type: v.union(v.literal("public"), v.literal("private"), v.literal("thread"), v.literal("direct")),
 		userIds: v.optional(v.array(v.id("users"))),
@@ -396,7 +403,9 @@ export const createDmChannelForOrganization = organizationServerMutation({
 		// Check if DM channel already exists
 		const existingChannel = await ctx.db
 			.query("channels")
-			.withIndex("by_organizationId_and_participantHash", (q) => q.eq("organizationId", ctx.organizationId))
+			.withIndex("by_organizationId_and_participantHash", (q) =>
+				q.eq("organizationId", ctx.organizationId),
+			)
 			.filter((q) => q.eq(q.field("type"), "dm"))
 			.collect()
 

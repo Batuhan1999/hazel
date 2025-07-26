@@ -1,6 +1,6 @@
 import { PushNotifications } from "@convex-dev/expo-push-notifications"
 import { v } from "convex/values"
-import { api, components } from "./_generated/api"
+import { components } from "./_generated/api"
 import type { Id } from "./_generated/dataModel"
 import { internalMutation } from "./_generated/server"
 import { accountMutation, accountQuery } from "./middleware/withAccount"
@@ -33,7 +33,7 @@ export const getStatusForUser = accountQuery({
 export const sendPushNotification = internalMutation({
 	args: { title: v.string(), body: v.optional(v.string()), to: v.id("users") },
 	handler: async (ctx, args) => {
-		const pushId = await pushNotifications.sendPushNotification(ctx, {
+		const _pushId = await pushNotifications.sendPushNotification(ctx, {
 			userId: args.to,
 			allowUnregisteredTokens: true,
 			notification: {

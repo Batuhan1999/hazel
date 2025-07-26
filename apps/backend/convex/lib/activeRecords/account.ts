@@ -29,11 +29,15 @@ export class Account {
 		}
 	}
 
-	public async createOrganizationMembership(args: { ctx: MutationCtx; organizationId: Id<"organizations">; role?: string }) {
+	public async createOrganizationMembership(args: {
+		ctx: MutationCtx
+		organizationId: Id<"organizations">
+		role?: string
+	}) {
 		const membership = await args.ctx.db
 			.query("organizationMembers")
-			.withIndex("by_organizationId_userId", (q) => 
-				q.eq("organizationId", args.organizationId).eq("userId", this.id)
+			.withIndex("by_organizationId_userId", (q) =>
+				q.eq("organizationId", args.organizationId).eq("userId", this.id),
 			)
 			.unique()
 

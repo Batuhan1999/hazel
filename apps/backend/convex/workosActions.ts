@@ -4,13 +4,14 @@ import { WorkOS } from "@workos-inc/node"
 import { v } from "convex/values"
 import { internalAction } from "./_generated/server"
 
+const workos = new WorkOS(process.env.WORKOS_API_KEY!)
+
 export const verifyWorkosWebhook = internalAction({
 	args: v.object({
 		payload: v.string(),
 		signature: v.string(),
 	}),
 	handler: async (_ctx, { payload, signature }) => {
-		const workos = new WorkOS(process.env.WORKOS_API_KEY!)
 		try {
 			const event = await workos.webhooks.constructEvent({
 				sigHeader: signature,
@@ -28,10 +29,9 @@ export const verifyWorkosWebhook = internalAction({
 export const fetchWorkosUsers = internalAction({
 	args: v.object({}),
 	handler: async (_ctx, _args) => {
-		const workos = new WorkOS(process.env.WORKOS_API_KEY!)
 		const users = []
 		let after: string | null = null
-		
+
 		try {
 			// Paginate through all users
 			do {
@@ -39,11 +39,11 @@ export const fetchWorkosUsers = internalAction({
 					after: after || undefined,
 					limit: 100,
 				})
-				
+
 				users.push(...response.data)
 				after = response.listMetadata?.after || null
 			} while (after)
-			
+
 			return { success: true, users }
 		} catch (err: any) {
 			console.error("Error fetching WorkOS users:", err)
@@ -56,10 +56,9 @@ export const fetchWorkosUsers = internalAction({
 export const fetchWorkosOrganizations = internalAction({
 	args: v.object({}),
 	handler: async (_ctx, _args) => {
-		const workos = new WorkOS(process.env.WORKOS_API_KEY!)
 		const organizations = []
 		let after: string | null = null
-		
+
 		try {
 			// Paginate through all organizations
 			do {
@@ -67,11 +66,11 @@ export const fetchWorkosOrganizations = internalAction({
 					after: after || undefined,
 					limit: 100,
 				})
-				
+
 				organizations.push(...response.data)
 				after = response.listMetadata?.after || null
 			} while (after)
-			
+
 			return { success: true, organizations }
 		} catch (err: any) {
 			console.error("Error fetching WorkOS organizations:", err)
@@ -86,10 +85,9 @@ export const fetchWorkosOrganizationMemberships = internalAction({
 		organizationId: v.string(),
 	}),
 	handler: async (_ctx, { organizationId }) => {
-		const workos = new WorkOS(process.env.WORKOS_API_KEY!)
 		const memberships = []
 		let after: string | null = null
-		
+
 		try {
 			// Paginate through all memberships
 			do {
@@ -98,15 +96,62 @@ export const fetchWorkosOrganizationMemberships = internalAction({
 					after: after || undefined,
 					limit: 100,
 				})
-				
+
 				memberships.push(...response.data)
 				after = response.listMetadata?.after || null
 			} while (after)
-			
+
 			return { success: true, memberships }
 		} catch (err: any) {
 			console.error(`Error fetching WorkOS memberships for org ${organizationId}:`, err)
 			return { success: false, error: err.message, memberships: [] }
+		}
+	},
+})
+
+export const updateUser = internalAction({
+	args: v.object({
+		workosUserId: v.string(),
+		firstName: v.string(),
+		lastName: v.string(),
+	}),
+	handler: async (_ctx, { workosUserId, firstName, lastName }) => {
+		try {
+			await workos.userManagement.updateUser({
+				userId: workosUserId,
+				firstName,
+				lastName,
+			})
+
+			return { success: true }
+		} catch (err: any) {
+			console.error("Error updating WorkOS user:", err)
+			throw new Error(`Failed to update user in WorkOS: ${err.message}`)
+		}
+	},
+})
+
+// Send invitation to join an organization
+export const sendInvitation = internalAction({
+	args: v.object({
+		email: v.string(),
+		organizationId: v.string(),
+		role: v.optional(v.string()),
+		inviterUserId: v.optional(v.string()),
+	}),
+	handler: async (_ctx, { email, organizationId, role, inviterUserId }) => {
+		try {
+			const invitation = await workos.userManagement.sendInvitation({
+				email,
+				organizationId,
+				...(role && { roleSlug: role }),
+				...(inviterUserId && { inviterUserId }),
+			})
+
+			return { success: true, invitation }
+		} catch (err: any) {
+			console.error("Error sending WorkOS invitation:", err)
+			return { success: false, error: err.message }
 		}
 	},
 })

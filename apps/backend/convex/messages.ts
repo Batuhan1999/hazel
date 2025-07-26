@@ -56,9 +56,7 @@ export const getMessagesForOrganization = organizationServerQuery({
 		paginationOpts: paginationOptsValidator,
 	},
 	handler: async (ctx, args) => {
-		const user = await ctx.db
-			.query("users")
-			.first()
+		const user = await ctx.db.query("users").first()
 
 		if (!user) {
 			throw new Error("User not found in this organization")
@@ -219,7 +217,6 @@ export const createMessageForOrganization = organizationServerMutation({
 
 export const createMessage = userMutation({
 	args: {
-
 		content: v.string(),
 		channelId: v.id("channels"),
 		threadChannelId: v.optional(v.id("channels")),
@@ -257,7 +254,6 @@ export const createMessage = userMutation({
 
 export const updateMessage = userMutation({
 	args: {
-
 		id: v.id("messages"),
 		content: v.string(),
 	},
@@ -272,7 +268,6 @@ export const updateMessage = userMutation({
 
 export const deleteMessage = userMutation({
 	args: {
-
 		id: v.id("messages"),
 	},
 	handler: async (ctx, args) => {
@@ -284,7 +279,6 @@ export const deleteMessage = userMutation({
 
 export const createReaction = userMutation({
 	args: {
-
 		messageId: v.id("messages"),
 		emoji: v.string(),
 	},
@@ -310,7 +304,6 @@ export const createReaction = userMutation({
 
 export const deleteReaction = userMutation({
 	args: {
-
 		id: v.id("messages"),
 		emoji: v.string(),
 	},
