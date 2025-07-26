@@ -20,6 +20,7 @@ export const processWorkosEvents = internalMutation({
 						firstName: typedEvent.data.firstName || "",
 						lastName: typedEvent.data.lastName || "",
 						lastSeen: Date.now(),
+						email: typedEvent.data.email,
 						status: "offline",
 					})
 					break
@@ -237,6 +238,7 @@ export const syncUsers = internalMutation({
 								`https://avatar.vercel.sh/${workosUser.id}.svg`,
 							lastSeen: Date.now(),
 							status: "offline",
+							email: workosUser.email,
 						})
 						results.created++
 					}

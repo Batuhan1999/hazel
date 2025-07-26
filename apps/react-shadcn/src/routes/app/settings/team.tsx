@@ -3,7 +3,6 @@ import { api } from "@hazel/backend/api"
 import { createFileRoute } from "@tanstack/react-router"
 import { SectionHeader } from "~/components/application/section-headers/section-headers"
 import { Form } from "~/components/base/form/form"
-
 import "@radix-ui/themes/styles.css"
 import "@workos-inc/widgets/styles.css"
 
@@ -37,7 +36,7 @@ function RouteComponent() {
 		teamMembersQuery?.map((user) => ({
 			id: user._id,
 			name: `${user.firstName} ${user.lastName}`,
-			email: `${user.firstName.toLowerCase()}.${user.lastName.toLowerCase()}@company.com`,
+			email: user.email,
 			username: `@${user.firstName.toLowerCase()}`,
 			avatarUrl: user.avatarUrl,
 			status: user.status === "online" ? "Active" : "Offline",

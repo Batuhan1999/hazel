@@ -24,6 +24,7 @@ import {
 import { ChannelItem, DmChannelLink } from "./channel-item"
 import { NavUser } from "./nav-user"
 import { SidebarFavoriteGroup } from "./sidebar-favorite-group"
+import { WorkspaceSwitcher } from "./workspace-switcher"
 
 export const AppSidebar = () => {
 	const channelsQuery = useQuery(
@@ -36,8 +37,6 @@ export const AppSidebar = () => {
 
 	const dmChannels = useMemo(() => channelsQuery.data?.dmChannels || [], [channelsQuery.data])
 
-	const [_createChannelModalOpen, _setCreateChannelModalOpenn] = useState(false)
-
 	// TODO: Add presence state when available
 	const presenceState = { presenceList: [] }
 
@@ -47,7 +46,9 @@ export const AppSidebar = () => {
 				collapsible="none"
 				className="w-[calc(var(--sidebar-width-icon)+1px)]! border-primary border-r"
 			>
-				<SidebarHeader>{/* <WorkspaceSwitcher /> */}</SidebarHeader>
+				<SidebarHeader>
+					<WorkspaceSwitcher />
+				</SidebarHeader>
 				<SidebarContent>
 					<SidebarGroup>
 						<SidebarGroupContent>

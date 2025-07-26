@@ -79,6 +79,7 @@ export const confectSchema = defineSchema({
 		Schema.Struct({
 			externalId: Schema.String,
 			firstName: Schema.String,
+			email: Schema.String,
 			lastName: Schema.String,
 			avatarUrl: Schema.String,
 			lastSeen: Schema.Number,
