@@ -7,6 +7,7 @@ import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading, Pressable }
 import { toast } from "sonner"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
 import { Button, IconButton } from "~/components/base/buttons/button"
+import { ButtonUtility } from "~/components/base/buttons/button-utility"
 import { CloseButton } from "~/components/base/buttons/close-button"
 import { Input, TextField } from "~/components/base/input/input"
 import { Select } from "~/components/base/select/select"
@@ -32,7 +33,7 @@ export const { useAppForm } = createFormHook({
 	formContext,
 })
 
-export const NewProjectModal = () => {
+export const NewChannelModal = () => {
 	const [isOpen, setIsOpen] = useState(false)
 	const createChannelMutation = useConvexMutation(api.channels.createChannelForOrganization)
 
@@ -58,11 +59,13 @@ export const NewProjectModal = () => {
 
 	return (
 		<AriaDialogTrigger isOpen={isOpen} onOpenChange={setIsOpen}>
-			<Pressable>
-				<IconButton className="size-4.5" asChild>
-					<IconPlusStroke />
-				</IconButton>
-			</Pressable>
+			<ButtonUtility
+				className="p-1 text-primary hover:text-secondary"
+				size="xs"
+				color="tertiary"
+				icon={IconPlusStroke}
+				tooltip="New direct message"
+			/>
 
 			<ModalOverlay isDismissable>
 				<Modal>
