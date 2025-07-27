@@ -1,17 +1,16 @@
 import { useConvexMutation } from "@convex-dev/react-query"
 import { api } from "@hazel/backend/api"
-import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import { type } from "arktype"
 import { useState } from "react"
-import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading, Pressable } from "react-aria-components"
+import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
-import { Button, IconButton } from "~/components/base/buttons/button"
+import { Button } from "~/components/base/buttons/button"
 import { ButtonUtility } from "~/components/base/buttons/button-utility"
 import { CloseButton } from "~/components/base/buttons/close-button"
-import { Input, TextField } from "~/components/base/input/input"
 import { Select } from "~/components/base/select/select"
 import { IconHashtagStroke, IconPlusStroke } from "~/components/icons"
+import { useAppForm } from "~/hooks/use-app-form"
 
 const channelSchema = type({
 	name: "string > 2",
@@ -19,19 +18,6 @@ const channelSchema = type({
 })
 
 type ChannelFormData = typeof channelSchema.infer
-
-const { fieldContext, formContext } = createFormHookContexts()
-
-export const { useAppForm } = createFormHook({
-	fieldComponents: {
-		Input,
-		Select,
-		TextField,
-	},
-	formComponents: {},
-	fieldContext,
-	formContext,
-})
 
 export const NewChannelModal = () => {
 	const [isOpen, setIsOpen] = useState(false)

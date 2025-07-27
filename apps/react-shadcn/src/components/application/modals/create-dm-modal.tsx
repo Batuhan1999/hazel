@@ -4,6 +4,7 @@ import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { Mail01, MessageSquare02, Plus } from "@untitledui/icons"
+import { type } from "arktype"
 import { useMemo, useState } from "react"
 import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
@@ -17,6 +18,13 @@ import { FeaturedIcon } from "~/components/foundations/featured-icon/featured-ic
 import IconCheckTickCircle from "~/components/icons/IconCheckTickCircle"
 import { BackgroundPattern } from "~/components/shared-assets/background-patterns"
 import { cx } from "~/utils/cx"
+import { useAppForm } from "~/hooks/use-app-form"
+
+const dmFormSchema = type({
+	userId: "string"
+})
+
+type DmFormData = typeof dmFormSchema.infer
 
 interface CreateDmModalProps {
 	isOpen: boolean
@@ -26,12 +34,47 @@ interface CreateDmModalProps {
 export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 	const [searchQuery, setSearchQuery] = useState("")
 	const [selectedUser, setSelectedUser] = useState<Doc<"users"> | null>(null)
-	const [isCreating, setIsCreating] = useState(false)
 
 	const navigate = useNavigate()
 
 	const friendsQuery = useQuery(convexQuery(api.social.getFriendsForOrganization, {}))
 	const createDmChannelMutation = useConvexMutation(api.channels.createDmChannel)
+
+	const form = useAppForm({
+		defaultValues: {
+			userId: ""
+		} as DmFormData,
+		validators: {
+			onChange: dmFormSchema,
+		},
+		onSubmit: async ({ value }) => {
+			const user = friendsQuery.data?.find(u => u?._id === value.userId)
+			if (!user) return
+
+			try {
+				const channelId = await createDmChannelMutation({
+					userId: value.userId as any,
+				})
+
+				toast.success(`Started conversation with ${user.firstName}`)
+				onOpenChange(false)
+
+				// Reset form
+				form.reset()
+				setSelectedUser(null)
+				setSearchQuery("")
+
+				// Navigate to the chat
+				navigate({
+					to: "/app/chat/$id",
+					params: { id: channelId },
+				})
+			} catch (error) {
+				console.error("Failed to create DM channel:", error)
+				toast.error("Failed to start conversation")
+			}
+		},
+	})
 
 	const filteredUsers = useMemo(() => {
 		const users = friendsQuery.data || []
@@ -53,41 +96,10 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 		return userss.filter(Boolean)
 	}, [friendsQuery.data, searchQuery])
 
-	const handleCreateDm = async () => {
-		if (!selectedUser) {
-			toast.error("Please select a user to message")
-			return
-		}
-
-		setIsCreating(true)
-		try {
-			const channelId = await createDmChannelMutation({
-				userId: selectedUser._id,
-			})
-
-			toast.success(`Started conversation with ${selectedUser.firstName}`)
-			onOpenChange(false)
-
-			// Reset state
-			setSelectedUser(null)
-			setSearchQuery("")
-
-			// Navigate to the chat
-			navigate({
-				to: "/app/chat/$id",
-				params: { id: channelId },
-			})
-		} catch (error) {
-			console.error("Failed to create DM channel:", error)
-			toast.error("Failed to start conversation")
-		} finally {
-			setIsCreating(false)
-		}
-	}
-
 	const handleClose = () => {
 		onOpenChange(false)
-		// Reset state when closing
+		// Reset form and state when closing
+		form.reset()
 		setSelectedUser(null)
 		setSearchQuery("")
 	}
@@ -150,7 +162,10 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 												<button
 													key={user?._id}
 													type="button"
-													onClick={() => setSelectedUser(user)}
+													onClick={() => {
+														setSelectedUser(user)
+														form.setFieldValue("userId", user?._id || "")
+													}}
 													className={cx(
 														"flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors hover:bg-secondary",
 														selectedUser?._id === user?._id &&
@@ -189,18 +204,24 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 									color="secondary"
 									size="lg"
 									onClick={handleClose}
-									isDisabled={isCreating}
+									isDisabled={form.state.isSubmitting}
 								>
 									Cancel
 								</Button>
-								<Button
-									color="primary"
-									size="lg"
-									onClick={handleCreateDm}
-									isDisabled={!selectedUser || isCreating}
+								<form.Subscribe
+									selector={(state) => [state.canSubmit, state.isSubmitting]}
 								>
-									{isCreating ? "Creating..." : "Start conversation"}
-								</Button>
+									{([canSubmit, isSubmitting]) => (
+										<Button
+											color="primary"
+											size="lg"
+											onClick={form.handleSubmit}
+											isDisabled={!canSubmit || isSubmitting || !selectedUser}
+										>
+											{isSubmitting ? "Creating..." : "Start conversation"}
+										</Button>
+									)}
+								</form.Subscribe>
 							</div>
 						</div>
 					</Dialog>

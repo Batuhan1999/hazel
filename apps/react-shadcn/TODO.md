@@ -1,4 +1,3 @@
-- Add Create Organization Modal
 - Redirect to create org page if not org is selected
 - Make Close DM button work
 - Add Join Existing Channel

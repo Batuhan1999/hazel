@@ -1,15 +1,24 @@
 import { useConvexAction } from "@convex-dev/react-query"
 import { api } from "@hazel/backend/api"
 import { Building02 } from "@untitledui/icons"
-import { useCallback, useState } from "react"
+import { type } from "arktype"
+import { useCallback, useEffect } from "react"
 import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
 import { Button } from "~/components/base/buttons/button"
 import { CloseButton } from "~/components/base/buttons/close-button"
-import { Input } from "~/components/base/input/input"
 import { FeaturedIcon } from "~/components/foundations/featured-icon/featured-icons"
 import { BackgroundPattern } from "~/components/shared-assets/background-patterns"
+import { useAppForm } from "~/hooks/use-app-form"
+
+const organizationSchema = type({
+	name: "string.trim",
+	slug: "3 <= string < 50",
+	logoUrl: "string.url | undefined",
+})
+
+type OrganizationFormData = typeof organizationSchema.infer
 
 interface CreateOrganizationModalProps {
 	isOpen: boolean
@@ -17,16 +26,8 @@ interface CreateOrganizationModalProps {
 }
 
 export const CreateOrganizationModal = ({ isOpen, onOpenChange }: CreateOrganizationModalProps) => {
-	const [name, setName] = useState("")
-	const [slug, setSlug] = useState("")
-	const [logoUrl, setLogoUrl] = useState("")
-	const [isCreating, setIsCreating] = useState(false)
-	const [slugError, setSlugError] = useState("")
-	const [logoUrlError, setLogoUrlError] = useState("")
-
 	const createOrganizationAction = useConvexAction(api.organizations.create)
 
-	// Generate slug from name
 	const generateSlug = useCallback((name: string) => {
 		return name
 			.toLowerCase()
@@ -35,116 +36,72 @@ export const CreateOrganizationModal = ({ isOpen, onOpenChange }: CreateOrganiza
 			.substring(0, 50)
 	}, [])
 
-	// Auto-generate slug from name
-	const handleNameChange = useCallback(
-		(newName: string) => {
-			setName(newName)
-			// Auto-generate slug only if user hasn't manually edited it
-			if (!slug || slug === generateSlug(name)) {
-				setSlug(generateSlug(newName))
+	const form = useAppForm({
+		defaultValues: {
+			name: "",
+			slug: "",
+			logoUrl: undefined,
+		} as OrganizationFormData,
+		validators: {
+			onChange: organizationSchema,
+		},
+		onSubmit: async ({ value }) => {
+			try {
+				await createOrganizationAction({
+					name: value.name.trim(),
+					slug: value.slug.trim(),
+					logoUrl: value.logoUrl?.trim() || undefined,
+				})
+
+				toast.success(`Organization "${value.name}" created successfully!`)
+
+				// Close modal and reset state
+				onOpenChange(false)
+				form.reset()
+
+				// The organization has been created in WorkOS
+				// The webhook will handle creating the Convex records
+				toast.info("Your new organization is being set up. The page will refresh shortly.")
+
+				setTimeout(() => {
+					window.location.reload()
+				}, 2000)
+			} catch (error: any) {
+				console.error("Failed to create organization:", error)
+				if (error.message?.includes("slug already exists")) {
+					form.setFieldMeta("slug", (meta) => ({
+						...meta,
+						errors: [{ message: "This slug is already taken" }],
+					}))
+				} else {
+					toast.error(error.message || "Failed to create organization")
+				}
 			}
 		},
-		[name, slug, generateSlug],
-	)
+	})
 
-	// Validate slug format
-	const validateSlug = (slug: string) => {
-		if (!slug) return "Slug is required"
-		if (!/^[a-z0-9-]+$/.test(slug)) return "Slug can only contain lowercase letters, numbers, and hyphens"
-		if (slug.startsWith("-") || slug.endsWith("-")) return "Slug cannot start or end with a hyphen"
-		if (slug.length < 3) return "Slug must be at least 3 characters long"
-		if (slug.length > 50) return "Slug must be less than 50 characters"
-		return ""
-	}
+	// Auto-generate slug from name
+	useEffect(() => {
+		let prevName = ""
+		const unsubscribe = form.store.subscribe(() => {
+			const name = form.getFieldValue("name") || ""
+			const currentSlug = form.getFieldValue("slug") || ""
 
-	// Validate logo URL
-	const validateLogoUrl = (url: string) => {
-		if (!url) return "" // Logo is optional
-		try {
-			const urlObj = new URL(url)
-			if (!["http:", "https:"].includes(urlObj.protocol)) {
-				return "Logo URL must use HTTP or HTTPS"
+			// Only update if name has changed
+			if (name !== prevName) {
+				prevName = name
+				// Only auto-generate if slug is empty or was previously auto-generated from old name
+				if (!currentSlug || currentSlug === generateSlug(prevName)) {
+					form.setFieldValue("slug", generateSlug(name))
+				}
 			}
-			return ""
-		} catch {
-			return "Invalid URL format"
-		}
-	}
-
-	const handleSlugChange = (newSlug: string) => {
-		setSlug(newSlug)
-		setSlugError(validateSlug(newSlug))
-	}
-
-	const handleLogoUrlChange = (newUrl: string) => {
-		setLogoUrl(newUrl)
-		setLogoUrlError(validateLogoUrl(newUrl))
-	}
-
-	const handleCreateOrganization = async () => {
-		// Validate inputs
-		const nameError = !name.trim() ? "Organization name is required" : ""
-		const slugValidation = validateSlug(slug)
-		const logoValidation = validateLogoUrl(logoUrl)
-
-		if (nameError) {
-			toast.error(nameError)
-			return
-		}
-		if (slugValidation) {
-			setSlugError(slugValidation)
-			return
-		}
-		if (logoValidation) {
-			setLogoUrlError(logoValidation)
-			return
-		}
-
-		setIsCreating(true)
-		try {
-			await createOrganizationAction({
-				name: name.trim(),
-				slug: slug.trim(),
-				logoUrl: logoUrl.trim() || undefined,
-			})
-
-			toast.success(`Organization "${name}" created successfully!`)
-
-			// Close modal and reset state
-			onOpenChange(false)
-			setName("")
-			setSlug("")
-			setLogoUrl("")
-			setSlugError("")
-			setLogoUrlError("")
-
-			// The organization has been created in WorkOS
-			// The webhook will handle creating the Convex records
-			toast.info("Your new organization is being set up. The page will refresh shortly.")
-
-			// Refresh after a short delay to allow the webhook to process
-			setTimeout(() => {
-				window.location.reload()
-			}, 2000)
-		} catch (error: any) {
-			console.error("Failed to create organization:", error)
-			if (error.message?.includes("slug already exists")) {
-				setSlugError("This slug is already taken")
-			} else {
-				toast.error(error.message || "Failed to create organization")
-			}
-		} finally {
-			setIsCreating(false)
-		}
-	}
+		})
+		return () => unsubscribe()
+	}, [form, generateSlug])
 
 	const handleClose = () => {
 		onOpenChange(false)
-		setName("")
-		setSlug("")
-		setLogoUrl("")
-		setSlugError("")
-		setLogoUrlError("")
+		form.reset()
 	}
 
 	return (
@@ -180,80 +137,94 @@ export const CreateOrganizationModal = ({ isOpen, onOpenChange }: CreateOrganiza
 							<div className="h-5 w-full" />
 							<div className="flex flex-col gap-4 px-4 sm:px-6">
 								{/* Organization Name */}
-								<div className="flex flex-col gap-1.5">
-									<label htmlFor="org-name" className="text-sm font-medium text-primary">
-										Organization name *
-									</label>
-									<Input
-										id="org-name"
-										size="md"
-										placeholder="Acme Inc."
-										value={name}
-										onChange={handleNameChange}
-										autoFocus
-									/>
-								</div>
+								<form.AppField
+									name="name"
+									children={(field) => (
+										<field.Input
+											label={"Organization name"}
+											id="org-name"
+											size="md"
+											placeholder="Acme Inc."
+											value={field.state.value}
+											onChange={(value) => field.handleChange(value)}
+											onBlur={field.handleBlur}
+											isInvalid={!!field.state.meta.errors?.length}
+											autoFocus
+											hint={field.state.meta.errors
+												?.map((error) => error?.message)
+												.join(", ")}
+										/>
+									)}
+								/>
 
 								{/* Organization Slug */}
-								<div className="flex flex-col gap-1.5">
-									<label htmlFor="org-slug" className="text-sm font-medium text-primary">
-										Organization slug *
-									</label>
-									<Input
-										id="org-slug"
-										size="md"
-										placeholder="acme-inc"
-										value={slug}
-										onChange={handleSlugChange}
-										isInvalid={!!slugError}
-									/>
-									{slugError && <p className="text-xs text-error">{slugError}</p>}
-									{!slugError && slug && (
-										<p className="text-xs text-tertiary">
-											Your organization URL will be: /app/{slug}
-										</p>
+								<form.AppField
+									name="slug"
+									children={(field) => (
+										<div className="flex flex-col gap-1.5">
+											<field.Input
+												label="Organization slug"
+												id="org-slug"
+												size="md"
+												placeholder="acme-inc"
+												value={field.state.value}
+												onChange={(value) => field.handleChange(value)}
+												onBlur={field.handleBlur}
+												isInvalid={!!field.state.meta.errors?.length}
+												hint={field.state.meta.errors
+													?.map((error) => error?.message)
+													.join(", ")}
+											/>
+											{!field.state.meta.errors?.length && field.state.value && (
+												<p className="text-xs text-tertiary">
+													Your organization URL will be: /app/{field.state.value}
+												</p>
+											)}
+										</div>
 									)}
-								</div>
+								/>
 
 								{/* Logo URL (Optional) */}
-								<div className="flex flex-col gap-1.5">
-									<label htmlFor="org-logo" className="text-sm font-medium text-primary">
-										Logo URL (optional)
-									</label>
-									<Input
-										id="org-logo"
-										size="md"
-										placeholder="https://example.com/logo.png"
-										value={logoUrl}
-										onChange={handleLogoUrlChange}
-										isInvalid={!!logoUrlError}
-									/>
-									{logoUrlError && <p className="text-xs text-error">{logoUrlError}</p>}
-								</div>
+								<form.AppField
+									name="logoUrl"
+									children={(field) => (
+										<field.Input
+											label="Logo URL (optional)"
+											id="org-logo"
+											size="md"
+											placeholder="https://example.com/logo.png"
+											value={field.state.value}
+											onChange={(value) => field.handleChange(value)}
+											onBlur={field.handleBlur}
+											isInvalid={!!field.state.meta.errors?.length}
+											hint={field.state.meta.errors
+												?.map((error) => error?.message)
+												.join(", ")}
+										/>
+									)}
+								/>
 							</div>
 							<div className="z-10 flex flex-1 flex-col-reverse gap-3 p-4 pt-6 *:grow sm:grid sm:grid-cols-2 sm:px-6 sm:pt-8 sm:pb-6">
 								<Button
 									color="secondary"
 									size="lg"
 									onClick={handleClose}
-									isDisabled={isCreating}
+									isDisabled={form.state.isSubmitting}
 								>
 									Cancel
 								</Button>
-								<Button
-									color="primary"
-									size="lg"
-									onClick={handleCreateOrganization}
-									isDisabled={
-										!name.trim() ||
-										!slug.trim() ||
-										!!slugError ||
-										!!logoUrlError ||
-										isCreating
-									}
-								>
-									{isCreating ? "Creating..." : "Create organization"}
-								</Button>
+								<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
+									{([canSubmit, isSubmitting]) => (
+										<Button
+											color="primary"
+											size="lg"
+											onClick={form.handleSubmit}
+											isDisabled={!canSubmit || isSubmitting}
+										>
+											{isSubmitting ? "Creating..." : "Create organization"}
+										</Button>
+									)}
+								</form.Subscribe>
 							</div>
 						</div>
 					</Dialog>

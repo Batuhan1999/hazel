@@ -1,9 +1,8 @@
 import { useConvexQuery } from "@convex-dev/react-query"
 import { api } from "@hazel/backend/api"
 import { createFileRoute } from "@tanstack/react-router"
-import { SectionHeader } from "~/components/application/section-headers/section-headers"
 import { Form } from "~/components/base/form/form"
-import "@radix-ui/themes/styles.css"
+
 import "@workos-inc/widgets/styles.css"
 
 import { Edit01, Plus, Trash01 } from "@untitledui/icons"
@@ -37,7 +36,6 @@ function RouteComponent() {
 			id: user._id,
 			name: `${user.firstName} ${user.lastName}`,
 			email: user.email,
-			username: `@${user.firstName.toLowerCase()}`,
 			avatarUrl: user.avatarUrl,
 			status: user.status === "online" ? "Active" : "Offline",
 			role: user.role,
@@ -110,12 +108,7 @@ function RouteComponent() {
 												initials={getInitials(member.name)}
 												alt={member.name}
 											/>
-											<div>
-												<p className="font-medium text-primary text-sm">
-													{member.name}
-												</p>
-												<p className="text-sm text-tertiary">{member.username}</p>
-											</div>
+											<p className="font-medium text-primary text-sm">{member.name}</p>
 										</div>
 									</Table.Cell>
 									<Table.Cell>
