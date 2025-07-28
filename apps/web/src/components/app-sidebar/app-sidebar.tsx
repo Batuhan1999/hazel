@@ -8,6 +8,7 @@ import { NewChannelModal } from "../application/modals/new-channel-modal"
 import IconChatChatting1 from "../icons/IconChatChatting1"
 import IconGridDashboard01DuoSolid from "../icons/IconGridDashboard01DuoSolid"
 import IconNotificationBellOn1 from "../icons/IconNotificationBellOn1"
+import { usePresence } from "../presence/presence-provider"
 import {
 	Sidebar,
 	SidebarContent,
@@ -38,8 +39,8 @@ export const AppSidebar = () => {
 
 	const dmChannels = useMemo(() => channelsQuery.data?.dmChannels || [], [channelsQuery.data])
 
-	// TODO: Add presence state when available
-	const presenceState = { presenceList: [] }
+	// Get presence data from context
+	const { presenceList } = usePresence()
 
 	return (
 		<Sidebar collapsible="icon" className="overflow-hidden *:data-[sidebar=sidebar]:flex-row">
@@ -129,7 +130,7 @@ export const AppSidebar = () => {
 							{dmChannels.map((channel) => (
 								<DmChannelLink
 									key={channel._id}
-									userPresence={presenceState.presenceList}
+									userPresence={presenceList}
 									channel={channel}
 								/>
 							))}

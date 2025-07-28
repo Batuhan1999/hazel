@@ -1,9 +1,30 @@
-import usePresence from "@convex-dev/presence/react"
+import usePresenceHook from "@convex-dev/presence/react"
 import { convexQuery } from "@convex-dev/react-query"
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
-import type { ReactNode } from "react"
+import { createContext, type ReactNode, useContext } from "react"
+
+interface PresenceContextValue {
+	presenceList: Array<{
+		userId: string
+		online: boolean
+		lastDisconnected: number
+	}>
+	isUserOnline: (userId: string) => boolean
+	organizationId?: Id<"organizations">
+	userId?: Id<"users">
+}
+
+const PresenceContext = createContext<PresenceContextValue | undefined>(undefined)
+
+export function usePresence() {
+	const context = useContext(PresenceContext)
+	if (!context) {
+		throw new Error("usePresence must be used within a PresenceProvider")
+	}
+	return context
+}
 
 interface PresenceProviderProps {
 	children: ReactNode
@@ -17,14 +38,24 @@ interface PresenceTrackerProps {
 
 // Inner component that actually calls the usePresence hook
 function PresenceTracker({ organizationId, userId, children }: PresenceTrackerProps) {
-	usePresence(
-		api.presence,
+	const presenceData = usePresenceHook(api.presence, organizationId, userId, 10000)
+
+	// The hook returns an array of presence states directly
+	const presenceList = presenceData || []
+
+	const isUserOnline = (checkUserId: string) => {
+		const userPresence = presenceList.find((p: any) => p.userId === checkUserId)
+		return userPresence?.online ?? false
+	}
+
+	const contextValue: PresenceContextValue = {
+		presenceList,
+		isUserOnline,
 		organizationId,
 		userId,
-		10000, // 10 second heartbeat interval
-	)
+	}
 
-	return <>{children}</>
+	return <PresenceContext.Provider value={contextValue}>{children}</PresenceContext.Provider>
 }
 
 export function PresenceProvider({ children }: PresenceProviderProps) {
@@ -38,7 +69,14 @@ export function PresenceProvider({ children }: PresenceProviderProps) {
 
 	// Only render PresenceTracker when both IDs are available
 	if (!organizationId || !userId) {
-		return <>{children}</>
+		// Provide a default context value when IDs are not available
+		const defaultContextValue: PresenceContextValue = {
+			presenceList: [],
+			isUserOnline: () => false,
+			organizationId: undefined,
+			userId: undefined,
+		}
+		return <PresenceContext.Provider value={defaultContextValue}>{children}</PresenceContext.Provider>
 	}
 
 	return (
