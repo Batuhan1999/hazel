@@ -33,31 +33,31 @@ export function useEmojiStats() {
 	// Get top 3 most used emojis
 	const getTopEmojis = useCallback((): string[] => {
 		const entries = Object.entries(emojiUsage)
-		
+
 		if (entries.length === 0) {
 			return DEFAULT_EMOJIS
 		}
 
 		// Sort by usage count descending
 		const sorted = entries.sort((a, b) => b[1] - a[1])
-		
+
 		// Get top 3 emojis
 		const topEmojis = sorted.slice(0, 3).map(([emoji]) => emoji)
-		
+
 		// If we have less than 3, fill with defaults
 		if (topEmojis.length < 3) {
-			const remainingDefaults = DEFAULT_EMOJIS.filter(emoji => !topEmojis.includes(emoji))
+			const remainingDefaults = DEFAULT_EMOJIS.filter((emoji) => !topEmojis.includes(emoji))
 			return [...topEmojis, ...remainingDefaults].slice(0, 3)
 		}
-		
+
 		return topEmojis
 	}, [emojiUsage])
 
 	// Track emoji usage
 	const trackEmojiUsage = useCallback((emoji: string) => {
-		setEmojiUsage(prev => ({
+		setEmojiUsage((prev) => ({
 			...prev,
-			[emoji]: (prev[emoji] || 0) + 1
+			[emoji]: (prev[emoji] || 0) + 1,
 		}))
 	}, [])
 
@@ -71,6 +71,6 @@ export function useEmojiStats() {
 		topEmojis: getTopEmojis(),
 		trackEmojiUsage,
 		resetStats,
-		emojiUsage
+		emojiUsage,
 	}
 }

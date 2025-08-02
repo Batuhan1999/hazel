@@ -12,6 +12,7 @@ import {
 	Trash01,
 } from "@untitledui/icons"
 import type { FunctionReturnType } from "convex/server"
+import { useState } from "react"
 import { Dialog, DialogTrigger, MenuTrigger, Popover } from "react-aria-components"
 import { useEmojiStats } from "~/hooks/use-emoji-stats"
 import { Button } from "../base/buttons/button"
@@ -55,7 +56,8 @@ export function MessageToolbar({
 	onViewDetails,
 }: MessageToolbarProps) {
 	const { topEmojis, trackEmojiUsage } = useEmojiStats()
-	
+	const [emojiPickerOpen, setEmojiPickerOpen] = useState(false)
+
 	const handleReaction = (emoji: string) => {
 		trackEmojiUsage(emoji)
 		onReaction(emoji)
@@ -79,7 +81,7 @@ export function MessageToolbar({
 				))}
 				<div className="mx-0.5 h-4 w-px bg-border-primary" />
 
-				<DialogTrigger>
+				<DialogTrigger isOpen={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
 					<Button
 						size="sm"
 						color="tertiary"
@@ -94,6 +96,7 @@ export function MessageToolbar({
 								className="h-[342px]"
 								onEmojiSelect={(emoji) => {
 									handleReaction(emoji.emoji)
+									setEmojiPickerOpen(false)
 								}}
 							>
 								<EmojiPickerSearch />
