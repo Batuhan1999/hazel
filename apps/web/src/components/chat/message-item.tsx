@@ -6,8 +6,10 @@ import type { FunctionReturnType } from "convex/server"
 import { format } from "date-fns"
 import { useState } from "react"
 import { Button } from "react-aria-components"
+import { toast } from "sonner"
 import { useChat } from "~/hooks/use-chat"
 import { cx } from "~/utils/cx"
+import { IconNotification } from "../application/notifications/notifications"
 import { Avatar } from "../base/avatar/avatar"
 import { Badge } from "../base/badges/badges"
 import { Button as StyledButton } from "../base/buttons/button"
@@ -82,13 +84,21 @@ export function MessageItem({
 
 	const handleCopy = () => {
 		navigator.clipboard.writeText(message.content)
+		toast.custom((t) => (
+			<IconNotification
+				title="Sucessfully copied!"
+				description="Message content has been copied to your clipboard."
+				color="success"
+				onClose={() => toast.dismiss(t)}
+			/>
+		))
 	}
 
 	return (
 		<div
 			id={`message-${message._id}`}
 			className={cx(
-				`group relative flex flex-col rounded-md rounded-l-none px-4 py-0.5 transition-colors hover:bg-secondary`,
+				`group relative transition-colors flex flex-col rounded-md rounded-l-none px-4 py-0.5 transition-colors hover:bg-secondary`,
 				isGroupStart ? "mt-2" : "",
 				isGroupEnd ? "mb-2" : "",
 				isFirstNewMessage
@@ -108,9 +118,9 @@ export function MessageItem({
 						if (replyElement) {
 							replyElement.scrollIntoView({ behavior: "smooth", block: "center" })
 							// Add a highlight effect
-							replyElement.classList.add("bg-highlight")
+							replyElement.classList.add("bg-quaternary/30")
 							setTimeout(() => {
-								replyElement.classList.remove("bg-highlight")
+								replyElement.classList.remove("bg-quaternary/30")
 							}, 2000)
 						}
 					}}
@@ -256,21 +266,6 @@ export function MessageItem({
 							))}
 						</div>
 					)}
-
-					{/* <Dropdown.Root>
-						<Button>
-							<span className="text-xs">+</span>
-						</Button>
-						<Dropdown.Popover>
-							<Dropdown.Menu>
-								{["👍", "❤️", "😂", "🎉", "🤔", "👎"].map((emoji) => (
-									<Dropdown.Item key={emoji} onAction={() => handleReaction(emoji)}>
-										{emoji}
-									</Dropdown.Item>
-								))}
-							</Dropdown.Menu>
-						</Dropdown.Popover>
-					</Dropdown.Root> */}
 
 					{/* Thread Button Placeholder */}
 					{message.threadChannelId && (
