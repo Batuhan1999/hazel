@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react"
 import { useChat } from "~/hooks/use-chat"
 
-import { MessageItem2 } from "./message-itemv2"
+import { MessageItem } from "./message-item"
 
 export function MessageList() {
 	const { messages, isLoadingMessages, hasMoreMessages, loadMoreMessages } = useChat()
@@ -105,7 +105,7 @@ export function MessageList() {
 				.map(([date, dateMessages]) => (
 					<div key={date}>
 						<div className="sticky top-0 z-10 my-4 flex items-center justify-center">
-							<span className="rounded-full bg-muted px-3 py-1 text-secondary text-xs">
+							<span className="rounded-full bg-muted px-3 py-1 font-mono text-secondary text-xs">
 								{date}
 							</span>
 						</div>
@@ -120,7 +120,7 @@ export function MessageList() {
 										: undefined
 								}
 							>
-								<MessageItem2
+								<MessageItem
 									message={processedMessage.message}
 									isGroupStart={processedMessage.isGroupStart}
 									isGroupEnd={processedMessage.isGroupEnd}

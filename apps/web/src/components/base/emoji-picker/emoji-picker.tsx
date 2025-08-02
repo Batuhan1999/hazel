@@ -30,7 +30,7 @@ function EmojiPickerSearch({
 }: React.ComponentProps<typeof EmojiPickerPrimitive.Search>) {
 	return (
 		<div
-			className={cx("flex h-9 items-center gap-2 border-b px-3", className)}
+			className={cx("flex h-9 items-center gap-2 border-primary border-b px-3", className)}
 			data-slot="emoji-picker-search-wrapper"
 		>
 			<IconSearch className="size-4 shrink-0 opacity-50" />
@@ -117,7 +117,7 @@ function EmojiPickerFooter({ className, ...props }: React.ComponentProps<"div">)
 	return (
 		<div
 			className={cx(
-				"flex w-full min-w-0 max-w-(--frimousse-viewport-width) items-center gap-1 border-t p-2",
+				"flex w-full min-w-0 max-w-(--frimousse-viewport-width) items-center gap-1 border-primary border-t p-2",
 				className,
 			)}
 			data-slot="emoji-picker-footer"

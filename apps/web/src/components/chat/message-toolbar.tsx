@@ -13,6 +13,7 @@ import {
 } from "@untitledui/icons"
 import type { FunctionReturnType } from "convex/server"
 import { Dialog, DialogTrigger, MenuTrigger, Popover } from "react-aria-components"
+import { useEmojiStats } from "~/hooks/use-emoji-stats"
 import { Button } from "../base/buttons/button"
 import { Dropdown } from "../base/dropdown/dropdown"
 import {
@@ -53,18 +54,23 @@ export function MessageToolbar({
 	onReport,
 	onViewDetails,
 }: MessageToolbarProps) {
-	const commonEmojis = ["👍", "❤️", "😂", "🎉", "🤔", "👎"]
+	const { topEmojis, trackEmojiUsage } = useEmojiStats()
+	
+	const handleReaction = (emoji: string) => {
+		trackEmojiUsage(emoji)
+		onReaction(emoji)
+	}
 
 	return (
 		<div className="-translate-y-1/2 absolute top-0 right-2 opacity-0 transition-opacity group-hover:opacity-100">
 			<div className="flex items-center gap-px rounded-lg border border-primary bg-primary shadow-sm">
 				{/* Quick Reactions */}
-				{commonEmojis.slice(0, 3).map((emoji) => (
+				{topEmojis.map((emoji) => (
 					<Button
 						key={emoji}
 						size="sm"
 						color="tertiary"
-						onClick={() => onReaction(emoji)}
+						onClick={() => handleReaction(emoji)}
 						aria-label={`React with ${emoji}`}
 						className="!p-1.5 hover:bg-secondary"
 					>
@@ -87,7 +93,7 @@ export function MessageToolbar({
 							<EmojiPicker
 								className="h-[342px]"
 								onEmojiSelect={(emoji) => {
-									onReaction(emoji.emoji)
+									handleReaction(emoji.emoji)
 								}}
 							>
 								<EmojiPickerSearch />
@@ -97,28 +103,6 @@ export function MessageToolbar({
 						</Dialog>
 					</Popover>
 				</DialogTrigger>
-
-				<Dropdown.Root>
-					<MenuTrigger>
-						<Button
-							size="sm"
-							color="tertiary"
-							aria-label="More reactions"
-							className="!p-1.5 hover:bg-secondary"
-						>
-							<Plus className="size-3.5" />
-						</Button>
-					</MenuTrigger>
-					<Dropdown.Popover placement="bottom end">
-						<Dropdown.Menu>
-							{commonEmojis.map((emoji) => (
-								<Dropdown.Item key={emoji} onAction={() => onReaction(emoji)}>
-									<span className="text-lg">{emoji}</span>
-								</Dropdown.Item>
-							))}
-						</Dropdown.Menu>
-					</Dropdown.Popover>
-				</Dropdown.Root>
 
 				{/* Action Buttons */}
 				<Button
