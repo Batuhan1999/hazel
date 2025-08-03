@@ -4,7 +4,7 @@ import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
 import type { FunctionReturnType } from "convex/server"
 import { useNextPrevPaginatedQuery } from "convex-use-next-prev-paginated-query"
-import { createContext, type ReactNode, useContext, useMemo, useState } from "react"
+import { createContext, type ReactNode, useContext, useMemo, useRef, useState } from "react"
 
 type MessagesResponse = FunctionReturnType<typeof api.messages.getMessages>
 type Message = MessagesResponse["page"][0]
@@ -63,6 +63,9 @@ export function ChatProvider({ channelId, children }: ChatProviderProps) {
 
 	// Reply state
 	const [replyToMessageId, setReplyToMessageId] = useState<Id<"messages"> | null>(null)
+	
+	// Keep track of previous messages to show during loading
+	const previousMessagesRef = useRef<Message[]>([])
 
 	// Fetch channel data
 	const channelQuery = useQuery(
@@ -166,12 +169,16 @@ export function ChatProvider({ channelId, children }: ChatProviderProps) {
 	}
 
 	// Extract messages and pagination functions based on result state
-	const messages = 
-		messagesResult._tag === "Loaded" || 
-		messagesResult._tag === "LoadingNextResults" || 
-		messagesResult._tag === "LoadingPrevResults" 
-			? messagesResult.page 
-			: []
+	const currentMessages = messagesResult._tag === "Loaded" ? messagesResult.page : []
+	
+	// Update previous messages when we have new data
+	if (currentMessages.length > 0) {
+		previousMessagesRef.current = currentMessages
+	}
+	
+	// Use previous messages during loading states to prevent flashing
+	const messages = currentMessages.length > 0 ? currentMessages : previousMessagesRef.current
+	
 	const loadNext = messagesResult._tag === "Loaded" ? (messagesResult.loadNext ?? undefined) : undefined
 	const loadPrev = messagesResult._tag === "Loaded" ? (messagesResult.loadPrev ?? undefined) : undefined
 	const isLoadingMessages = messagesResult._tag === "LoadingInitialResults"
