@@ -200,7 +200,11 @@ export function MessageList() {
 						</span>
 					</div>
 					{dateMessages.map((processedMessage) => (
-						<div key={processedMessage.message._id}>
+						<div
+							key={processedMessage.message._id}
+							style={{ overflowAnchor: "none" }}
+							data-message-id={processedMessage.message._id}
+						>
 							<MessageItem
 								message={processedMessage.message}
 								isGroupStart={processedMessage.isGroupStart}
