@@ -62,7 +62,7 @@ export function MessageList() {
 		}
 	}, [])
 
-	if (isLoadingMessages) {
+	if (isLoadingMessages && messages.length === 0) {
 		return (
 			<div className="flex h-full items-center justify-center">
 				<div className="text-muted-foreground text-sm">Loading messages...</div>
@@ -70,7 +70,7 @@ export function MessageList() {
 		)
 	}
 
-	if (messages.length === 0) {
+	if (!isLoadingMessages && messages.length === 0) {
 		return (
 			<div className="flex size-full flex-col items-center justify-center p-4 sm:p-8">
 				<div className="mask-radial-at-center mask-radial-from-black mask-radial-to-transparent relative aspect-square w-full max-w-sm">
