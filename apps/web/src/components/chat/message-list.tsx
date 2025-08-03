@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useChat } from "~/hooks/use-chat"
 import { useIntersectionObserver } from "~/hooks/use-intersection-observer"
 
@@ -9,6 +9,8 @@ export function MessageList() {
 	const scrollContainerRef = useRef<HTMLDivElement>(null)
 	const prevScrollHeightRef = useRef<number>(0)
 	const lastLoadTimeRef = useRef<number>(0)
+	const [isAtBottom, setIsAtBottom] = useState(true)
+	const prevMessageCountRef = useRef(messages.length)
 
 	// Intersection observers for infinite scroll
 	const [topSentinelRef, isTopVisible] = useIntersectionObserver({
@@ -71,6 +73,22 @@ export function MessageList() {
 		)
 	}, [processedMessages])
 
+	// Check if user is at bottom of scroll container
+	const checkIfAtBottom = useCallback(() => {
+		const container = scrollContainerRef.current
+		if (!container) return false
+
+		// Consider user at bottom if within 50px of the bottom
+		const threshold = 50
+		const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold
+		return isNearBottom
+	}, [])
+
+	// Handle scroll events to track if user is at bottom
+	const handleScroll = useCallback(() => {
+		setIsAtBottom(checkIfAtBottom())
+	}, [checkIfAtBottom])
+
 	// Auto-scroll to bottom on initial load
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We only want to scroll on initial load>
 	useEffect(() => {
@@ -78,6 +96,24 @@ export function MessageList() {
 			scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight
 		}
 	}, [isLoadingMessages])
+
+	// Auto-scroll to bottom when new messages arrive if user was at bottom
+	useEffect(() => {
+		const container = scrollContainerRef.current
+		if (!container) return
+
+		// Check if new messages were added (not from pagination)
+		const messageCountIncreased = messages.length > prevMessageCountRef.current
+		const notLoadingOlder = !isLoadingNext && !isLoadingPrev
+
+		if (messageCountIncreased && notLoadingOlder && isAtBottom) {
+			// Scroll to bottom to show new messages
+			container.scrollTop = container.scrollHeight
+		}
+
+		// Update previous message count
+		prevMessageCountRef.current = messages.length
+	}, [messages.length, isAtBottom, isLoadingNext, isLoadingPrev])
 
 	// Load older messages when top sentinel is visible
 	useEffect(() => {
@@ -142,7 +178,11 @@ export function MessageList() {
 	}
 
 	return (
-		<div ref={scrollContainerRef} className="flex h-full flex-col overflow-y-auto py-2 pr-4">
+		<div
+			ref={scrollContainerRef}
+			onScroll={handleScroll}
+			className="flex h-full flex-col overflow-y-auto py-2 pr-4"
+		>
 			{/* Top sentinel for loading older messages */}
 			<div ref={topSentinelRef} className="h-1" />
 
