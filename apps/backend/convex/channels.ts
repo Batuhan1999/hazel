@@ -121,7 +121,7 @@ export const getChannelsForOrganization = organizationServerQuery({
 
 export const list = organizationServerQuery({
 	args: {},
-	handler: async (ctx, args) => {
+	handler: async (ctx, _args) => {
 		const user = ctx.account.doc
 
 		const channels = await ctx.db

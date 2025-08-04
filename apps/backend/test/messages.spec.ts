@@ -152,7 +152,10 @@ describe("messages", () => {
 			organizationId: organization,
 			id: messageId,
 			content: "Updated content",
-			jsonContent: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Updated content" }] }] },
+			jsonContent: {
+				type: "doc",
+				content: [{ type: "paragraph", content: [{ type: "text", text: "Updated content" }] }],
+			},
 		})
 
 		const messages = await t.query(api.messages.getMessages, {
@@ -333,7 +336,7 @@ describe("messages", () => {
 		})
 
 		// Add a small delay to ensure different timestamps
-		await new Promise(resolve => setTimeout(resolve, 10))
+		await new Promise((resolve) => setTimeout(resolve, 10))
 
 		const _message2Id = await createMessage(t, {
 			organizationId: organization,
@@ -343,7 +346,7 @@ describe("messages", () => {
 		})
 
 		// Add a small delay to ensure different timestamps
-		await new Promise(resolve => setTimeout(resolve, 10))
+		await new Promise((resolve) => setTimeout(resolve, 10))
 
 		const _message3Id = await createMessage(t, {
 			organizationId: organization,

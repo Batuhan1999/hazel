@@ -5,10 +5,10 @@ import schema from "../../convex/schema"
 import { modules } from "../setup"
 
 export function randomIdentity(convexTest: TestConvex<typeof schema>, organizationId?: string) {
-	const identity = { 
-		tokenIdentifier: crypto.randomUUID(), 
+	const identity = {
+		tokenIdentifier: crypto.randomUUID(),
 		subject: crypto.randomUUID(),
-		...(organizationId && { organizationId })
+		...(organizationId && { organizationId }),
 	}
 	const t = convexTest.withIdentity(identity)
 	// Store identity for later use
@@ -27,7 +27,7 @@ export async function createAccount(
 ) {
 	// Get the stored identity
 	const identity = (t as any)._testIdentity
-	
+
 	if (!identity) {
 		throw new Error("No identity found - use randomIdentity() or withIdentity() first")
 	}
@@ -80,9 +80,9 @@ export async function createUser(
 	t: TestConvex<typeof schema> | TestConvexForDataModel<(typeof schema)["schemaValidation"]>,
 	props: { organizationId: Id<"organizations">; role?: "member" | "admin" | "owner" },
 ) {
-	// Get the identity from the test context  
+	// Get the identity from the test context
 	const identity = (t as any)._testIdentity
-	
+
 	if (!identity) {
 		throw new Error("No identity found - use randomIdentity() or withIdentity() first")
 	}
@@ -115,7 +115,7 @@ export async function createUser(
 		const existingMembership = await ctx.db
 			.query("organizationMembers")
 			.withIndex("by_organizationId_userId", (q) =>
-				q.eq("organizationId", props.organizationId).eq("userId", userId)
+				q.eq("organizationId", props.organizationId).eq("userId", userId),
 			)
 			.unique()
 
@@ -139,7 +139,7 @@ export async function createOrganization(
 ) {
 	const name = props?.name || "Test Organization"
 	const slug = props?.slug || "test-org"
-	
+
 	return await t.run(async (ctx) => {
 		return await ctx.db.insert("organizations", {
 			name,
@@ -250,7 +250,15 @@ export async function createMessage(
 		return await ctx.db.insert("messages", {
 			channelId: props.channelId,
 			content: props.content ?? "Test message content",
-			jsonContent: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: props.content ?? "Test message content" }] }] },
+			jsonContent: {
+				type: "doc",
+				content: [
+					{
+						type: "paragraph",
+						content: [{ type: "text", text: props.content ?? "Test message content" }],
+					},
+				],
+			},
 			authorId: user._id,
 			replyToMessageId: props.replyToMessageId,
 			threadChannelId: props.threadChannelId,

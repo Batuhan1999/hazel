@@ -64,4 +64,3 @@ export function useDebouncedIntersection(
 
 	return [targetRef, debouncedIntersecting]
 }
-

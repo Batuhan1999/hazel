@@ -51,8 +51,8 @@ describe("user", () => {
 
 		// Create a new user that is not a member of the organization
 		const t2 = randomIdentity(ct)
-		const userId2 = await createAccount(t2)
-		// NOTE: This test reveals a potential security issue - getUser checks if the 
+		const _userId2 = await createAccount(t2)
+		// NOTE: This test reveals a potential security issue - getUser checks if the
 		// requested user is in the org, not if the requesting user is in the org
 		// This allows anyone to query users in any organization
 		const result = await t2.query(api.users.getUser, { organizationId: organization, userId: userId })
@@ -84,15 +84,15 @@ describe("user", () => {
 		const org1 = await setupOrganization(ct)
 		const org1Doc = await ct.run(async (ctx) => {
 			const doc = await ctx.db.get(org1)
-			if (!doc || !('workosId' in doc)) throw new Error("Invalid organization")
+			if (!doc || !("workosId" in doc)) throw new Error("Invalid organization")
 			return doc
 		})
-		
+
 		// Create org2 with proper WorkOS ID
 		const org2 = await setupOrganization(ct)
 		const org2Doc = await ct.run(async (ctx) => {
 			const doc = await ctx.db.get(org2)
-			if (!doc || !('workosId' in doc)) throw new Error("Invalid organization")
+			if (!doc || !("workosId" in doc)) throw new Error("Invalid organization")
 			return doc
 		})
 
@@ -100,7 +100,7 @@ describe("user", () => {
 		const t1 = randomIdentity(ct, org1Doc.workosId)
 		await createAccount(t1)
 		const userId1 = await createUser(t1, { organizationId: org1 })
-		
+
 		// Create user for org2 with proper identity
 		const t2 = randomIdentity(ct, org2Doc.workosId)
 		await createAccount(t2)
@@ -109,11 +109,11 @@ describe("user", () => {
 		// Get users for org1 (uses organizationServerQuery which gets org from identity)
 		const users1 = await t1.query(api.users.getUsers, {})
 		expect(users1).toHaveLength(2) // Owner + new user
-		expect(users1.find(u => u._id === userId1)).toBeDefined()
+		expect(users1.find((u) => u._id === userId1)).toBeDefined()
 
 		// Get users for org2 (uses organizationServerQuery which gets org from identity)
 		const users2 = await t2.query(api.users.getUsers, {})
 		expect(users2).toHaveLength(2) // Owner + new user
-		expect(users2.find(u => u._id === userId2)).toBeDefined()
+		expect(users2.find((u) => u._id === userId2)).toBeDefined()
 	})
 })

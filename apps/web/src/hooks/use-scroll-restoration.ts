@@ -50,4 +50,3 @@ export function useScrollRestoration() {
 		hasSavedState: () => savedStateRef.current !== null,
 	}
 }
-

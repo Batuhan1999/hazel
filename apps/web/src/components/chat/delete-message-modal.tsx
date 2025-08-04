@@ -24,18 +24,30 @@ export const DeleteMessageModal = ({ isOpen, onOpenChange, onConfirm }: DeleteMe
 				<Modal>
 					<Dialog>
 						<div className="relative w-full overflow-hidden rounded-2xl bg-primary shadow-xl transition-all sm:max-w-100">
-							<CloseButton onClick={() => onOpenChange(false)} theme="light" size="lg" className="absolute top-3 right-3" />
+							<CloseButton
+								onClick={() => onOpenChange(false)}
+								theme="light"
+								size="lg"
+								className="absolute top-3 right-3"
+							/>
 							<div className="flex flex-col gap-4 px-4 pt-5 sm:px-6 sm:pt-6">
 								<div className="relative w-max">
 									<FeaturedIcon color="error" size="lg" theme="light" icon={Trash01} />
 
-									<BackgroundPattern pattern="circle" size="sm" className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2" />
+									<BackgroundPattern
+										pattern="circle"
+										size="sm"
+										className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2"
+									/>
 								</div>
 								<div className="z-10 flex flex-col gap-0.5">
 									<AriaHeading slot="title" className="font-semibold text-md text-primary">
 										Delete message
 									</AriaHeading>
-									<p className="text-sm text-tertiary">Are you sure you want to delete this message? This action cannot be undone.</p>
+									<p className="text-sm text-tertiary">
+										Are you sure you want to delete this message? This action cannot be
+										undone.
+									</p>
 								</div>
 							</div>
 							<div className="z-10 flex flex-1 flex-col-reverse gap-3 p-4 pt-6 *:grow sm:grid sm:grid-cols-2 sm:px-6 sm:pt-8 sm:pb-6">

@@ -18,13 +18,13 @@ async function setupOrganizationAndUser(convexTest: TestConvex<typeof schema>) {
 	const org = await createOrganization(ct)
 	const orgDoc = await ct.run(async (ctx) => {
 		const doc = await ctx.db.get(org)
-		if (!doc || !('workosId' in doc)) throw new Error("Invalid organization")
+		if (!doc || !("workosId" in doc)) throw new Error("Invalid organization")
 		return doc
 	})
-	
+
 	const t = randomIdentity(ct, orgDoc.workosId)
 	const userId = await createAccount(t)
-	
+
 	// Add user to organization
 	await t.run(async (ctx) => {
 		await ctx.db.insert("organizationMembers", {
@@ -43,10 +43,10 @@ async function setupMultipleUsers(convexTest: TestConvex<typeof schema>) {
 	const org = await createOrganization(ct)
 	const orgDoc = await ct.run(async (ctx) => {
 		const doc = await ctx.db.get(org)
-		if (!doc || !('workosId' in doc)) throw new Error("Invalid organization")
+		if (!doc || !("workosId" in doc)) throw new Error("Invalid organization")
 		return doc
 	})
-	
+
 	const t1 = randomIdentity(ct, orgDoc.workosId)
 	const user1Id = await createAccount(t1)
 	await t1.run(async (ctx) => {
@@ -95,9 +95,9 @@ describe("channel", () => {
 
 		// Direct channels are not supported by createChannelForOrganization
 		// Use the helper function instead
-		const directChannelId = await createChannel(t, { 
+		const directChannelId = await createChannel(t, {
 			organizationId: organization,
-			type: "direct" as any
+			type: "direct" as any,
 		})
 
 		const channels = await t.query(api.channels.getChannelsForOrganization, {})
@@ -188,7 +188,7 @@ describe("channel", () => {
 		// Try to join again
 		await expect(
 			t.mutation(api.channels.joinChannelForOrganization, {
-					channelId,
+				channelId,
 			}),
 		).rejects.toThrow("Already a member of this channel")
 	})
@@ -230,7 +230,7 @@ describe("channel", () => {
 		// User 2 tries to leave without joining
 		await expect(
 			t2.mutation(api.channels.leaveChannelForOrganization, {
-					channelId,
+				channelId,
 			}),
 		).rejects.toThrow("You are not a member of this channel")
 	})
@@ -286,7 +286,7 @@ describe("channel", () => {
 		// User 2 tries to update preferences without being a member
 		await expect(
 			t2.mutation(api.channels.updateChannelPreferencesForOrganization, {
-					channelId,
+				channelId,
 				isMuted: true,
 			}),
 		).rejects.toThrow("You are not a member of this channel")
@@ -324,9 +324,9 @@ describe("channel", () => {
 		})
 
 		// Direct channels are not supported by createChannelForOrganization
-		await createChannel(t, { 
+		await createChannel(t, {
 			organizationId: organization,
-			type: "direct" as any
+			type: "direct" as any,
 		})
 
 		// await t.mutation(api.channels.createChannelForOrganization, {
