@@ -6,6 +6,7 @@ import { Link } from "@tanstack/react-router"
 import type { FunctionReturnType } from "convex/server"
 import { useCallback } from "react"
 import { Pressable } from "react-aria"
+import { useChat } from "~/hooks/use-chat"
 import { cn } from "~/lib/utils"
 import { cx } from "~/utils/cx"
 import { Avatar } from "../base/avatar/avatar"
@@ -26,6 +27,7 @@ export interface ChannelItemProps {
 }
 
 export const ChannelItem = ({ channel }: ChannelItemProps) => {
+	const { prefetchChannel } = useChat()
 	const leaveChannelMutation = useConvexMutation(api.channels.leaveChannelForOrganization)
 	const updateChannelPreferencesMutation = useConvexMutation(
 		api.channels.updateChannelPreferencesForOrganization,
@@ -51,8 +53,13 @@ export const ChannelItem = ({ channel }: ChannelItemProps) => {
 		})
 	}, [channel._id, channel.isFavorite, updateChannelPreferencesMutation])
 
+	const handleMouseEnter = useCallback(() => {
+		// Prefetch channel data on hover
+		prefetchChannel(channel._id as Id<"channels">)
+	}, [channel._id, prefetchChannel])
+
 	return (
-		<SidebarMenuItem>
+		<SidebarMenuItem onMouseEnter={handleMouseEnter}>
 			<SidebarMenuButton asChild>
 				<Link to="/app/chat/$id" params={{ id: channel._id }}>
 					<IconHashtagStroke className="size-5" />
@@ -139,6 +146,7 @@ interface DmChannelLinkProps {
 
 export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => {
 	const { data: me } = useQuery(convexQuery(api.me.getCurrentUser, {}))
+	const { prefetchChannel } = useChat()
 	const updateChannelPreferencesMutation = useConvexMutation(
 		api.channels.updateChannelPreferencesForOrganization,
 	)
@@ -166,8 +174,13 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 		})
 	}, [channel._id, updateChannelPreferencesMutation])
 
+	const handleMouseEnter = useCallback(() => {
+		// Prefetch channel data on hover
+		prefetchChannel(channel._id as Id<"channels">)
+	}, [channel._id, prefetchChannel])
+
 	return (
-		<SidebarMenuItem>
+		<SidebarMenuItem onMouseEnter={handleMouseEnter}>
 			<SidebarMenuButton asChild>
 				<Link to="/app/chat/$id" params={{ id: channel._id }}>
 					<div className="-space-x-4 flex items-center justify-center">
