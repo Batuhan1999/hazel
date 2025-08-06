@@ -16,7 +16,7 @@ const COOLDOWN_MS = 300
 
 export function useLoadingState(): UseLoadingStateReturn {
 	const [loadingState, setLoadingState] = useState<LoadingState>("idle")
-	const cooldownTimeoutRef = useRef<NodeJS.Timeout | undefined>()
+	const cooldownTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
 	const canLoadTop = loadingState === "idle"
 	const canLoadBottom = loadingState === "idle"

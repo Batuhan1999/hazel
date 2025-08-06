@@ -23,6 +23,11 @@ import {
 	EmojiPickerFooter,
 	EmojiPickerSearch,
 } from "../base/emoji-picker/emoji-picker"
+import IconArrowBigTurnLeft1 from "../icons/IconArrowBigTurnLeft1"
+import IconThreads from "../icons/IconThreads"
+import IconThreads1 from "../icons/IconThreads1"
+import { IconEmojiAdd } from "../temp-icons/emoji-add"
+import { IconThread } from "../temp-icons/thread"
 import { DeleteMessageModal } from "./delete-message-modal"
 
 type Message = FunctionReturnType<typeof api.messages.getMessages>["page"][0]
@@ -92,7 +97,7 @@ export function MessageToolbar({
 						aria-label="More reactions"
 						className="!p-1.5 hover:bg-secondary"
 					>
-						<Plus className="size-3.5" />
+						<IconEmojiAdd className="size-3.5" />
 					</Button>
 					<Popover>
 						<Dialog className="rounded-lg">
@@ -130,7 +135,7 @@ export function MessageToolbar({
 						aria-label="Reply to message"
 						className="!p-1.5 hover:bg-secondary"
 					>
-						<MessageSquare02 className="size-3.5" />
+						<IconArrowBigTurnLeft1 className="size-3.5" />
 					</Button>
 				)}
 
@@ -176,11 +181,7 @@ export function MessageToolbar({
 					<Dropdown.Popover placement="bottom end">
 						<Dropdown.Menu>
 							{onReply && (
-								<Dropdown.Item
-									onAction={onReply}
-									icon={MessageSquare02}
-									label="Reply in thread"
-								/>
+								<Dropdown.Item onAction={onReply} icon={IconThread} label="Reply in thread" />
 							)}
 							{onForward && (
 								<Dropdown.Item onAction={onForward} icon={Share06} label="Forward message" />
