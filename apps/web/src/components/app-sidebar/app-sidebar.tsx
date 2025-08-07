@@ -30,16 +30,8 @@ import { SidebarFavoriteGroup } from "./sidebar-favorite-group"
 import { WorkspaceSwitcher } from "./workspace-switcher"
 
 export const AppSidebar = () => {
-	// Try to get orgId from route params
 	const params = useParams({ from: "/app/$orgId" })
-	const orgIdFromRoute = params?.orgId as Id<"organizations"> | undefined
-
-	// Fall back to getting organization from session if not in route
-	const organizationQuery = useQuery(convexQuery(api.me.getOrganization, orgIdFromRoute ? "skip" : {}))
-	const orgIdFromSession =
-		organizationQuery.data?.directive === "success" ? organizationQuery.data.data._id : undefined
-
-	const organizationId = orgIdFromRoute || orgIdFromSession
+	const organizationId = params?.orgId as Id<"organizations">
 
 	const channelsQuery = useQuery(
 		convexQuery(
@@ -57,7 +49,6 @@ export const AppSidebar = () => {
 
 	const dmChannels = useMemo(() => channelsQuery.data?.dmChannels || [], [channelsQuery.data])
 
-	// Get presence data from context
 	const { presenceList } = usePresence()
 
 	return (
@@ -163,13 +154,14 @@ export const AppSidebar = () => {
 }
 
 const ActiveServer = () => {
-	const { data } = useQuery(convexQuery(api.me.getOrganization, {}))
+	const { orgId } = useParams({
+		from: "/app/$orgId",
+	})
+	const { data } = useQuery(
+		convexQuery(api.organizations.getOrganizationById, {
+			organizationId: orgId as Id<"organizations">,
+		}),
+	)
 
-	useEffect(() => {
-		if (data?.directive === "redirect") {
-			console.log("TODO redirect to onboarding")
-		}
-	}, [data?.directive])
-
-	return <div className="font-semibold text-foreground text-lg">{data?.data?.name}</div>
+	return <div className="font-semibold text-foreground text-lg">{data?.name}</div>
 }

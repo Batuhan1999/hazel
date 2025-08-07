@@ -21,60 +21,36 @@ export const WorkspaceSwitcher = () => {
 	const navigate = useNavigate()
 	const params = useParams({ strict: false })
 
-	// Get organization ID from URL params
 	const organizationId = params.orgId as Id<"organizations"> | undefined
 
-	// Get current organization by ID from URL
 	const organizationByIdQuery = useQuery(
-		organizationId
-			? convexQuery(api.organizations.getOrganizationById, { organizationId })
-			: { enabled: false }
-	)
-
-	// Fall back to session-based query if no URL param
-	const organizationFromSessionQuery = useQuery(
-		!organizationId ? convexQuery(api.me.getOrganization, {}) : { enabled: false }
+		convexQuery(api.organizations.getOrganizationById, organizationId ? { organizationId } : "skip"),
 	)
 
 	const userOrganizationsQuery = useQuery(convexQuery(api.organizations.getUserOrganizations, {}))
 
-	// Use URL-based org if available, otherwise fall back to session
-	const currentOrg = organizationId
-		? organizationByIdQuery.data
-		: organizationFromSessionQuery.data?.directive === "success"
-			? organizationFromSessionQuery.data.data
-			: null
+	const currentOrg = organizationId ? organizationByIdQuery.data : null
 	const organizations = userOrganizationsQuery.data || []
 
 	const handleOrganizationSwitch = async (workosOrgId: string) => {
 		try {
-			// Find the organization to get its Convex ID
-			const targetOrg = organizations.find(org => org.workosId === workosOrgId)
+			const targetOrg = organizations.find((org) => org.workosId === workosOrgId)
 			if (targetOrg) {
-				// Get the current route path to preserve sub-routes
 				const currentPath = window.location.pathname
-				const pathSegments = currentPath.split('/')
-				
-				// Determine which sub-route we're in (if any)
+				const pathSegments = currentPath.split("/")
+
 				let targetRoute = `/app/${targetOrg._id}`
-				
-				// If we're in a sub-route under the org, preserve it
-				if (pathSegments.length > 3 && pathSegments[1] === 'app') {
-					// Keep everything after /app/$orgId/
-					const subPath = pathSegments.slice(3).join('/')
+
+				if (pathSegments.length > 3 && pathSegments[1] === "app") {
+					const subPath = pathSegments.slice(3).join("/")
 					if (subPath) {
 						targetRoute = `/app/${targetOrg._id}/${subPath}`
 					}
 				}
-				
-				// Navigate to the new organization path first (this updates the UI immediately)
+
 				await navigate({ to: targetRoute as any })
-				
-				// Then switch the WorkOS session and reload to sync everything
+
 				await switchToOrganization({ organizationId: workosOrgId })
-				
-				// Force a reload to ensure session is fully synced
-				window.location.reload()
 			}
 		} catch (error) {
 			console.error("Failed to switch organization:", error)
