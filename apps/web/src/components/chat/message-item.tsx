@@ -16,6 +16,7 @@ import { Avatar } from "../base/avatar/avatar"
 import { Badge } from "../base/badges/badges"
 import { Button as StyledButton } from "../base/buttons/button"
 import { TextEditor as EditableTextEditor } from "../base/text-editor/text-editor"
+import { IconThread } from "../temp-icons/thread"
 import { MessageReplySection } from "./message-reply-section"
 import { MessageToolbar } from "./message-toolbar"
 import { TextEditor } from "./read-only-message"
@@ -139,6 +140,7 @@ export function MessageItem({
 	}
 
 	return (
+		// biome-ignore lint/a11y/noStaticElementInteractions: <explanation>
 		<div
 			id={`message-${message._id}`}
 			className={cx(
@@ -319,7 +321,7 @@ export function MessageItem({
 					)}
 
 					{/* Thread Button */}
-					{(message.threadChannelId || message.threadMessages?.length) && (
+					{(message.threadChannelId || (message.threadMessages && message.threadMessages.length > 0)) && (
 						<button
 							type="button"
 							onClick={() => {
@@ -329,21 +331,10 @@ export function MessageItem({
 							}}
 							className="mt-2 flex items-center gap-2 text-secondary text-sm transition-colors hover:text-primary"
 						>
-							<svg
-								className="size-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-								strokeWidth={2}
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"
-								/>
-							</svg>
+							<IconThread className="size-4" />
 							<span>
-								{message.threadMessages?.length || 0} {message.threadMessages?.length === 1 ? "reply" : "replies"}
+								{message.threadMessages?.length || 0}{" "}
+								{message.threadMessages?.length === 1 ? "reply" : "replies"}
 							</span>
 						</button>
 					)}

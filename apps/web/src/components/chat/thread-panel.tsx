@@ -2,6 +2,7 @@ import { convexQuery } from "@convex-dev/react-query"
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
+import { X } from "@untitledui/icons"
 import { format } from "date-fns"
 import { Button } from "react-aria-components"
 import { ChatProvider } from "~/providers/chat-provider"
@@ -18,12 +19,7 @@ interface ThreadPanelProps {
 	onClose: () => void
 }
 
-function ThreadContent({
-	threadChannelId,
-	originalMessageId,
-	organizationId,
-	onClose,
-}: ThreadPanelProps) {
+function ThreadContent({ threadChannelId, originalMessageId, organizationId, onClose }: ThreadPanelProps) {
 	// Fetch the original message (parent message)
 	const { data: originalMessage } = useQuery(
 		convexQuery(api.messages.getMessage, {
@@ -53,24 +49,8 @@ function ThreadContent({
 						</span>
 					)}
 				</div>
-				<Button
-					onPress={onClose}
-					className="rounded p-1 hover:bg-tertiary"
-					aria-label="Close thread"
-				>
-					<svg
-						className="size-4"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-						strokeWidth={2}
-					>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							d="M6 18L18 6M6 6l12 12"
-						/>
-					</svg>
+				<Button onPress={onClose} className="rounded p-1 hover:bg-tertiary" aria-label="Close thread">
+					<X className="size-4" />
 				</Button>
 			</div>
 
