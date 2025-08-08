@@ -47,6 +47,8 @@ export function MessageItem({
 		pinMessage,
 		unpinMessage,
 		pinnedMessages,
+		createThread,
+		openThread,
 	} = useChat()
 	const [isEditing, setIsEditing] = useState(false)
 	const [hasBeenHovered, setHasBeenHovered] = useState(false)
@@ -316,14 +318,33 @@ export function MessageItem({
 						</div>
 					)}
 
-					{/* Thread Button Placeholder */}
-					{message.threadChannelId && (
+					{/* Thread Button */}
+					{(message.threadChannelId || message.threadMessages?.length) && (
 						<button
 							type="button"
-							className="mt-2 flex items-center gap-2 text-secondary text-sm hover:text-primary"
+							onClick={() => {
+								if (message.threadChannelId) {
+									openThread(message.threadChannelId, message._id)
+								}
+							}}
+							className="mt-2 flex items-center gap-2 text-secondary text-sm transition-colors hover:text-primary"
 						>
-							<div className="size-4 rounded bg-muted-foreground/20" />
-							<span>Thread replies</span>
+							<svg
+								className="size-4"
+								fill="none"
+								stroke="currentColor"
+								viewBox="0 0 24 24"
+								strokeWidth={2}
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4z"
+								/>
+							</svg>
+							<span>
+								{message.threadMessages?.length || 0} {message.threadMessages?.length === 1 ? "reply" : "replies"}
+							</span>
 						</button>
 					)}
 				</div>
@@ -341,6 +362,9 @@ export function MessageItem({
 					onCopy={handleCopy}
 					onReply={() => {
 						setReplyToMessageId(message._id)
+					}}
+					onThread={() => {
+						createThread(message._id)
 					}}
 					onForward={() => {
 						// TODO: Implement forward message
