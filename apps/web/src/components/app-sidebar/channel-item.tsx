@@ -236,6 +236,17 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 											: "offline"
 									}
 								/>
+								<Avatar
+									size="xs"
+									src={filteredMembers[0].user.avatarUrl}
+									alt={`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
+									status={
+										userPresence.find((p) => p.userId === filteredMembers[0].user._id)
+											?.online
+											? "online"
+											: "offline"
+									}
+								/>
 								<p className={cn("truncate", channel.isMuted && "opacity-60")}>
 									{`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
 								</p>

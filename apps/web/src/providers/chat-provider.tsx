@@ -2,9 +2,11 @@ import { convexQuery, useConvexMutation } from "@convex-dev/react-query"
 import type { Doc, Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
 import { useQuery } from "@tanstack/react-query"
+import { useAuth } from "@workos-inc/authkit-react"
 import type { FunctionReturnType } from "convex/server"
 import { useNextPrevPaginatedQuery } from "convex-use-next-prev-paginated-query"
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react"
+import { useNotificationSound } from "~/hooks/use-notification-sound"
 
 type MessagesResponse = FunctionReturnType<typeof api.messages.getMessages>
 type Message = MessagesResponse["page"][0]
@@ -60,6 +62,9 @@ interface ChatProviderProps {
 }
 
 export function ChatProvider({ channelId, organizationId, children }: ChatProviderProps) {
+	const { user } = useAuth()
+	const { playSound } = useNotificationSound()
+	
 	// Reply state
 	const [replyToMessageId, setReplyToMessageId] = useState<Id<"messages"> | null>(null)
 	// Thread state
@@ -73,6 +78,8 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 	// Keep track of pagination functions to avoid losing them during loading
 	const loadNextRef = useRef<(() => void) | undefined>(undefined)
 	const loadPrevRef = useRef<(() => void) | undefined>(undefined)
+	// Track message count to detect new messages
+	const prevMessageCountRef = useRef<number>(0)
 
 	// Clear previous messages when channel changes
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We only want to run this when channelId changes
@@ -259,6 +266,33 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 
 	// Use previous messages during loading states to prevent flashing
 	const messages = currentMessages.length > 0 ? currentMessages : previousMessagesRef.current
+
+	// Play sound when new messages arrive from other users
+	useEffect(() => {
+		// Skip on first render or when switching channels
+		if (prevMessageCountRef.current === 0 || previousChannelIdRef.current !== channelId) {
+			prevMessageCountRef.current = messages.length
+			return
+		}
+
+		// Check if we have new messages
+		if (messages.length > prevMessageCountRef.current) {
+			// Get the new messages
+			const newMessagesCount = messages.length - prevMessageCountRef.current
+			const newMessages = messages.slice(0, newMessagesCount)
+			
+			// Check if any of the new messages are from other users
+			const hasOtherUserMessages = newMessages.some(
+				(msg) => msg.author?.email && msg.author.email !== user?.email
+			)
+			
+			if (hasOtherUserMessages) {
+				playSound()
+			}
+		}
+		
+		prevMessageCountRef.current = messages.length
+	}, [messages.length, channelId, user?.email, playSound])
 
 	// Update pagination function refs when available
 	if (messagesResult._tag === "Loaded") {

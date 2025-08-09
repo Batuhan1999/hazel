@@ -188,7 +188,6 @@ export function MessageItem({
 				) : (
 					<div className="flex w-10 items-center justify-end pr-1 text-[10px] text-secondary leading-tight opacity-0 group-hover:opacity-100">
 						{format(message._creationTime, "HH:mm")}
-						{isEdited && <span className="ml-0.5">(edited)</span>}
 					</div>
 				)}
 

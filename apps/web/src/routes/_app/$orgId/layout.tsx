@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { AppSidebar } from "~/components/app-sidebar/app-sidebar"
+import { NotificationManager } from "~/components/notification-manager"
 import { PresenceProvider } from "~/components/presence/presence-provider"
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar"
 
@@ -11,6 +12,7 @@ function RouteComponent() {
 	return (
 		<PresenceProvider>
 			<SidebarProvider>
+				<NotificationManager />
 				<AppSidebar />
 				<SidebarInset>
 					<Outlet />
