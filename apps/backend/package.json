@@ -21,6 +21,7 @@
 	"devDependencies": {
 		"convex-test": "^0.0.38",
 		"typescript": "5.9.2",
+		"vite": "^7.1.1",
 		"vitest": "^3.2.4"
 	},
 	"exports": {
