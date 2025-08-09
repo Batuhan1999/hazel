@@ -19,7 +19,7 @@ const STORAGE_KEY = "notification-sound-settings"
 export function useNotificationSound() {
 	const [settings, setSettings] = useState<NotificationSoundSettings>(() => {
 		if (typeof window === "undefined") return DEFAULT_SETTINGS
-		
+
 		const stored = localStorage.getItem(STORAGE_KEY)
 		if (stored) {
 			try {
@@ -38,7 +38,7 @@ export function useNotificationSound() {
 	// Initialize audio element
 	useEffect(() => {
 		if (typeof window === "undefined") return
-		
+
 		const audio = new Audio(`/sounds/${settings.soundFile}.mp3`)
 		audio.volume = settings.volume
 		audioRef.current = audio
@@ -60,20 +60,20 @@ export function useNotificationSound() {
 
 	const playSound = useCallback(async () => {
 		if (!settings.enabled || !audioRef.current) return
-		
+
 		// Check cooldown
 		const now = Date.now()
 		if (now - lastPlayedRef.current < settings.cooldownMs) {
 			return
 		}
-		
+
 		// Prevent overlapping sounds
 		if (isPlayingRef.current) return
-		
+
 		try {
 			isPlayingRef.current = true
 			lastPlayedRef.current = now
-			
+
 			// Reset and play
 			audioRef.current.currentTime = 0
 			await audioRef.current.play()
@@ -91,7 +91,7 @@ export function useNotificationSound() {
 
 	const testSound = useCallback(async () => {
 		if (!audioRef.current) return
-		
+
 		try {
 			audioRef.current.currentTime = 0
 			await audioRef.current.play()

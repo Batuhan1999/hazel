@@ -10,7 +10,7 @@ export function NotificationManager() {
 	const params = useParams({ from: "/_app/$orgId" })
 	const organizationId = params?.orgId as Id<"organizations">
 	const { playSound } = useNotificationSound()
-	
+
 	// Track previous notification counts per channel
 	const prevNotificationCounts = useRef<Map<string, number>>(new Map())
 	const isFirstRender = useRef(true)

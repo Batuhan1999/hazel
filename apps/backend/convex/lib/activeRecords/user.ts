@@ -38,7 +38,10 @@ export class User {
 		return new User(user, membership)
 	}
 
-	public async isMemberOfChannel(args: { ctx: GenericContext; channelId: Id<"channels"> }): Promise<boolean> {
+	public async isMemberOfChannel(args: {
+		ctx: GenericContext
+		channelId: Id<"channels">
+	}): Promise<boolean> {
 		const channel = await args.ctx.db.get(args.channelId)
 		if (!channel) return false
 
@@ -61,7 +64,13 @@ export class User {
 		}
 	}
 
-	public async canViewChannel({ ctx, channelId }: { ctx: GenericContext; channelId: Id<"channels"> }): Promise<boolean> {
+	public async canViewChannel({
+		ctx,
+		channelId,
+	}: {
+		ctx: GenericContext
+		channelId: Id<"channels">
+	}): Promise<boolean> {
 		const channel = await ctx.db.get(channelId)
 		if (!channel) throw new Error("Channel not found")
 

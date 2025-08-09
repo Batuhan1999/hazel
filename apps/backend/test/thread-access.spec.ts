@@ -2,7 +2,13 @@ import type { TestConvex } from "convex-test"
 import { describe, expect, test, vi } from "vitest"
 import { api } from "../convex/_generated/api"
 import type schema from "../convex/schema"
-import { convexTest, createAccount, createMessage, createOrganization, randomIdentity } from "./utils/data-generator"
+import {
+	convexTest,
+	createAccount,
+	createMessage,
+	createOrganization,
+	randomIdentity,
+} from "./utils/data-generator"
 
 async function setupTestEnvironment(ct: TestConvex<typeof schema>) {
 	const org = await createOrganization(ct)

@@ -48,7 +48,7 @@ function NotificationsSettings() {
 				{/* Sound Settings Section */}
 				<div className="rounded-lg border bg-card p-6">
 					<h3 className="mb-4 font-semibold text-lg">Sound Notifications</h3>
-					
+
 					<div className="space-y-6">
 						{/* Enable/Disable Sounds */}
 						<div className="flex items-center justify-between">

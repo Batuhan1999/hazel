@@ -64,7 +64,7 @@ interface ChatProviderProps {
 export function ChatProvider({ channelId, organizationId, children }: ChatProviderProps) {
 	const { user } = useAuth()
 	const { playSound } = useNotificationSound()
-	
+
 	// Reply state
 	const [replyToMessageId, setReplyToMessageId] = useState<Id<"messages"> | null>(null)
 	// Thread state
@@ -280,19 +280,19 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 			// Get the new messages
 			const newMessagesCount = messages.length - prevMessageCountRef.current
 			const newMessages = messages.slice(0, newMessagesCount)
-			
+
 			// Check if any of the new messages are from other users
 			const hasOtherUserMessages = newMessages.some(
-				(msg) => msg.author?.email && msg.author.email !== user?.email
+				(msg) => msg.author?.email && msg.author.email !== user?.email,
 			)
-			
+
 			if (hasOtherUserMessages) {
 				playSound()
 			}
 		}
-		
+
 		prevMessageCountRef.current = messages.length
-	}, [messages.length, channelId, user?.email, playSound])
+	}, [messages.length, channelId, user?.email, playSound, messages.slice])
 
 	// Update pagination function refs when available
 	if (messagesResult._tag === "Loaded") {

@@ -236,32 +236,36 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 											: "offline"
 									}
 								/>
-								<Avatar
-									size="xs"
-									src={filteredMembers[0].user.avatarUrl}
-									alt={`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
-									status={
-										userPresence.find((p) => p.userId === filteredMembers[0].user._id)
-											?.online
-											? "online"
-											: "offline"
-									}
-								/>
+
 								<p className={cn("truncate", channel.isMuted && "opacity-60")}>
 									{`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
 								</p>
 							</div>
 						) : (
-							<div className="-space-x-4 flex items-center justify-center">
-								{filteredMembers.map((member) => (
-									<div key={member.user._id} className="inline-block">
+							<div className="flex items-center gap-1">
+								<div className="-space-x-2 flex">
+									{filteredMembers.slice(0, 2).map((member) => (
 										<Avatar
-											className="size-7"
+											key={member.user._id}
+											size="xs"
 											src={member.user.avatarUrl}
 											alt={member.user.firstName[0]}
-										></Avatar>
-									</div>
-								))}
+											className="ring-[1.5px] ring-sidebar"
+										/>
+									))}
+
+									{filteredMembers.length > 2 && (
+										<Avatar
+											size="xs"
+											className="ring-[1.5px] ring-sidebar"
+											placeholder={
+												<span className="flex items-center justify-center font-semibold text-quaternary text-sm">
+													+{filteredMembers.length - 2}
+												</span>
+											}
+										/>
+									)}
+								</div>
 								<p className={cn("truncate", channel.isMuted && "opacity-60")}>
 									{filteredMembers
 										.map((member) => `${member.user.firstName} ${member.user.lastName}`)
