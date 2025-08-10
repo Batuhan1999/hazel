@@ -82,14 +82,14 @@ function ChatContent() {
 	}, [])
 
 	return (
-		<div className="flex h-screen">
+		<div className="flex h-[100dvh] overflow-hidden">
 			{/* Main Chat Area */}
-			<div className="flex flex-1 flex-col">
+			<div className="flex flex-1 flex-col min-h-0">
 				<ChatHeader />
-				<div className="flex-1 overflow-hidden">
+				<div className="flex-1 min-h-0 overflow-hidden">
 					<MessageList />
 				</div>
-				<div className="px-4 pt-2">
+				<div className="px-4 pt-2 flex-shrink-0">
 					<MessageComposer ref={messageComposerRef} />
 					<TypingIndicator />
 				</div>

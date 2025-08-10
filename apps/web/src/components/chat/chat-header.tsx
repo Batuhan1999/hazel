@@ -10,7 +10,7 @@ export function ChatHeader() {
 
 	if (!channel) {
 		return (
-			<div className="flex h-14 items-center border-border border-b px-4">
+			<div className="flex h-14 flex-shrink-0 items-center border-border border-b px-4">
 				<div className="h-4 w-32 animate-pulse rounded bg-muted" />
 			</div>
 		)
@@ -21,7 +21,7 @@ export function ChatHeader() {
 	const _onlineCount = channel.members?.filter((member) => isUserOnline(member.userId)).length || 0
 
 	return (
-		<div className="flex h-14 items-center justify-between border-sidebar-border border-b bg-sidebar px-4">
+		<div className="flex h-14 flex-shrink-0 items-center justify-between border-sidebar-border border-b bg-sidebar px-4">
 			<div className="flex items-center gap-3">
 				{isDirectMessage ? (
 					<>
