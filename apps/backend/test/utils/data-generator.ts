@@ -248,6 +248,23 @@ export async function createMessage(
 			throw new Error("User not found - call createAccount first")
 		}
 
+		// Create attachment records if needed
+		const attachmentIds: Id<"attachments">[] = []
+		if (props.attachedFiles && props.attachedFiles.length > 0) {
+			for (const fileName of props.attachedFiles) {
+				const attachmentId = await ctx.db.insert("attachments", {
+					organizationId: props.organizationId,
+					channelId: props.channelId,
+					fileName: fileName,
+					r2Key: `test-${Date.now()}-${fileName}`,
+					uploadedBy: user._id,
+					uploadedAt: Date.now(),
+					status: "complete" as const,
+				})
+				attachmentIds.push(attachmentId)
+			}
+		}
+
 		// Create the message directly in the database
 		return await ctx.db.insert("messages", {
 			channelId: props.channelId,
@@ -264,7 +281,7 @@ export async function createMessage(
 			authorId: user._id,
 			replyToMessageId: props.replyToMessageId,
 			threadChannelId: props.threadChannelId,
-			attachedFiles: props.attachedFiles || [],
+			attachedFiles: attachmentIds,
 			reactions: [],
 			updatedAt: Date.now(),
 		})
