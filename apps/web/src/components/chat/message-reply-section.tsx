@@ -59,7 +59,7 @@ export function MessageReplySection({
 				) : replyMessage ? (
 					<>
 						<Avatar
-							size="xs"
+							size="xxs"
 							alt={`${replyMessage.author.firstName} ${replyMessage.author.lastName}`}
 							src={replyMessage.author.avatarUrl}
 						/>
