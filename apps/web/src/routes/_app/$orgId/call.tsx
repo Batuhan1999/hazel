@@ -5,6 +5,7 @@ import {
 	useRealtimeKitSelector,
 } from "@cloudflare/realtimekit-react"
 import {
+	provideRtkDesignSystem,
 	RtkButton,
 	RtkControlbar,
 	RtkDialogManager,
@@ -51,11 +52,11 @@ function MyMeeting() {
 
 	return (
 		<RtkUiProvider meeting={meeting}>
-			<div style={{ height: "480px" }}>
+			<div style={{ height: "100vh" }}>
 				{roomState === "init" && <CustomMeetingPreview />}
 
 				<RtkParticipantsAudio />
-				<RtkNotifications />
+				{/* <RtkNotifications /> */}
 				<RtkDialogManager />
 
 				{roomState === "joined" && (
