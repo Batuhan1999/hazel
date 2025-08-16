@@ -65,8 +65,8 @@ export const InputBase = ({
 	const hasTrailingIcon = tooltip || isInvalid
 	const hasLeadingIcon = Icon
 
-	// If the input is inside a `TextFieldWrapper`, use its context to simplify applying styles
-	const context = useContext(TextFieldWrapper)
+	// If the input is inside a `TextFieldContext`, use its context to simplify applying styles
+	const context = useContext(TextFieldContext)
 
 	const inputSize = context?.size || size
 
@@ -209,11 +209,11 @@ interface TextFieldProps
 	ref?: Ref<HTMLDivElement>
 }
 
-const TextFieldWrapper = createContext<TextFieldProps>({})
+const TextFieldContext = createContext<TextFieldProps>({})
 
 export const TextField = ({ className, ...props }: TextFieldProps) => {
 	return (
-		<TextFieldWrapper.Provider value={props}>
+		<TextFieldContext.Provider value={props}>
 			<AriaTextField
 				{...props}
 				data-input-wrapper
@@ -224,7 +224,7 @@ export const TextField = ({ className, ...props }: TextFieldProps) => {
 					)
 				}
 			/>
-		</TextFieldWrapper.Provider>
+		</TextFieldContext.Provider>
 	)
 }
 
@@ -255,13 +255,14 @@ export const Input = ({
 }: InputProps) => {
 	return (
 		<TextField aria-label={!label ? placeholder : undefined} {...props} className={className}>
-			{({ isInvalid }) => (
+			{({ isRequired, isInvalid }) => (
 				<>
 					{label && (
-						<Label isRequired={hideRequiredIndicator ? !hideRequiredIndicator : undefined}>
+						<Label isRequired={hideRequiredIndicator ? !hideRequiredIndicator : isRequired}>
 							{label}
 						</Label>
 					)}
+
 					<InputBase
 						{...{
 							ref,
@@ -277,6 +278,7 @@ export const Input = ({
 							tooltip,
 						}}
 					/>
+
 					{hint && <HintText isInvalid={isInvalid}>{hint}</HintText>}
 				</>
 			)}
