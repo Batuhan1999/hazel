@@ -48,7 +48,6 @@ const decoratePreview: Decorate = ({ entry: [node, path] }) => {
 						const innerEnd = innerStart + innerLength
 
 						if (typeof innerToken !== "string") {
-							// Mark punctuation (backticks) differently
 							if (innerToken.type === "punctuation") {
 								ranges.push({
 									anchor: { offset: innerStart, path },
@@ -73,7 +72,6 @@ const decoratePreview: Decorate = ({ entry: [node, path] }) => {
 						innerStart = innerEnd
 					}
 				} else {
-					// For other tokens, add them normally
 					ranges.push({
 						anchor: { offset: start, path },
 						focus: { offset: end, path },
@@ -125,12 +123,12 @@ function PreviewLeaf({
 				italic && "italic",
 				title && "mx-0 mt-5 mb-2.5 inline-block font-bold text-[20px]",
 				list && "pl-2.5 text-[20px] leading-[10px]",
-				hr && "block border-[#ddd] border-b-2 text-center",
-				blockquote && "inline-block border-[#ddd] border-l-2 pl-2.5 text-[#aaa] italic",
+				hr && "block border-secondary border-b-2 text-center",
+				blockquote && "inline-block border-brand border-l-2 pl-2.5 text-brand-primary italic",
 				codeSnippet && "bg-[#eee] p-[3px] font-mono text-red-500",
-				codeBlock && "bg-gray-900 font-mono text-gray-100",
-				codePunctuation && "text-gray-500",
-				codeLanguage && "font-mono text-gray-400",
+				codeBlock && "font-mono text-secondary",
+				codePunctuation && "text-tertiary",
+				codeLanguage && "font-mono text-tertiary",
 				code && !codeSnippet && !codeBlock && "font-mono",
 			)}
 		>
