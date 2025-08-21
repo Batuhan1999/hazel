@@ -96,7 +96,18 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 		const handleSubmit = async () => {
 			if (!onSubmit) return
 
-			const textContent = editor.api.markdown.serialize()
+			const textContent = editor.api.markdown.serialize().trim()
+
+			function isEffectivelyEmpty(str: string) {
+				if (!str) return true // null, undefined, or ""
+				// Remove normal whitespace + zero-width + non-breaking spaces
+				const cleaned = str.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, "")
+				return cleaned.length === 0
+			}
+
+			console.log("textContent", !!textContent, textContent.length)
+
+			if (!textContent || textContent.length === 0 || isEffectivelyEmpty(textContent)) return
 
 			await onSubmit(textContent)
 

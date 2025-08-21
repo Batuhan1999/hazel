@@ -1,7 +1,11 @@
 "use client"
 
+import { convexQuery } from "@convex-dev/react-query"
+import type { Id } from "@hazel/backend"
+import { api } from "@hazel/backend/api"
 import { getMentionOnSelectItem } from "@platejs/mention"
-
+import { useQuery } from "@tanstack/react-query"
+import { useParams } from "@tanstack/react-router"
 import type { TComboboxInputElement, TMentionElement } from "platejs"
 import { IS_APPLE, KEYS } from "platejs"
 import type { PlateElementProps } from "platejs/react"
@@ -9,7 +13,6 @@ import { PlateElement, useFocused, useReadOnly, useSelected } from "platejs/reac
 import * as React from "react"
 import { useMounted } from "~/hooks/use-mounted"
 import { cn } from "~/lib/utils"
-
 import {
 	InlineCombobox,
 	InlineComboboxContent,
@@ -71,8 +74,18 @@ export function MentionElement(
 const onSelectItem = getMentionOnSelectItem()
 
 export function MentionInputElement(props: PlateElementProps<TComboboxInputElement>) {
+	const { id, orgId } = useParams({ from: "/_app/$orgId/chat/$id" })
 	const { editor, element } = props
 	const [search, setSearch] = React.useState("")
+
+	const { data } = useQuery(
+		convexQuery(api.channels.getChannelMembers, {
+			channelId: id as Id<"channels">,
+			limit: 100,
+			searchQuery: search,
+			organizationId: orgId as Id<"organizations">,
+		}),
+	)
 
 	return (
 		<PlateElement {...props} as="span">
@@ -92,13 +105,22 @@ export function MentionInputElement(props: PlateElementProps<TComboboxInputEleme
 					<InlineComboboxEmpty>No results</InlineComboboxEmpty>
 
 					<InlineComboboxGroup>
-						{MENTIONABLES.map((item) => (
+						{data?.map((item) => (
 							<InlineComboboxItem
-								key={item.key}
-								value={item.text}
-								onClick={() => onSelectItem(editor, item, search)}
+								key={item._id}
+								value={item.userId}
+								onClick={() => {
+									onSelectItem(
+										editor,
+										{
+											key: item.userId,
+											text: `${item.user.firstName} ${item.user.lastName}`,
+										},
+										search,
+									)
+								}}
 							>
-								{item.text}
+								{item.user.firstName} {item.user.lastName}
 							</InlineComboboxItem>
 						))}
 					</InlineComboboxGroup>
