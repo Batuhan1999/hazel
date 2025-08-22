@@ -1,14 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Bell, BellOff, Monitor, Moon, Volume2, VolumeX } from "@untitledui/icons"
+import { Bell01, Laptop01, Moon01, VolumeMax, VolumeX } from "@untitledui/icons"
 import { useState } from "react"
 import { RadioGroup } from "react-aria-components"
 import { toast } from "sonner"
 import { SectionFooter } from "~/components/application/section-footers/section-footer"
 import { SectionHeader } from "~/components/application/section-headers/section-headers"
-import { SectionLabel } from "~/components/application/section-headers/section-label"
 import { Button } from "~/components/base/buttons/button"
 import { Form } from "~/components/base/form/form"
-import { Slider } from "~/components/base/slider/slider"
 import { Toggle } from "~/components/base/toggle/toggle"
 import IconNotificationBellOn from "~/components/icons/IconNotificationBellOn"
 import IconVolumeMute1 from "~/components/icons/IconVolumeMute1"
@@ -61,129 +59,246 @@ function NotificationsSettings() {
 				</SectionHeader.Group>
 			</SectionHeader.Root>
 
-			<div className="flex flex-col gap-5">
-				{/* Sound Settings Section */}
-				<div className="rounded-lg border bg-card p-6">
-					<h3 className="mb-4 font-semibold text-lg">Sound Notifications</h3>
+			<div className="flex flex-col gap-6">
+				{/* Desktop Notifications */}
+				<div className="rounded-xl border border-border bg-primary p-6 shadow-xs">
+					<div className="mb-6 flex items-center gap-3">
+						<div className="flex size-10 items-center justify-center rounded-lg bg-brand-subtle">
+							<Laptop01 className="size-5 text-brand-solid" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-primary">Desktop Notifications</h3>
+							<p className="text-sm text-tertiary">Get notified even when the app isn't open</p>
+						</div>
+					</div>
+					<Toggle
+						size="md"
+						label="Enable desktop notifications"
+						hint="Show system notifications for new messages"
+						isSelected={desktopNotifications}
+						onChange={setDesktopNotifications}
+					/>
+				</div>
+
+				{/* Sound Settings */}
+				<div className="rounded-xl border border-border bg-primary p-6 shadow-xs">
+					<div className="mb-6 flex items-center gap-3">
+						<div className="flex size-10 items-center justify-center rounded-lg bg-brand-subtle">
+							<VolumeMax className="size-5 text-brand-solid" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-primary">Sound Notifications</h3>
+							<p className="text-sm text-tertiary">Audio alerts for new messages</p>
+						</div>
+					</div>
 
 					<div className="space-y-6">
-						{/* Enable/Disable Sounds */}
-						<div className="flex items-center justify-between">
-							<Toggle
-								label="Enable notification sounds"
-								hint="Play a sound when you receive new messages"
-								isSelected={settings.enabled}
-								onChange={(checked) => updateSettings({ enabled: checked })}
-							/>
-						</div>
+						<Toggle
+							size="md"
+							label="Enable notification sounds"
+							hint="Play a sound when you receive new messages"
+							isSelected={settings.enabled}
+							onChange={(checked) => updateSettings({ enabled: checked })}
+						/>
 
-						{/* Sound Selection */}
-						<div className="space-y-2">
-							<p className="font-medium text-sm">Notification Sound</p>
-							<div className="flex gap-2">
-								<Button
+						{/* Sound Selection Cards */}
+						<div className="space-y-3">
+							<p className="font-medium text-sm text-secondary">Choose notification sound</p>
+							<div className="grid grid-cols-2 gap-3">
+								<button
 									type="button"
-									size="sm"
-									color={settings.soundFile === "notification01" ? "primary" : "secondary"}
-									onClick={() => updateSettings({ soundFile: "notification01" })}
-									isDisabled={!settings.enabled}
+									className={cx(
+										"relative flex items-center gap-3 rounded-lg border p-4 transition-all",
+										settings.soundFile === "notification01"
+											? "border-brand-solid bg-brand-subtle"
+											: "border-border bg-secondary hover:bg-tertiary",
+										!settings.enabled && "cursor-not-allowed opacity-50",
+									)}
+									onClick={() => settings.enabled && updateSettings({ soundFile: "notification01" })}
+									disabled={!settings.enabled}
 								>
-									Sound 1
-								</Button>
-								<Button
+									<Bell01 className="size-5 text-tertiary" />
+									<div className="text-left">
+										<p className="font-medium text-sm text-primary">Classic Bell</p>
+										<p className="text-xs text-tertiary">Traditional notification sound</p>
+									</div>
+								</button>
+
+								<button
 									type="button"
-									size="sm"
-									color={settings.soundFile === "notification02" ? "primary" : "secondary"}
-									onClick={() => updateSettings({ soundFile: "notification02" })}
-									isDisabled={!settings.enabled}
+									className={cx(
+										"relative flex items-center gap-3 rounded-lg border p-4 transition-all",
+										settings.soundFile === "notification02"
+											? "border-brand-solid bg-brand-subtle"
+											: "border-border bg-secondary hover:bg-tertiary",
+										!settings.enabled && "cursor-not-allowed opacity-50",
+									)}
+									onClick={() => settings.enabled && updateSettings({ soundFile: "notification02" })}
+									disabled={!settings.enabled}
 								>
-									Sound 2
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									color="secondary"
-									onClick={testSound}
-									isDisabled={!settings.enabled}
-								>
-									Test Sound
-								</Button>
+									<IconNotificationBellOn className="size-5 text-tertiary" />
+									<div className="text-left">
+										<p className="font-medium text-sm text-primary">Modern Chime</p>
+										<p className="text-xs text-tertiary">Subtle modern notification</p>
+									</div>
+								</button>
 							</div>
+
+							<Button
+								type="button"
+								size="sm"
+								color="secondary"
+								onClick={testSound}
+								isDisabled={!settings.enabled}
+								iconLeading={VolumeMax}
+							>
+								Test Sound
+							</Button>
 						</div>
 
-						{/* Volume Control */}
-						<div className="space-y-2">
+						{/* Volume Slider */}
+						<div className="space-y-3">
 							<div className="flex items-center justify-between">
-								<p className="font-medium text-sm">Volume</p>
-								<span className="text-muted-foreground text-sm">
-									{Math.round(settings.volume * 100)}%
-								</span>
+								<p className="font-medium text-sm text-secondary">Volume</p>
+								<span className="text-sm text-tertiary">{Math.round(settings.volume * 100)}%</span>
 							</div>
-							<div className="flex gap-2">
-								<Button
-									type="button"
-									size="sm"
-									color={settings.volume === 0.25 ? "primary" : "secondary"}
-									onClick={() => updateSettings({ volume: 0.25 })}
-									isDisabled={!settings.enabled}
-									iconLeading={IconVolumeMute1}
-								>
-									25%
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									color={settings.volume === 0.5 ? "primary" : "secondary"}
-									onClick={() => updateSettings({ volume: 0.5 })}
-									isDisabled={!settings.enabled}
-								>
-									50%
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									color={settings.volume === 0.75 ? "primary" : "secondary"}
-									onClick={() => updateSettings({ volume: 0.75 })}
-									isDisabled={!settings.enabled}
-								>
-									75%
-								</Button>
-								<Button
-									type="button"
-									size="sm"
-									color={settings.volume === 1 ? "primary" : "secondary"}
-									onClick={() => updateSettings({ volume: 1 })}
-									isDisabled={!settings.enabled}
-									iconLeading={IconVolumeOne1}
-								>
-									100%
-								</Button>
+							<div className="flex items-center gap-3">
+								{settings.volume === 0 ? (
+									<VolumeX className="size-4 text-tertiary" />
+								) : settings.volume < 0.5 ? (
+									<IconVolumeMute1 className="size-4 text-tertiary" />
+								) : (
+									<IconVolumeOne1 className="size-4 text-tertiary" />
+								)}
+								<input
+									type="range"
+									min="0"
+									max="100"
+									value={settings.volume * 100}
+									onChange={(e) => updateSettings({ volume: Number(e.target.value) / 100 })}
+									disabled={!settings.enabled}
+									className="flex-1 accent-brand-solid disabled:opacity-50"
+								/>
 							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-			<div className="flex flex-col gap-5">
-				<WorkOsWidgets
-					theme={{
-						appearance: "dark",
-						accentColor: "green",
-						radius: "medium",
-						fontFamily: "Inter",
-					}}
-				>
-					<OrganizationSwitcher
-						authToken={getAccessToken}
-						switchToOrganization={switchToOrganization}
-					>
-						{/* <CreateOrganization /> */}
-					</OrganizationSwitcher>
-					<UserProfile authToken={getAccessToken} />
 
-					<UsersManagement authToken={getAccessToken} />
-					<UserSessions authToken={getAccessToken} />
-					<UserSecurity authToken={getAccessToken} />
-				</WorkOsWidgets>
+				{/* Message Preferences */}
+				<div className="rounded-xl border border-border bg-primary p-6 shadow-xs">
+					<div className="mb-6 flex items-center gap-3">
+						<div className="flex size-10 items-center justify-center rounded-lg bg-brand-subtle">
+							<Bell01 className="size-5 text-brand-solid" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-primary">Message Notifications</h3>
+							<p className="text-sm text-tertiary">Choose which messages trigger notifications</p>
+						</div>
+					</div>
+
+					<RadioGroup
+						value={messagePreference}
+						onChange={(value) => setMessagePreference(value as "all" | "mentions" | "none")}
+						className="space-y-3"
+					>
+						<label className="flex cursor-pointer items-start gap-3 rounded-lg p-3 hover:bg-secondary">
+							<input
+								type="radio"
+								value="all"
+								checked={messagePreference === "all"}
+								onChange={(e) => setMessagePreference(e.target.value as "all")}
+								className="mt-1 accent-brand-solid"
+							/>
+							<div className="flex-1">
+								<p className="font-medium text-sm text-primary">All messages</p>
+								<p className="text-sm text-tertiary">Get notified for every new message</p>
+							</div>
+						</label>
+
+						<label className="flex cursor-pointer items-start gap-3 rounded-lg p-3 hover:bg-secondary">
+							<input
+								type="radio"
+								value="mentions"
+								checked={messagePreference === "mentions"}
+								onChange={(e) => setMessagePreference(e.target.value as "mentions")}
+								className="mt-1 accent-brand-solid"
+							/>
+							<div className="flex-1">
+								<p className="font-medium text-sm text-primary">Direct messages & mentions</p>
+								<p className="text-sm text-tertiary">Only when someone mentions you or sends a DM</p>
+							</div>
+						</label>
+
+						<label className="flex cursor-pointer items-start gap-3 rounded-lg p-3 hover:bg-secondary">
+							<input
+								type="radio"
+								value="none"
+								checked={messagePreference === "none"}
+								onChange={(e) => setMessagePreference(e.target.value as "none")}
+								className="mt-1 accent-brand-solid"
+							/>
+							<div className="flex-1">
+								<p className="font-medium text-sm text-primary">Nothing</p>
+								<p className="text-sm text-tertiary">Turn off all message notifications</p>
+							</div>
+						</label>
+				</RadioGroup>
+				</div>
+
+				{/* Quiet Hours */}
+				<div className="rounded-xl border border-border bg-primary p-6 shadow-xs">
+					<div className="mb-6 flex items-center gap-3">
+						<div className="flex size-10 items-center justify-center rounded-lg bg-brand-subtle">
+							<Moon01 className="size-5 text-brand-solid" />
+						</div>
+						<div>
+							<h3 className="font-semibold text-primary">Quiet Hours</h3>
+							<p className="text-sm text-tertiary">Automatically mute notifications during set hours</p>
+						</div>
+					</div>
+
+					<div className="space-y-4">
+						<Toggle
+							size="md"
+							label="Enable quiet hours"
+							hint="Mute all notifications during specified times"
+							isSelected={doNotDisturb}
+							onChange={setDoNotDisturb}
+						/>
+
+						{doNotDisturb && (
+							<div className="ml-12 grid grid-cols-2 gap-4">
+								<div>
+									<label className="mb-2 block text-sm font-medium text-secondary">Start time</label>
+									<input
+										type="time"
+										value={quietHoursStart}
+										onChange={(e) => setQuietHoursStart(e.target.value)}
+										className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
+									/>
+								</div>
+								<div>
+									<label className="mb-2 block text-sm font-medium text-secondary">End time</label>
+									<input
+										type="time"
+										value={quietHoursEnd}
+										onChange={(e) => setQuietHoursEnd(e.target.value)}
+										className="w-full rounded-lg border border-border bg-secondary px-3 py-2 text-sm"
+									/>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+
+				{/* Save Button */}
+				<SectionFooter.Root>
+					<SectionFooter.Actions>
+						<Button type="submit" color="primary" size="md" isDisabled={isSubmitting}>
+							{isSubmitting ? "Saving..." : "Save Changes"}
+						</Button>
+					</SectionFooter.Actions>
+				</SectionFooter.Root>
 			</div>
 		</Form>
 	)
