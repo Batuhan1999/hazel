@@ -290,7 +290,7 @@ const InnerMultiSelect = ({
 				selectContext?.selectedItems?.items?.map((value) => (
 					<span
 						key={value.id}
-						className="flex items-center rounded-md bg-primary py-0.5 pr-1 pl-1.25 ring-1 ring-primary ring-inset"
+						className="inset-ring inset-ring-primary flex items-center rounded-md bg-primary py-0.5 pr-1 pl-1.25"
 					>
 						<Avatar size="xxs" alt={value?.label} src={value?.avatarUrl} />
 
@@ -332,7 +332,7 @@ const InnerMultiSelect = ({
 					>
 						<span
 							className={cx(
-								"pointer-events-none select-none rounded px-1 py-px font-medium text-quaternary text-xs ring-1 ring-secondary ring-inset",
+								"pointer-events-none inset-ring select-none rounded px-1 py-px font-medium text-quaternary text-xs ring-secondary",
 								isDisabled && "bg-transparent text-disabled",
 							)}
 						>
@@ -360,9 +360,9 @@ export const MultiSelectTagsValue = ({
 			{...otherProps}
 			className={({ isFocusWithin, isDisabled }) =>
 				cx(
-					"relative flex w-full items-center gap-2 rounded-lg bg-primary shadow-xs outline-hidden ring-1 ring-primary ring-inset transition duration-100 ease-linear",
+					"relative inset-ring inset-ring-primary flex w-full items-center gap-2 rounded-lg bg-primary shadow-xs outline-hidden transition duration-100 ease-linear",
 					isDisabled && "cursor-not-allowed bg-disabled_subtle",
-					isFocusWithin && "ring-2 ring-brand",
+					isFocusWithin && "inset-ring-brand",
 					sizes[size].root,
 				)
 			}

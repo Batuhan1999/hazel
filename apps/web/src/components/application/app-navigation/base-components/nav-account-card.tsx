@@ -90,7 +90,7 @@ export const NavAccountMenu = ({
 				className,
 			)}
 		>
-			<div className="rounded-xl bg-primary ring-1 ring-secondary">
+			<div className="rounded-xl bg-primary ring ring-secondary">
 				<div className="flex flex-col gap-0.5 py-1.5">
 					<NavAccountCardMenuItem label="View profile" icon={User01} shortcut="⌘K->P" />
 					<NavAccountCardMenuItem label="Account settings" icon={Settings01} shortcut="⌘S" />
@@ -168,7 +168,7 @@ const NavAccountCardMenuItem = ({
 				</div>
 
 				{shortcut && (
-					<kbd className="flex rounded px-1 py-px font-body font-medium text-tertiary text-xs ring-1 ring-secondary ring-inset">
+					<kbd className="inset-ring inset-ring-secondary flex rounded px-1 py-px font-body font-medium text-tertiary text-xs">
 						{shortcut}
 					</kbd>
 				)}
@@ -199,7 +199,7 @@ export const NavAccountCard = ({
 	return (
 		<div
 			ref={triggerRef}
-			className="relative flex items-center gap-3 rounded-xl p-3 ring-1 ring-secondary ring-inset"
+			className="relative inset-ring inset-ring-secondary flex items-center gap-3 rounded-xl p-3"
 		>
 			<AvatarLabelGroup
 				size="md"

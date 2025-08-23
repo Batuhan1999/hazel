@@ -61,7 +61,7 @@ const ComboBoxValue = ({
 			{...otherProps}
 			className={({ isFocusWithin, isDisabled }) =>
 				cx(
-					"relative flex w-full items-center gap-2 rounded-lg bg-primary shadow-xs outline-hidden ring-1 ring-primary ring-inset transition-shadow duration-100 ease-linear",
+					"relative flex w-full items-center gap-2 rounded-lg bg-primary shadow-xs outline-hidden ring ring-primary ring-inset transition-shadow duration-100 ease-linear",
 					isDisabled && "cursor-not-allowed bg-disabled_subtle",
 					isFocusWithin && "ring-2 ring-brand",
 					sizes[size].root,
@@ -116,7 +116,7 @@ const ComboBoxValue = ({
 						>
 							<span
 								className={cx(
-									"pointer-events-none select-none rounded px-1 py-px font-medium text-quaternary text-xs ring-1 ring-secondary ring-inset",
+									"pointer-events-none inset-ring inset-ring-secondary select-none rounded px-1 py-px font-medium text-quaternary text-xs",
 									isDisabled && "bg-transparent text-disabled",
 								)}
 								aria-hidden="true"

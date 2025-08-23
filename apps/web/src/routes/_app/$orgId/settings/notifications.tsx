@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { VolumeMax, VolumeMin, VolumeX } from "@untitledui/icons"
 import { useState } from "react"
-import { RadioGroup } from "react-aria-components"
 import { toast } from "sonner"
 import { SectionFooter } from "~/components/application/section-footers/section-footer"
 import { SectionHeader } from "~/components/application/section-headers/section-headers"
@@ -11,7 +10,9 @@ import { Form } from "~/components/base/form/form"
 import { RadioGroupCheckbox } from "~/components/base/radio-groups/radio-group-checkbox"
 import { Slider } from "~/components/base/slider/slider"
 import { Toggle } from "~/components/base/toggle/toggle"
+import { Separator } from "~/components/ui/separator"
 import { useNotificationSound } from "~/hooks/use-notification-sound"
+import { cx } from "~/utils/cx"
 
 export const Route = createFileRoute("/_app/$orgId/settings/notifications")({
 	component: NotificationsSettings,
@@ -60,48 +61,48 @@ function NotificationsSettings() {
 				</SectionHeader.Group>
 			</SectionHeader.Root>
 
-			<div className="flex flex-col gap-5">
+			<div className="flex flex-col gap-y-6">
 				{/* Desktop Notifications */}
-				<div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,280px)_minmax(400px,512px)] lg:gap-8">
+				<NotificationSection>
 					<SectionLabel.Root
 						size="sm"
 						title="Desktop notifications"
-						description="System notifications"
-						className="max-lg:hidden"
+						description="Show alerts directly on your desktop when new activity happens"
+						className="space-y-1 max-lg:hidden"
 					/>
 
 					<Toggle
 						size="sm"
 						label="Enable desktop notifications"
-						hint="Show system notifications for new messages when the app is in the background"
+						// hint="Show system notifications for new messages when the app is in the background"
 						isSelected={desktopNotifications}
 						onChange={setDesktopNotifications}
 					/>
-				</div>
+				</NotificationSection>
 
-				<hr className="h-px w-full border-none bg-border-secondary" />
+				<Separator className="my-3" />
 
 				{/* Sound Settings */}
-				<div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,280px)_minmax(400px,512px)] lg:gap-8">
+				<NotificationSection>
 					<SectionLabel.Root
 						size="sm"
 						title="Sound notifications"
-						description="Audio alerts"
-						className="max-lg:hidden"
+						description="Play a sound to notify you when new activity occurs"
+						className="space-y-1 max-lg:hidden"
 					/>
 
 					<div className="space-y-4">
 						<Toggle
 							size="sm"
 							label="Enable notification sounds"
-							hint="Play a sound when you receive new messages"
+							// hint="Play a sound when you receive new messages"
 							isSelected={settings.enabled}
 							onChange={(checked) => updateSettings({ enabled: checked })}
 						/>
 
 						{settings.enabled && (
 							<>
-								<div className="space-y-2">
+								<div className="flex flex-col gap-y-2">
 									<label className="font-medium text-secondary text-sm">
 										Notification sound
 									</label>
@@ -142,10 +143,10 @@ function NotificationsSettings() {
 									</div>
 								</div>
 
-								<div className="space-y-2">
+								<div className="flex flex-col gap-y-2">
 									<div className="flex items-center justify-between">
 										<label className="font-medium text-secondary text-sm">Volume</label>
-										<span className="text-sm text-tertiary">
+										<span className="tabular-numbs text-sm text-tertiary">
 											{Math.round(settings.volume * 100)}%
 										</span>
 									</div>
@@ -171,17 +172,17 @@ function NotificationsSettings() {
 							</>
 						)}
 					</div>
-				</div>
+				</NotificationSection>
 
-				<hr className="h-px w-full border-none bg-border-secondary" />
+				<Separator className="my-3" />
 
 				{/* Message Preferences */}
-				<div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,280px)_minmax(400px,512px)] lg:gap-8">
+				<NotificationSection>
 					<SectionLabel.Root
 						size="sm"
 						title="Message notifications"
-						description="When to notify"
-						className="max-lg:hidden"
+						description="Choose when you want to be notified about new messages and conversations"
+						className="space-y-1 max-lg:hidden"
 					/>
 
 					<RadioGroupCheckbox
@@ -192,50 +193,50 @@ function NotificationsSettings() {
 						items={[
 							{
 								value: "all",
-								label: "All messages",
+								title: "All messages",
 								description: "Get notified for every new message",
 							},
 							{
 								value: "mentions",
-								label: "Mentions only",
+								title: "Mentions only",
 								description: "Only when someone @mentions you",
 							},
 							{
 								value: "direct",
-								label: "Direct messages & mentions",
+								title: "Direct messages & mentions",
 								description: "DMs and @mentions only",
 							},
 							{
 								value: "none",
-								label: "Nothing",
+								title: "Nothing",
 								description: "Turn off all message notifications",
 							},
 						]}
 					/>
-				</div>
+				</NotificationSection>
 
-				<hr className="h-px w-full border-none bg-border-secondary" />
+				<Separator className="my-3" />
 
 				{/* Email Notifications */}
-				<div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,280px)_minmax(400px,512px)] lg:gap-8">
+				<NotificationSection>
 					<SectionLabel.Root
 						size="sm"
 						title="Email notifications"
-						description="Email preferences"
-						className="max-lg:hidden"
+						description="Receive updates by email when you are away"
+						className="space-y-1 max-lg:hidden"
 					/>
 
 					<div className="space-y-4">
 						<Toggle
 							size="sm"
 							label="Enable email notifications"
-							hint="Receive email notifications for messages and updates"
+							// hint="Receive email notifications for messages and updates"
 							isSelected={emailNotifications}
 							onChange={setEmailNotifications}
 						/>
 
 						{emailNotifications && (
-							<div className="space-y-2">
+							<div className="flex flex-col gap-y-2">
 								<label className="font-medium text-secondary text-sm">
 									Email digest frequency
 								</label>
@@ -268,24 +269,24 @@ function NotificationsSettings() {
 							</div>
 						)}
 					</div>
-				</div>
+				</NotificationSection>
 
-				<hr className="h-px w-full border-none bg-border-secondary" />
+				<Separator className="my-3" />
 
 				{/* Quiet Hours */}
-				<div className="grid grid-cols-1 lg:grid-cols-[minmax(200px,280px)_minmax(400px,512px)] lg:gap-8">
+				<NotificationSection>
 					<SectionLabel.Root
 						size="sm"
 						title="Quiet hours"
-						description="Do not disturb"
-						className="max-lg:hidden"
+						description="Mute notifications during selected times"
+						className="space-y-1 max-lg:hidden"
 					/>
 
 					<div className="space-y-4">
 						<Toggle
 							size="sm"
 							label="Enable quiet hours"
-							hint="Mute all notifications during specified times"
+							// hint="Mute all notifications during specified times"
 							isSelected={doNotDisturb}
 							onChange={setDoNotDisturb}
 						/>
@@ -317,7 +318,7 @@ function NotificationsSettings() {
 							</div>
 						)}
 					</div>
-				</div>
+				</NotificationSection>
 
 				<SectionFooter.Root>
 					<SectionFooter.Actions>
@@ -329,4 +330,8 @@ function NotificationsSettings() {
 			</div>
 		</Form>
 	)
+}
+
+const NotificationSection = ({ className, ...props }: React.ComponentProps<"div">) => {
+	return <div className={cx("grid grid-cols-1 lg:grid-cols-[24rem_1fr] lg:gap-14", className)} {...props} />
 }

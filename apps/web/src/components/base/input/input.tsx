@@ -91,9 +91,9 @@ export const InputBase = ({
 			ref={groupRef}
 			className={({ isFocusWithin, isDisabled, isInvalid }) =>
 				cx(
-					"relative flex w-full flex-row place-content-center place-items-center rounded-lg bg-primary shadow-xs ring-1 ring-primary ring-inset transition-shadow duration-100 ease-linear",
+					"relative inset-ring inset-ring-primary flex w-full flex-row place-content-center place-items-center rounded-lg bg-primary shadow-xs transition-shadow duration-100 ease-linear",
 
-					isFocusWithin && !isDisabled && "ring-2 ring-brand",
+					isFocusWithin && !isDisabled && "inset-ring-brand",
 
 					// Disabled state styles
 					isDisabled && "cursor-not-allowed bg-disabled_subtle ring-disabled",
@@ -177,7 +177,7 @@ export const InputBase = ({
 				>
 					<span
 						className={cx(
-							"pointer-events-none select-none rounded px-1 py-px font-medium text-quaternary text-xs ring-1 ring-secondary ring-inset",
+							"pointer-events-none inset-ring inset-ring-secondary select-none rounded px-1 py-px font-medium text-quaternary text-xs",
 							isDisabled && "bg-transparent text-disabled",
 						)}
 						aria-hidden="true"
