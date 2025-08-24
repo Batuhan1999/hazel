@@ -6,11 +6,7 @@ import { useParams } from "@tanstack/react-router"
 import type { FunctionReturnType } from "convex/server"
 import { format } from "date-fns"
 import { useRef, useState } from "react"
-import {
-	Heading as AriaHeading,
-	Button,
-	DialogTrigger,
-} from "react-aria-components"
+import { Heading as AriaHeading, Button, DialogTrigger } from "react-aria-components"
 import { toast } from "sonner"
 import { Dialog, Modal, ModalFooter, ModalOverlay } from "~/components/application/modals/modal"
 import { Button as StyledButton } from "~/components/base/buttons/button"

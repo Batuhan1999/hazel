@@ -9,9 +9,9 @@ import { Popover } from "~/components/base/select/popover"
 import { TextArea } from "~/components/base/textarea/textarea"
 import { Tooltip } from "~/components/base/tooltip/tooltip"
 import IconPencilEdit from "~/components/icons/IconPencilEdit"
+import { IconNotification } from "../application/notifications/notifications"
 import IconPhone2 from "../icons/IconPhone2"
 import IconStar from "../icons/IconStar"
-import { IconNotification } from "../application/notifications/notifications"
 
 interface UserProfilePopoverProps {
 	user: {
@@ -75,8 +75,16 @@ export function UserProfilePopover({
 													onToggleFavorite?.()
 													toast.custom((t) => (
 														<IconNotification
-															title={isFavorite ? "Removed from favorites" : "Added to favorites"}
-															description={isFavorite ? `${fullName} has been removed from your favorites.` : `${fullName} has been added to your favorites.`}
+															title={
+																isFavorite
+																	? "Removed from favorites"
+																	: "Added to favorites"
+															}
+															description={
+																isFavorite
+																	? `${fullName} has been removed from your favorites.`
+																	: `${fullName} has been added to your favorites.`
+															}
 															color="success"
 															onClose={() => toast.dismiss(t)}
 														/>
@@ -85,7 +93,9 @@ export function UserProfilePopover({
 												color={isFavorite ? "secondary" : "tertiary"}
 												size="xs"
 												icon={IconStar}
-												aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+												aria-label={
+													isFavorite ? "Remove from favorites" : "Add to favorites"
+												}
 											/>
 										</Tooltip>
 
@@ -120,35 +130,43 @@ export function UserProfilePopover({
 													</Dropdown.Section>
 													<Dropdown.Separator />
 													<Dropdown.Section>
-														<Dropdown.Item onAction={() => {
-															onToggleMute?.()
-															toast.custom((t) => (
-																<IconNotification
-																	title={isMuted ? "Unmuted" : "Muted"}
-																	description={isMuted ? `You will now receive notifications from ${fullName}.` : `You will no longer receive notifications from ${fullName}.`}
-																	color="success"
-																	onClose={() => toast.dismiss(t)}
-																/>
-															))
-														}}>
+														<Dropdown.Item
+															onAction={() => {
+																onToggleMute?.()
+																toast.custom((t) => (
+																	<IconNotification
+																		title={isMuted ? "Unmuted" : "Muted"}
+																		description={
+																			isMuted
+																				? `You will now receive notifications from ${fullName}.`
+																				: `You will no longer receive notifications from ${fullName}.`
+																		}
+																		color="success"
+																		onClose={() => toast.dismiss(t)}
+																	/>
+																))
+															}}
+														>
 															{isMuted ? "Unmute" : "Mute"}
 														</Dropdown.Item>
 													</Dropdown.Section>
 													<Dropdown.Separator />
-													<Dropdown.Item onAction={() => {
-														if (user._id) {
-															navigator.clipboard.writeText(user._id)
-															toast.custom((t) => (
-																<IconNotification
-																	title="User ID copied!"
-																	description="User ID has been copied to your clipboard."
-																	color="success"
-																	onClose={() => toast.dismiss(t)}
-																/>
-															))
-															onCopyUserId?.()
-														}
-														}}>
+													<Dropdown.Item
+														onAction={() => {
+															if (user._id) {
+																navigator.clipboard.writeText(user._id)
+																toast.custom((t) => (
+																	<IconNotification
+																		title="User ID copied!"
+																		description="User ID has been copied to your clipboard."
+																		color="success"
+																		onClose={() => toast.dismiss(t)}
+																	/>
+																))
+																onCopyUserId?.()
+															}
+														}}
+													>
 														Copy user ID
 													</Dropdown.Item>
 												</Dropdown.Menu>

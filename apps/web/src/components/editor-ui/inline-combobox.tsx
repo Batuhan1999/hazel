@@ -234,7 +234,7 @@ const InlineComboboxContent: typeof ComboboxPopover = ({ className, ...props }) 
 		<Portal>
 			<ComboboxPopover
 				className={cn(
-					"z-500 max-h-[288px] w-[300px] overflow-y-auto rounded-md bg-tertiary shadow-md",
+					"z-500 max-h-[288px] w-[300px] overflow-y-auto rounded-md bg-tertiary shadow-md border border-primary",
 					className,
 				)}
 				{...props}
@@ -325,7 +325,10 @@ function InlineComboboxGroup({ className, ...props }: React.ComponentProps<typeo
 	return (
 		<ComboboxGroup
 			{...props}
-			className={cn("hidden not-last:border-b py-1.5 [&:has([role=option])]:block", className)}
+			className={cn(
+				"hidden border-primary not-last:border-b py-1.5 [&:has([role=option])]:block",
+				className,
+			)}
 		/>
 	)
 }
