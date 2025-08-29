@@ -1,3 +1,2 @@
-import { integer, pgTable, uuid, varchar } from "drizzle-orm/pg-core"
-
-export const usersTable = pgTable("users", {})
+// Re-export everything from the schema directory
+export * from "./schema/index"
