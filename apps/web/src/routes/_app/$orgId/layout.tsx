@@ -6,13 +6,29 @@ import { CommandPalette } from "~/components/command-palette"
 import { NotificationManager } from "~/components/notification-manager"
 import { PresenceProvider } from "~/components/presence/presence-provider"
 import { SidebarInset, SidebarProvider } from "~/components/ui/sidebar"
+import {
+	attachmentCollection,
+	channelCollection,
+	channelMemberCollection,
+	directMessageParticipantCollection,
+} from "~/db/collections"
 
 export const Route = createFileRoute("/_app/$orgId")({
 	component: RouteComponent,
+	loader: async () => {
+		// TODO: Should be scoped to the organization
+		await channelCollection.preload()
+		await channelMemberCollection.preload()
+		await attachmentCollection.preload()
+		await directMessageParticipantCollection.preload()
+
+		return null
+	},
 })
 
 function RouteComponent() {
 	const [openCmd, setOpenCmd] = useState(false)
+
 	return (
 		<PresenceProvider>
 			<SidebarProvider>

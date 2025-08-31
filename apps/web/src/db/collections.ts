@@ -2,6 +2,7 @@ import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
 import {
 	Attachment,
+	Channel,
 	ChannelMember,
 	DirectMessageParticipant,
 	Invitation,
@@ -21,14 +22,6 @@ import { convexQueryOptions } from "."
 
 const electricUrl =
 	"https://api.electric-sql.cloud/v1/shape?source_id=382e0de8-797d-4395-9a5e-dafa86df0821&secret=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzb3VyY2VfaWQiOiIzODJlMGRlOC03OTdkLTQzOTUtOWE1ZS1kYWZhODZkZjA4MjEiLCJpYXQiOjE3NTY0MTkzMTJ9.Mgw0AAyt-vDM8In0G5BZN7FK6oYkvZV5Lw1sE4wRT6c"
-
-export const channelCollection = (organizationId: Id<"organizations">) =>
-	createCollection({
-		...queryCollectionOptions({
-			...convexQueryOptions(api.channels.list, { organizationId }),
-			getKey: (channel) => channel._id,
-		}),
-	})
 
 export const organizationCollection = createCollection(
 	electricCollectionOptions({
@@ -138,6 +131,20 @@ export const organizationMemberCollection = createCollection(
 			},
 		},
 		schema: Schema.standardSchemaV1(OrganizationMember.Model.json),
+		getKey: (item) => item.id,
+	}),
+)
+
+export const channelCollection = createCollection(
+	electricCollectionOptions({
+		id: "channels",
+		shapeOptions: {
+			url: electricUrl,
+			params: {
+				table: "channels",
+			},
+		},
+		schema: Schema.standardSchemaV1(Channel.Model.json),
 		getKey: (item) => item.id,
 	}),
 )

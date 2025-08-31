@@ -1,6 +1,7 @@
 import { convexQuery, useConvexMutation } from "@convex-dev/react-query"
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
+import type { Channel } from "@hazel/db/models"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useParams } from "@tanstack/react-router"
 import type { FunctionReturnType } from "convex/server"
@@ -26,7 +27,7 @@ import { SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from "../ui/sid
 type ChannelsResponse = FunctionReturnType<typeof api.channels.getChannelsForOrganization>
 
 export interface ChannelItemProps {
-	channel: ChannelsResponse["organizationChannels"][0]
+	channel: typeof Channel.Model.Type
 }
 
 export const ChannelItem = ({ channel }: ChannelItemProps) => {
@@ -43,47 +44,47 @@ export const ChannelItem = ({ channel }: ChannelItemProps) => {
 		if (organizationId) {
 			leaveChannelMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 			})
 		}
-	}, [channel._id, organizationId, leaveChannelMutation])
+	}, [channel.id, organizationId, leaveChannelMutation])
 
 	const handleToggleMute = useCallback(() => {
 		if (organizationId) {
 			updateChannelPreferencesMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 				isMuted: !channel.isMuted,
 			})
 		}
-	}, [channel._id, channel.isMuted, organizationId, updateChannelPreferencesMutation])
+	}, [channel.id, channel.isMuted, organizationId, updateChannelPreferencesMutation])
 
 	const handleToggleFavorite = useCallback(() => {
 		if (organizationId) {
 			updateChannelPreferencesMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 				isFavorite: !channel.isFavorite,
 			})
 		}
-	}, [channel._id, channel.isFavorite, organizationId, updateChannelPreferencesMutation])
+	}, [channel.id, channel.isFavorite, organizationId, updateChannelPreferencesMutation])
 
 	const handleMouseEnter = useCallback(() => {
 		// Prefetch channel data on hover
 		if (organizationId) {
 			queryClient.prefetchQuery(
 				convexQuery(api.channels.getChannel, {
-					channelId: channel._id as Id<"channels">,
+					channelId: channel.id,
 					organizationId,
 				}),
 			)
 		}
-	}, [channel._id, organizationId, queryClient])
+	}, [channel.id, organizationId, queryClient])
 
 	return (
 		<SidebarMenuItem onMouseEnter={handleMouseEnter}>
 			<SidebarMenuButton asChild>
-				<Link to="/$orgId/chat/$id" params={{ orgId: organizationId || "", id: channel._id }}>
+				<Link to="/$orgId/chat/$id" params={{ orgId: organizationId || "", id: channel.id }}>
 					<IconHashtagStroke className="size-5" />
 					<p className={cn("text-ellipsis text-nowrap", channel.isMuted && "opacity-60")}>
 						{channel.name}
@@ -192,54 +193,54 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 		api.channels.updateChannelPreferencesForOrganization,
 	)
 
-	const filteredMembers = channel.members.filter((member) => member.userId !== me?._id)
+	const filteredMembers = channel.members.filter((member) => member.userId !== me?.id)
 
 	const handleToggleMute = useCallback(() => {
 		if (organizationId) {
 			updateChannelPreferencesMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 				isMuted: !channel.isMuted,
 			})
 		}
-	}, [channel._id, channel.isMuted, organizationId, updateChannelPreferencesMutation])
+	}, [channel.id, channel.isMuted, organizationId, updateChannelPreferencesMutation])
 
 	const handleToggleFavorite = useCallback(() => {
 		if (organizationId) {
 			updateChannelPreferencesMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 				isFavorite: !channel.isFavorite,
 			})
 		}
-	}, [channel._id, channel.isFavorite, organizationId, updateChannelPreferencesMutation])
+	}, [channel.id, channel.isFavorite, organizationId, updateChannelPreferencesMutation])
 
 	const handleClose = useCallback(() => {
 		if (organizationId) {
 			updateChannelPreferencesMutation({
 				organizationId,
-				channelId: channel._id as Id<"channels">,
+				channelId: channel.id,
 				isHidden: true,
 			})
 		}
-	}, [channel._id, organizationId, updateChannelPreferencesMutation])
+	}, [channel.id, organizationId, updateChannelPreferencesMutation])
 
 	const handleMouseEnter = useCallback(() => {
 		// Prefetch channel data on hover
 		if (organizationId) {
 			queryClient.prefetchQuery(
 				convexQuery(api.channels.getChannel, {
-					channelId: channel._id as Id<"channels">,
+					channelId: channel.id,
 					organizationId,
 				}),
 			)
 		}
-	}, [channel._id, organizationId, queryClient])
+	}, [channel.id, organizationId, queryClient])
 
 	return (
 		<SidebarMenuItem onMouseEnter={handleMouseEnter}>
 			<SidebarMenuButton asChild>
-				<Link to="/$orgId/chat/$id" params={{ orgId: organizationId || "", id: channel._id }}>
+				<Link to="/$orgId/chat/$id" params={{ orgId: organizationId || "", id: channel.id }}>
 					<div className="-space-x-4 flex items-center justify-center">
 						{channel.type === "single" && filteredMembers.length === 1 ? (
 							<div className="flex items-center justify-center gap-3">
@@ -248,7 +249,7 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 									src={filteredMembers[0].user.avatarUrl}
 									alt={`${filteredMembers[0].user.firstName} ${filteredMembers[0].user.lastName}`}
 									status={
-										userPresence.find((p) => p.userId === filteredMembers[0].user._id)
+										userPresence.find((p) => p.userId === filteredMembers[0].user.id)
 											?.online
 											? "online"
 											: "offline"
@@ -264,7 +265,7 @@ export const DmChannelLink = ({ channel, userPresence }: DmChannelLinkProps) => 
 								<div className="-space-x-2 flex">
 									{filteredMembers.slice(0, 2).map((member) => (
 										<Avatar
-											key={member.user._id}
+											key={member.user.id}
 											size="xs"
 											src={member.user.avatarUrl}
 											alt={member.user.firstName[0]}
