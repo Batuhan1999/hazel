@@ -119,6 +119,7 @@
         "@fontsource/inter": "^5.2.6",
         "@hazel/backend": "workspace:*",
         "@hazel/backendv2": "workspace:*",
+        "@hazel/db": "workspace:*",
         "@platejs/ai": "^49.2.15",
         "@platejs/autoformat": "^49.0.0",
         "@platejs/basic-nodes": "^49.0.0",

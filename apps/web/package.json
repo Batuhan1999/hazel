@@ -20,6 +20,7 @@
 		"@convex-dev/workos": "^0.0.1",
 		"@effect/platform": "^0.90.6",
 		"@fontsource/inter": "^5.2.6",
+		"@hazel/db": "workspace:*",
 		"@hazel/backend": "workspace:*",
 		"@hazel/backendv2": "workspace:*",
 		"@platejs/ai": "^49.2.15",

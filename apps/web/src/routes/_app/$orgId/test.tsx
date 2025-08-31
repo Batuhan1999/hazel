@@ -1,3 +1,4 @@
+import { ChannelId, MessageId, UserId } from "@hazel/db/schema"
 import { useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute, useParams } from "@tanstack/react-router"
 import { Button } from "~/components/base/buttons/button"
@@ -12,11 +13,17 @@ function RouteComponent() {
 
 	const addMessage = () => {
 		messageCollection.insert({
-			id: crypto.randomUUID(),
-			channelId: crypto.randomUUID(),
+			id: MessageId.make(crypto.randomUUID()),
+			channelId: ChannelId.make(crypto.randomUUID()),
 			content: "XD",
+
+			createdAt: new Date().toISOString() as unknown as Date,
+			authorId: UserId.make(crypto.randomUUID()),
+
 			replyToMessageId: null,
 			threadChannelId: null,
+			deletedAt: null,
+			updatedAt: null,
 		})
 	}
 

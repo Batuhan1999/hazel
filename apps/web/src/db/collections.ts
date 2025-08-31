@@ -1,9 +1,10 @@
 import type { Id } from "@hazel/backend"
 import { api } from "@hazel/backend/api"
+import { Message } from "@hazel/db/models"
 import { electricCollectionOptions } from "@tanstack/electric-db-collection"
 import { queryCollectionOptions } from "@tanstack/query-db-collection"
 import { createCollection } from "@tanstack/react-db"
-import { Effect } from "effect"
+import { Effect, Schema } from "effect"
 import { backendClient } from "~/lib/client"
 import { convexQueryOptions } from "."
 
@@ -24,6 +25,7 @@ export const messageCollection = createCollection(
 				table: "messages",
 			},
 		},
+		schema: Schema.standardSchemaV1(Message.Model.json),
 		getKey: (item) => item.id,
 		onInsert: async ({ transaction }) => {
 			const { modified: newMessage } = transaction.mutations[0]
