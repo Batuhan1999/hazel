@@ -10,6 +10,7 @@ import { BunHttpServer, BunRuntime } from "@effect/platform-bun"
 import { Layer } from "effect"
 import { HazelApi } from "./api"
 import { HttpApiRoutes } from "./http"
+import { ChannelMemberRepo } from "./repositories/channel-member-repo"
 import { ChannelRepo } from "./repositories/channel-repo"
 import { InvitationRepo } from "./repositories/invitation-repo"
 import { MessageRepo } from "./repositories/message-repo"
@@ -54,6 +55,7 @@ const TracerLive = OtlpTracer.layer({
 const MainLive = Layer.mergeAll(
 	MessageRepo.Default,
 	ChannelRepo.Default,
+	ChannelMemberRepo.Default,
 	UserRepo.Default,
 	OrganizationRepo.Default,
 	OrganizationMemberRepo.Default,

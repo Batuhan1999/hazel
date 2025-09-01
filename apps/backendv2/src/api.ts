@@ -119,14 +119,18 @@ export class WebhookGroup extends HttpApiGroup.make("webhooks")
 	)
 	.prefix("/webhooks") {}
 
-export class GenerateMockDataRequest extends Schema.Class<GenerateMockDataRequest>("GenerateMockDataRequest")({
-	organizationId: Schema.UUID,
-	userCount: Schema.Number,
-	channelCount: Schema.Number,
-	messageCount: Schema.Number,
-}) {}
+export class GenerateMockDataRequest extends Schema.Class<GenerateMockDataRequest>("GenerateMockDataRequest")(
+	{
+		organizationId: Schema.UUID,
+		userCount: Schema.Number,
+		channelCount: Schema.Number,
+		messageCount: Schema.Number,
+	},
+) {}
 
-export class GenerateMockDataResponse extends Schema.Class<GenerateMockDataResponse>("GenerateMockDataResponse")({
+export class GenerateMockDataResponse extends Schema.Class<GenerateMockDataResponse>(
+	"GenerateMockDataResponse",
+)({
 	transactionId: TransactionId,
 	created: Schema.Struct({
 		users: Schema.Number,

@@ -18,6 +18,7 @@ import { IconSearchStroke } from "~/components/icons/IconSearchStroke"
 import { IconThreeDotsMenuHorizontalStroke } from "~/components/icons/IconThreeDotsMenuHorizontalStroke"
 import IconUserUser03 from "~/components/icons/IconUserUser03"
 import { organizationMemberCollection, userCollection } from "~/db/collections"
+import { useUser } from "~/lib/auth"
 import { backendClient } from "~/lib/client"
 
 export const Route = createFileRoute("/_app/$orgId/")({
@@ -29,7 +30,6 @@ function RouteComponent() {
 	const organizationId = orgId as OrganizationId
 	const navigate = useNavigate()
 	const [searchQuery, setSearchQuery] = useState("")
-	const { user: authUser } = useAuth()
 
 	const { data: membersData } = useLiveQuery((q) =>
 		q
@@ -43,16 +43,7 @@ function RouteComponent() {
 			})),
 	)
 
-	console.log("membersData", membersData)
-
-	const { data: currentUser } = useLiveQuery((q) =>
-		q
-			.from({ user: userCollection })
-			.where(({ user }) => eq(user.externalId, authUser?.id || ""))
-			.select(({ user }) => user)
-			.orderBy(({ user }) => user.lastSeen, "desc")
-			.limit(1),
-	)
+	const { user } = useUser()
 
 	const createDmChannelMutation = useMutation({
 		mutationFn: async ({ targetUserId }: { targetUserId: string }) => {
@@ -133,8 +124,7 @@ function RouteComponent() {
 				) : (
 					filteredMembers.map((member) => {
 						const fullName = `${member.firstName} ${member.lastName}`.trim()
-						const isCurrentUser =
-							currentUser && currentUser.length > 0 && currentUser[0].id === member.id
+						const isCurrentUser = user && user.id === member.id
 						return (
 							<div
 								key={member.id}

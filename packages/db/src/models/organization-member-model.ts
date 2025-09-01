@@ -11,7 +11,7 @@ export class Model extends M.Class<Model>("OrganizationMember")({
 	organizationId: OrganizationId,
 	userId: UserId,
 	role: OrganizationRole,
-	joinedAt: Schema.DateFromString,
+	joinedAt: Schema.Date,
 	invitedBy: Schema.NullOr(UserId),
 	...baseFields,
 }) {}

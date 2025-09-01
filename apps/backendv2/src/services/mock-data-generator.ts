@@ -1,5 +1,6 @@
-import type { ChannelId, OrganizationId } from "@hazel/db/schema"
+import type { ChannelId, OrganizationId, UserId } from "@hazel/db/schema"
 import { Effect } from "effect"
+import { ChannelMemberRepo } from "../repositories/channel-member-repo"
 import { ChannelRepo } from "../repositories/channel-repo"
 import { MessageRepo } from "../repositories/message-repo"
 import { OrganizationMemberRepo } from "../repositories/organization-member-repo"
@@ -20,6 +21,7 @@ export class MockDataGenerator extends Effect.Service<MockDataGenerator>()("Mock
 				const channelRepo = yield* ChannelRepo
 				const messageRepo = yield* MessageRepo
 				const orgMemberRepo = yield* OrganizationMemberRepo
+				const channelMemberRepo = yield* ChannelMemberRepo
 				// Generate users
 				const userDataArray = Array.from({ length: config.userCount }, (_, i) => ({
 					externalId: `mock_user_${Date.now()}_${i}`,
@@ -42,7 +44,10 @@ export class MockDataGenerator extends Effect.Service<MockDataGenerator>()("Mock
 					users.map((user, i) => ({
 						organizationId,
 						userId: user[0]!.id,
-						role: (i === 0 ? "owner" : i === 1 ? "admin" : "member") as const,
+						role: (i === 0 ? "owner" : i === 1 ? "admin" : "member") as
+							| "owner"
+							| "admin"
+							| "member",
 						joinedAt: new Date().toISOString(),
 						invitedBy: null,
 						deletedAt: null,
@@ -65,7 +70,12 @@ export class MockDataGenerator extends Effect.Service<MockDataGenerator>()("Mock
 					(_, i) => ({
 						organizationId,
 						name: channelNames[i] || `channel-${i}`,
-						type: (i > 2 ? "private" : "public") as const,
+						type: (i > 2 ? "private" : "public") as
+							| "public"
+							| "private"
+							| "thread"
+							| "direct"
+							| "single",
 						parentChannelId: null,
 						deletedAt: null,
 					}),
@@ -75,6 +85,42 @@ export class MockDataGenerator extends Effect.Service<MockDataGenerator>()("Mock
 					channelDataArray,
 					(channelData) => channelRepo.insert(channelData),
 					{ concurrency: 3 },
+				)
+
+				// Generate channel members
+				const channelMembersData = channels.flatMap((channelResult, channelIndex) => {
+					const channel = channelResult[0]
+					if (!channel) return []
+
+					// For public channels (first 3), add all users
+					// For private channels, add only a subset of users
+					const isPublic = channelIndex <= 2
+					const usersToAdd = isPublic ? users : users.slice(0, Math.ceil(users.length / 2))
+
+					return usersToAdd
+						.map((userResult) => {
+							const user = userResult[0]
+							if (!user) return null
+
+							return {
+								channelId: channel.id as ChannelId,
+								userId: user.id as UserId,
+								isHidden: false,
+								isMuted: false,
+								isFavorite: channelIndex === 0, // Favorite the general channel
+								lastSeenMessageId: null,
+								notificationCount: 0,
+								joinedAt: new Date().toISOString(),
+								deletedAt: null,
+							}
+						})
+						.filter((member): member is NonNullable<typeof member> => member !== null)
+				})
+
+				const channelMembers = yield* Effect.forEach(
+					channelMembersData,
+					(memberData) => channelMemberRepo.insert(memberData),
+					{ concurrency: 10 },
 				)
 
 				// Generate messages
@@ -122,6 +168,7 @@ export class MockDataGenerator extends Effect.Service<MockDataGenerator>()("Mock
 						channels: channels.length,
 						messages: messages.length,
 						organizationMembers: orgMembers.length,
+						channelMembers: channelMembers.length,
 					},
 				}
 			})

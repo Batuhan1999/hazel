@@ -1,9 +1,5 @@
-import { convexQuery } from "@convex-dev/react-query"
-import type { Id } from "@hazel/backend"
-import { api } from "@hazel/backend/api"
 import type { OrganizationId } from "@hazel/db/schema"
 import { and, eq, inArray, or, useLiveQuery } from "@tanstack/react-db"
-import { useQuery } from "@tanstack/react-query"
 import { Link, useParams } from "@tanstack/react-router"
 import { useAuth } from "@workos-inc/authkit-react"
 import { useMemo } from "react"
@@ -14,6 +10,7 @@ import {
 	organizationCollection,
 	userCollection,
 } from "~/db/collections"
+import { useUser } from "~/lib/auth"
 import { CreateDmButton } from "../application/modals/create-dm-modal"
 import IconChatChatting1 from "../icons/IconChatChatting1"
 import IconGridDashboard01DuoSolid from "../icons/IconGridDashboard01DuoSolid"
@@ -155,25 +152,28 @@ export const AppSidebar = ({ setOpenCmd }: { setOpenCmd: (open: boolean) => void
 }
 
 const ChannelGroup = (props: { organizationId: OrganizationId }) => {
-	const { user } = useAuth()
-	const userId = user?.id
+	const { user } = useUser()
 
-	const { data: userChannels } = useLiveQuery((q) =>
-		q
-			.from({ channel: channelCollection })
-			.innerJoin({ member: channelMemberCollection }, ({ channel, member }) =>
-				eq(member.channelId, channel.id),
-			)
-			.where((q) =>
-				and(
-					eq(q.channel.organizationId, props.organizationId),
-					or(eq(q.channel.type, "public"), eq(q.channel.type, "private")),
-					eq(q.member.userId, userId || ""),
-					eq(q.member.isHidden, false),
-				),
-			)
-			.orderBy(({ channel }) => channel.createdAt, "asc"),
+	const { data: userChannels } = useLiveQuery(
+		(q) =>
+			q
+				.from({ channel: channelCollection })
+				.innerJoin({ member: channelMemberCollection }, ({ channel, member }) =>
+					eq(member.channelId, channel.id),
+				)
+				.where((q) =>
+					and(
+						eq(q.channel.organizationId, props.organizationId),
+						or(eq(q.channel.type, "public"), eq(q.channel.type, "private")),
+						eq(q.member.userId, user?.id || ""),
+						eq(q.member.isHidden, false),
+					),
+				)
+				.orderBy(({ channel }) => channel.createdAt, "asc"),
+		[user?.id],
 	)
+
+	console.log("userChannels", userChannels)
 
 	const channelIds = useMemo(() => {
 		if (!userChannels) return []
@@ -188,7 +188,7 @@ const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 	})
 
 	const channels = useMemo(() => {
-		if (!userChannels || !userId) return []
+		if (!userChannels || !user?.id) return []
 
 		// Create a map of channel participants
 		const participantsByChannel = new Map<string, Array<any>>()
@@ -231,7 +231,7 @@ const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 			}
 			return channel
 		})
-	}, [userChannels, allParticipants, userId])
+	}, [userChannels, allParticipants, user?.id])
 
 	return (
 		<SidebarGroup>
@@ -251,24 +251,25 @@ const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 }
 
 const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
-	const { user } = useAuth()
-	const userId = user?.id
+	const { user } = useUser()
 
-	const { data: userDmChannels } = useLiveQuery((q) =>
-		q
-			.from({ channel: channelCollection })
-			.innerJoin({ member: channelMemberCollection }, ({ channel, member }) =>
-				eq(member.channelId, channel.id),
-			)
-			.where((q) =>
-				and(
-					eq(q.channel.organizationId, props.organizationId),
-					or(eq(q.channel.type, "direct"), eq(q.channel.type, "single")),
-					eq(q.member.userId, userId || ""),
-					eq(q.member.isHidden, false),
-				),
-			)
-			.orderBy(({ channel }) => channel.createdAt, "asc"),
+	const { data: userDmChannels } = useLiveQuery(
+		(q) =>
+			q
+				.from({ channel: channelCollection })
+				.innerJoin({ member: channelMemberCollection }, ({ channel, member }) =>
+					eq(member.channelId, channel.id),
+				)
+				.where((q) =>
+					and(
+						eq(q.channel.organizationId, props.organizationId),
+						or(eq(q.channel.type, "direct"), eq(q.channel.type, "single")),
+						eq(q.member.userId, user?.id),
+						eq(q.member.isHidden, false),
+					),
+				)
+				.orderBy(({ channel }) => channel.createdAt, "asc"),
+		[user?.id],
 	)
 
 	const dmChannelIds = useMemo(() => {
@@ -284,7 +285,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 	})
 
 	const dmChannels = useMemo(() => {
-		if (!userDmChannels || !userId) return []
+		if (!userDmChannels || !user?.id) return []
 
 		const participantsByChannel = new Map<string, Array<any>>()
 
@@ -320,7 +321,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 			}
 			return channel
 		})
-	}, [userDmChannels, dmParticipants, userId])
+	}, [userDmChannels, dmParticipants, user?.id])
 
 	return (
 		<SidebarGroup>

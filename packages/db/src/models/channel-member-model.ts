@@ -12,7 +12,7 @@ export class Model extends M.Class<Model>("ChannelMember")({
 	isFavorite: Schema.Boolean,
 	lastSeenMessageId: Schema.NullOr(MessageId),
 	notificationCount: Schema.Number,
-	joinedAt: Schema.DateFromString,
+	joinedAt: Schema.Date,
 	...baseFields,
 }) {}
 

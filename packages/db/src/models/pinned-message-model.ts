@@ -7,7 +7,7 @@ export class Model extends M.Class<Model>("PinnedMessage")({
 	channelId: ChannelId,
 	messageId: MessageId,
 	pinnedBy: UserId,
-	pinnedAt: Schema.DateFromString,
+	pinnedAt: Schema.Date,
 }) {}
 
 export const Insert = Model.insert

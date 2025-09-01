@@ -15,7 +15,7 @@ export class Model extends M.Class<Model>("Attachment")({
 	r2Key: Schema.String,
 	uploadedBy: UserId,
 	status: AttachmentStatus,
-	uploadedAt: Schema.DateFromString,
+	uploadedAt: Schema.Date,
 	...baseFields,
 }) {}
 

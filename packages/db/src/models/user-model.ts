@@ -14,7 +14,7 @@ export class Model extends M.Class<Model>("User")({
 	lastName: Schema.String,
 	avatarUrl: Schema.String,
 	status: UserStatus,
-	lastSeen: Schema.DateFromString,
+	lastSeen: Schema.Date,
 	settings: Schema.NullOr(Schema.String),
 	...baseFields,
 }) {}

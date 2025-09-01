@@ -7,7 +7,7 @@
  * 2. Run: bun run scripts/test-mock-data.ts
  */
 
-import { Effect, Console } from "effect"
+import { Console, Effect } from "effect"
 
 // Configuration
 const API_URL = "http://localhost:3003/mock-data/generate"

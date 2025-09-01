@@ -12,10 +12,10 @@ export class Model extends M.Class<Model>("Invitation")({
 	organizationId: OrganizationId,
 	email: Schema.String,
 	invitedBy: Schema.NullOr(UserId),
-	invitedAt: Schema.DateFromString,
-	expiresAt: Schema.DateFromString,
+	invitedAt: Schema.Date,
+	expiresAt: Schema.Date,
 	status: InvitationStatus,
-	acceptedAt: Schema.NullOr(Schema.DateFromString),
+	acceptedAt: Schema.NullOr(Schema.Date),
 	acceptedBy: Schema.NullOr(UserId),
 	...baseFields,
 }) {}
