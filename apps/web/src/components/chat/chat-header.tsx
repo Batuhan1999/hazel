@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import { Avatar } from "~/components/base/avatar/avatar"
 import { Tooltip, TooltipTrigger } from "~/components/base/tooltip/tooltip"
 import IconHashtagStroke from "~/components/icons/IconHashtagStroke"
@@ -6,7 +5,6 @@ import { usePresence } from "~/components/presence/presence-provider"
 import { useChat } from "~/hooks/use-chat"
 import { ButtonUtility } from "../base/buttons/button-utility"
 import IconPhone from "../icons/IconPhone"
-import IconPhoneDuoSolid from "../icons/IconPhoneDuoSolid"
 import { PinnedMessagesModal } from "./pinned-messages-modal"
 
 export function ChatHeader() {

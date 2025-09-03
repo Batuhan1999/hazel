@@ -6,6 +6,7 @@ import { Link, useParams } from "@tanstack/react-router"
 import { useCallback } from "react"
 import IconDeleteDustbin011 from "~/components/icons/IconDeleteDustbin011"
 import IconPencilEdit from "~/components/icons/IconPencilEdit"
+import { channelMemberCollection } from "~/db/collections"
 import { useChannelWithCurrentUser } from "~/db/hooks"
 import { useUser } from "~/lib/auth"
 import { cn } from "~/lib/utils"
@@ -35,46 +36,33 @@ export const ChannelItem = ({ channelId }: ChannelItemProps) => {
 		return null
 	}
 
-	const leaveChannelMutation = useConvexMutation(api.channels.leaveChannelForOrganization)
-	const updateChannelPreferencesMutation = useConvexMutation(
-		api.channels.updateChannelPreferencesForOrganization,
-	)
-
 	const handleLeaveChannel = useCallback(() => {
-		if (organizationId) {
-			leaveChannelMutation({
-				organizationId,
-				channelId: channelId,
-			})
-		}
-	}, [channelId, organizationId, leaveChannelMutation])
+		channelMemberCollection.delete(channel.currentUser.id)
+	}, [channel.currentUser.id])
 
 	const handleToggleMute = useCallback(() => {
-		if (organizationId) {
-			updateChannelPreferencesMutation({
-				organizationId,
-				channelId: channelId,
-				isMuted: !channel.currentUser.isMuted,
-			})
-		}
-	}, [channelId, channel.currentUser.isMuted, organizationId, updateChannelPreferencesMutation])
+		channelMemberCollection.update(channel.currentUser.id, (member) => {
+			member.isMuted = !member.isMuted
+		})
+	}, [channel.currentUser.id])
 
 	const handleToggleFavorite = useCallback(() => {
-		if (organizationId) {
-			updateChannelPreferencesMutation({
-				organizationId,
-				channelId: channelId,
-				isFavorite: !channel.currentUser.isFavorite,
-			})
-		}
-	}, [channelId, channel.currentUser.isFavorite, organizationId, updateChannelPreferencesMutation])
+		channelMemberCollection.update(channel.currentUser.id, (member) => {
+			member.isFavorite = !member.isFavorite
+		})
+	}, [channel.currentUser.id])
 
 	return (
 		<SidebarMenuItem>
 			<SidebarMenuButton asChild>
 				<Link to="/$orgId/chat/$id" params={{ orgId: organizationId || "", id: channelId }}>
 					<IconHashtagStroke className="size-5" />
-					<p className={cn("text-ellipsis text-nowrap", channel.isMuted && "opacity-60")}>
+					<p
+						className={cn(
+							"text-ellipsis text-nowrap",
+							channel.currentUser.isMuted && "opacity-60",
+						)}
+					>
 						{channel.name}
 					</p>
 					{channel.currentUser.notificationCount > 0 && (
@@ -176,10 +164,6 @@ export const DmChannelLink = ({ channelId, userPresence }: DmChannelLinkProps) =
 	const { channel } = useChannelWithCurrentUser(channelId)
 
 	const { user: me } = useUser()
-	const queryClient = useQueryClient()
-	const updateChannelPreferencesMutation = useConvexMutation(
-		api.channels.updateChannelPreferencesForOrganization,
-	)
 
 	if (!channel) {
 		return null
@@ -188,34 +172,22 @@ export const DmChannelLink = ({ channelId, userPresence }: DmChannelLinkProps) =
 	const filteredMembers = (channel.members || []).filter((member) => member.userId !== me?.id)
 
 	const handleToggleMute = useCallback(() => {
-		if (organizationId) {
-			updateChannelPreferencesMutation({
-				organizationId,
-				channelId: channelId,
-				isMuted: !channel.currentUser.isMuted,
-			})
-		}
-	}, [channelId, channel.currentUser.isMuted, organizationId, updateChannelPreferencesMutation])
+		channelMemberCollection.update(channel.currentUser.id, (member) => {
+			member.isMuted = !member.isMuted
+		})
+	}, [channel.currentUser.id])
 
 	const handleToggleFavorite = useCallback(() => {
-		if (organizationId) {
-			updateChannelPreferencesMutation({
-				organizationId,
-				channelId: channelId,
-				isFavorite: !channel.currentUser.isFavorite,
-			})
-		}
-	}, [channelId, channel.currentUser.isFavorite, organizationId, updateChannelPreferencesMutation])
+		channelMemberCollection.update(channel.currentUser.id, (member) => {
+			member.isFavorite = !member.isFavorite
+		})
+	}, [channel.currentUser.id])
 
 	const handleClose = useCallback(() => {
-		if (organizationId) {
-			updateChannelPreferencesMutation({
-				organizationId,
-				channelId: channelId,
-				isHidden: true,
-			})
-		}
-	}, [channelId, organizationId, updateChannelPreferencesMutation])
+		channelMemberCollection.update(channel.currentUser.id, (member) => {
+			member.isHidden = true
+		})
+	}, [channel.currentUser.id])
 
 	return (
 		<SidebarMenuItem>
@@ -270,7 +242,12 @@ export const DmChannelLink = ({ channelId, userPresence }: DmChannelLinkProps) =
 										/>
 									)}
 								</div>
-								<p className={cn("max-w-40 truncate", channel.isMuted && "opacity-60")}>
+								<p
+									className={cn(
+										"max-w-40 truncate",
+										channel.currentUser.isMuted && "opacity-60",
+									)}
+								>
 									{filteredMembers.map((member) => member.user.firstName).join(", ")}
 								</p>
 							</div>
