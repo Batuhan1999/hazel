@@ -1,10 +1,12 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { ChannelMemberId } from "@hazel/db/schema"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
 import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
 import { InternalServerError } from "../lib/errors"
+import { ChannelMemberRepo } from "../repositories/channel-member-repo"
 import { ChannelRepo } from "../repositories/channel-repo"
 
 export const HttpChannelLive = HttpApiBuilder.group(HazelApi, "channels", (handlers) =>
@@ -28,6 +30,18 @@ export const HttpChannelLive = HttpApiBuilder.group(HazelApi, "channels", (handl
 									...payload,
 									deletedAt: null,
 								}).pipe(Effect.map((res) => res[0]!))
+
+								yield* ChannelMemberRepo.insert({
+									channelId: createdChannel.id,
+									userId: user.id,
+									isHidden: false,
+									isMuted: false,
+									isFavorite: false,
+									lastSeenMessageId: null,
+									notificationCount: 0,
+									joinedAt: new Date(),
+									deletedAt: null,
+								})
 
 								const txid = yield* generateTransactionId(tx)
 

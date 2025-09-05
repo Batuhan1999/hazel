@@ -17,13 +17,13 @@ export class Model extends M.Class<Model>("ChannelMember")({
 		}),
 	),
 	createdAt: M.Generated(
-		Schema.Date.annotations({
+		Schema.DateFromSelf.annotations({
 			jsonSchema: { type: "string", format: "date-time" },
 		}),
 	),
 	deletedAt: M.GeneratedByApp(
 		Schema.NullOr(
-			Schema.Date.annotations({
+			Schema.DateFromSelf.annotations({
 				jsonSchema: { type: "string", format: "date-time" },
 			}),
 		),

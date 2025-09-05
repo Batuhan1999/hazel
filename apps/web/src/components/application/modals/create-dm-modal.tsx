@@ -1,11 +1,11 @@
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query"
-import type { Doc, Id } from "@hazel/backend"
-import { api } from "@hazel/backend/api"
-import { useQuery } from "@tanstack/react-query"
+import type { User } from "@hazel/db/models"
+import { ChannelId, ChannelMemberId, DirectMessageParticipantId, type OrganizationId, type UserId } from "@hazel/db/schema"
+import { eq, useLiveQuery } from "@tanstack/react-db"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { Mail01, MessageSquare02, Plus } from "@untitledui/icons"
 import { type } from "arktype"
 import { useMemo, useState } from "react"
+import { v4 as uuid } from "uuid"
 import { Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
 import { Dialog, Modal, ModalFooter, ModalOverlay } from "~/components/application/modals/modal"
@@ -205,12 +205,12 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 		setSearchQuery("")
 	}
 
-	const toggleUserSelection = (user: Doc<"users">) => {
-		const isSelected = selectedUsers.some((u) => u._id === user._id)
-		let newSelection: Doc<"users">[]
+	const toggleUserSelection = (user: typeof User.Model.Type) => {
+		const isSelected = selectedUsers.some((u) => u.id === user.id)
+		let newSelection: (typeof User.Model.Type)[]
 
 		if (isSelected) {
-			newSelection = selectedUsers.filter((u) => u._id !== user._id)
+			newSelection = selectedUsers.filter((u) => u.id !== user.id)
 		} else {
 			newSelection = [...selectedUsers, user]
 		}
@@ -218,7 +218,7 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 		setSelectedUsers(newSelection)
 		form.setFieldValue(
 			"userIds",
-			newSelection.map((u) => u._id),
+			newSelection.map((u) => u.id),
 		)
 	}
 
@@ -270,7 +270,7 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 										<div className="-space-x-2 flex">
 											{selectedUsers.slice(0, 3).map((user) => (
 												<Avatar
-													key={user._id}
+													key={user.id}
 													size="xs"
 													src={user.avatarUrl}
 													initials={`${user.firstName?.charAt(0) || ""}${user.lastName?.charAt(0) || ""}`}
@@ -297,12 +297,12 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 									<div className="flex flex-col gap-1">
 										{filteredUsers.map((user) => (
 											<button
-												key={user?._id}
+												key={user?.id}
 												type="button"
 												onClick={() => user && toggleUserSelection(user)}
 												className={cx(
 													"flex w-full items-center justify-between rounded-lg p-3 text-left transition-colors hover:bg-secondary",
-													selectedUsers.some((u) => u._id === user?._id) &&
+													selectedUsers.some((u) => u.id === user?.id) &&
 														"bg-secondary ring ring-border-brand ring-inset",
 												)}
 											>
@@ -313,7 +313,7 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 														initials={`${user?.firstName?.charAt(0) || ""}${user?.lastName?.charAt(0) || ""}`}
 														alt={`${user?.firstName || ""} ${user?.lastName || ""}`}
 														status={
-															isUserOnline(user?._id || "")
+															isUserOnline(user?.id || "")
 																? "online"
 																: "offline"
 														}
@@ -322,14 +322,14 @@ export const CreateDmModal = ({ isOpen, onOpenChange }: CreateDmModalProps) => {
 														<p className="font-medium text-primary text-sm">
 															{user?.firstName || ""} {user?.lastName || ""}
 														</p>
-														{isUserOnline(user?._id || "") && (
+														{isUserOnline(user?.id || "") && (
 															<span className="text-success text-xs">
 																Active now
 															</span>
 														)}
 													</div>
 												</div>
-												{selectedUsers.some((u) => u._id === user?._id) && (
+												{selectedUsers.some((u) => u.id === user?.id) && (
 													<IconCheckTickCircle className="size-5 text-brand" />
 												)}
 											</button>

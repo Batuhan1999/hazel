@@ -13,7 +13,7 @@ import {
 	User,
 } from "@hazel/db/models"
 import { electricCollectionOptions } from "@tanstack/electric-db-collection"
-import { createCollection } from "@tanstack/react-db"
+import { createCollection, createTransaction } from "@tanstack/react-db"
 import { Effect, Schema } from "effect"
 import { backendClient } from "~/lib/client"
 
@@ -321,7 +321,7 @@ export const channelMemberCollection = createCollection(
 			return { txid: results.transactionId }
 		},
 		onDelete: async ({ transaction }) => {
-			const { original: deletedChannelMember } = transaction.mutations[0]
+			const { original: deletedChannelMember, ...rest } = transaction.mutations[0]
 
 			const results = await Effect.runPromise(
 				Effect.gen(function* () {

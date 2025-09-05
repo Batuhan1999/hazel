@@ -26,15 +26,27 @@ export const JoinChannelModal = ({ isOpen, setIsOpen }: JoinChannelModalProps) =
 	const { orgId } = useParams({ from: "/_app/$orgId" })
 	const { user } = useUser()
 
-	const { data: unjoinedChannels } = useLiveQuery(
-		(q) => {
-			const userChannelIds = q
+	const { data: userChannels } = useLiveQuery(
+		(q) =>
+			q
 				.from({ m: channelMemberCollection })
 				.where(({ m }) => eq(m.userId, user?.id))
-				.select(({ m }) => ({ channelId: m.channelId }))
+				.select(({ m }) => ({ channelId: m.channelId })),
+		[user?.id],
+	)
+
+	const { data: unjoinedChannels } = useLiveQuery(
+		(q) => {
 			return q
 				.from({ channel: channelCollection })
-				.where(({ channel }) => not(inArray(channel.id, userChannelIds)))
+				.where(({ channel }) =>
+					not(
+						inArray(
+							channel.id,
+							userChannels.map((m) => m.channelId),
+						),
+					),
+				)
 				.select(({ channel }) => ({ ...channel }))
 		},
 		[user?.id, orgId],

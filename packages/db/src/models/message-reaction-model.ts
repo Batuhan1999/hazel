@@ -7,7 +7,7 @@ export class Model extends M.Class<Model>("MessageReaction")({
 	messageId: MessageId,
 	userId: UserId,
 	emoji: Schema.String,
-	createdAt: M.Generated(Schema.Date),
+	createdAt: M.Generated(Schema.DateFromSelf.annotations({ jsonSchema: { format: "date-time" } })),
 }) {}
 
 export const Insert = Model.insert
