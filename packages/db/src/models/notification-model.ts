@@ -11,7 +11,6 @@ export class Model extends M.Class<Model>("Notification")({
 	resourceId: Schema.NullOr(Schema.UUID),
 	resourceType: Schema.NullOr(Schema.String),
 	readAt: Schema.NullOr(Schema.Date),
-	...baseFields,
 }) {}
 
 export const Insert = Model.insert
