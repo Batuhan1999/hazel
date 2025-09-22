@@ -18,6 +18,9 @@ import {
 	TypingIndicatorGroup,
 	UserGroup,
 } from "./api/electric/collections"
+import { Authorization } from "./lib/auth"
+import { InternalServerError, UnauthorizedError } from "./lib/errors"
+import { TransactionId } from "./lib/schema"
 
 export class RootGroup extends HttpApiGroup.make("root").add(
 	HttpApiEndpoint.get("root")`/`.addSuccess(Schema.String),
