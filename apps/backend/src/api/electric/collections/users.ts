@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { User } from "@hazel/db/models"
 import { UserId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class UserResponse extends Schema.Class<UserResponse>("UserResponse")({
@@ -68,4 +67,4 @@ export class UserGroup extends HttpApiGroup.make("users")
 			),
 	)
 	.prefix("/users")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

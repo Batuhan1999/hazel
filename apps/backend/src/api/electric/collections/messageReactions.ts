@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { MessageReaction } from "@hazel/db/models"
 import { MessageReactionId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 import { MessageNotFoundError } from "./messages"
 
@@ -74,4 +73,4 @@ export class MessageReactionGroup extends HttpApiGroup.make("messageReactions")
 			),
 	)
 	.prefix("/message-reactions")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

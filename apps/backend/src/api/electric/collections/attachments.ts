@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, HttpApiSchema, Multipart, OpenApi } from "@effect/platform"
 import { Attachment } from "@hazel/db/models"
 import { AttachmentId, ChannelId, OrganizationId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class AttachmentResponse extends Schema.Class<AttachmentResponse>("AttachmentResponse")({
@@ -55,4 +54,4 @@ export class AttachmentGroup extends HttpApiGroup.make("attachments")
 			),
 	)
 	.prefix("/attachments")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

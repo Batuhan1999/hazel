@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Invitation } from "@hazel/db/models"
 import { InvitationId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class InvitationResponse extends Schema.Class<InvitationResponse>("InvitationResponse")({
@@ -70,4 +69,4 @@ export class InvitationGroup extends HttpApiGroup.make("invitations")
 			),
 	)
 	.prefix("/invitations")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

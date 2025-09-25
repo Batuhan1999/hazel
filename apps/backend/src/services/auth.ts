@@ -1,13 +1,10 @@
-import { UserId } from "@hazel/db/schema"
-import { randomUUIDv7 } from "bun"
+import { CurrentUser, UnauthorizedError } from "@hazel/effect-lib"
 import { Config, Effect, Layer, Option, Redacted } from "effect"
 import { createRemoteJWKSet, jwtVerify } from "jose"
-import { Authorization, User } from "../lib/auth"
-import { UnauthorizedError } from "../lib/errors"
 import { UserRepo } from "../repositories/user-repo"
 
 export const AuthorizationLive = Layer.effect(
-	Authorization,
+	CurrentUser.Authorization,
 	Effect.gen(function* () {
 		const userRepo = yield* UserRepo
 		yield* Effect.log("Initializing Authorization middleware...")
@@ -30,6 +27,7 @@ export const AuthorizationLive = Layer.effect(
 							console.error("JWT verification failed", error)
 							return new UnauthorizedError({
 								message: `Invalid token: ${error}`,
+								detail: `The provided token ${rawToken} is invalid`,
 							})
 						},
 					})
@@ -41,6 +39,7 @@ export const AuthorizationLive = Layer.effect(
 						return yield* Effect.fail(
 							new UnauthorizedError({
 								message: "Token missing user ID",
+								detail: `The provided token ${rawToken} is missing the user ID`,
 							}),
 						)
 					}
@@ -51,13 +50,17 @@ export const AuthorizationLive = Layer.effect(
 						return yield* Effect.fail(
 							new UnauthorizedError({
 								message: "User not found",
+								detail: `The provided token ${rawToken} is missing the user ID`,
 							}),
 						)
 					}
 
 					yield* Effect.annotateCurrentSpan("userId", user.value.id)
 
-					return new User({ id: user.value.id, role: payload.role as "admin" | "member" })
+					return new CurrentUser.Schema({
+						id: user.value.id,
+						role: payload.role as "admin" | "member",
+					})
 				}),
 		}
 	}),

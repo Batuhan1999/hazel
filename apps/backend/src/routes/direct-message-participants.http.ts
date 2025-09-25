@@ -1,10 +1,9 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { DirectMessageParticipantRepo } from "../repositories/direct-message-participant-repo"
 
 export const HttpDirectMessageParticipantLive = HttpApiBuilder.group(
@@ -18,7 +17,7 @@ export const HttpDirectMessageParticipantLive = HttpApiBuilder.group(
 				.handle(
 					"create",
 					Effect.fn(function* ({ payload }) {
-						const user = yield* CurrentUser
+						const user = yield* CurrentUser.Context
 
 						const { createdDirectMessageParticipant, txid } = yield* db
 							.transaction(

@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { PinnedMessage } from "@hazel/db/models"
 import { PinnedMessageId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 import { MessageNotFoundError } from "./messages"
 
@@ -72,4 +71,4 @@ export class PinnedMessageGroup extends HttpApiGroup.make("pinnedMessages")
 			),
 	)
 	.prefix("/pinned-messages")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

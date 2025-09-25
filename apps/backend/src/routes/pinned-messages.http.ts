@@ -1,10 +1,9 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { PinnedMessageRepo } from "../repositories/pinned-message-repo"
 
 export const HttpPinnedMessageLive = HttpApiBuilder.group(HazelApi, "pinnedMessages", (handlers) =>
@@ -15,7 +14,7 @@ export const HttpPinnedMessageLive = HttpApiBuilder.group(HazelApi, "pinnedMessa
 			.handle(
 				"create",
 				Effect.fn(function* ({ payload }) {
-					const user = yield* CurrentUser
+					const user = yield* CurrentUser.Context
 
 					const { createdPinnedMessage, txid } = yield* db
 						.transaction(

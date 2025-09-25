@@ -1,10 +1,9 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { AttachmentRepo } from "../repositories/attachment-repo"
 import { MessageRepo } from "../repositories/message-repo"
 
@@ -16,7 +15,7 @@ export const HttpMessageLive = HttpApiBuilder.group(HazelApi, "messages", (handl
 			.handle(
 				"create",
 				Effect.fn(function* ({ payload }) {
-					const user = yield* CurrentUser
+					const user = yield* CurrentUser.Context
 
 					// TODO: Verify the user has permission to post in this channel
 					// This would typically check channel membership, organization membership, etc.
@@ -74,7 +73,7 @@ export const HttpMessageLive = HttpApiBuilder.group(HazelApi, "messages", (handl
 			.handle(
 				"update",
 				Effect.fn(function* ({ payload, path }) {
-					const _user = yield* CurrentUser
+					const _user = yield* CurrentUser.Context
 
 					// TODO: Verify the user has permission to post in this channel
 					// This would typically check channel membership, organization membership, etc.

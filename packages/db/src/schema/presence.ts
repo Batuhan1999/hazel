@@ -1,5 +1,5 @@
+import type { PresenceId, UserId } from "@hazel/effect-lib"
 import { bigint, index, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
-import type { PresenceId, UserId } from "../lib/schema"
 
 // Presence table - for tracking user presence in rooms/channels
 export const presenceTable = pgTable(

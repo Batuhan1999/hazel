@@ -1,4 +1,4 @@
-import { ChannelId, DirectMessageParticipantId, OrganizationId, UserId } from "../lib/schema"
+import { ChannelId, DirectMessageParticipantId, OrganizationId, UserId } from "@hazel/effect-lib"
 import * as M from "../services/model"
 
 export class Model extends M.Class<Model>("DirectMessageParticipant")({

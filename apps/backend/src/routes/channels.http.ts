@@ -1,11 +1,10 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
 import { ChannelMemberId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { ChannelMemberRepo } from "../repositories/channel-member-repo"
 import { ChannelRepo } from "../repositories/channel-repo"
 
@@ -17,7 +16,7 @@ export const HttpChannelLive = HttpApiBuilder.group(HazelApi, "channels", (handl
 			.handle(
 				"create",
 				Effect.fn(function* ({ payload }) {
-					const user = yield* CurrentUser
+					const user = yield* CurrentUser.Context
 
 					// TODO: Verify the user has permission to create channels in this organization
 					// This would typically check organization membership and role permissions

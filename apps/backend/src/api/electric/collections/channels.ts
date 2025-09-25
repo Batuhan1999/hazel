@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Channel } from "@hazel/db/models"
 import { ChannelId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class CreateChannelResponse extends Schema.Class<CreateChannelResponse>("CreateChannelResponse")({
@@ -68,4 +67,4 @@ export class ChannelGroup extends HttpApiGroup.make("channels")
 			),
 	)
 	.prefix("/channels")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

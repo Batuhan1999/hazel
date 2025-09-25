@@ -1,10 +1,9 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { UserRepo } from "../repositories/user-repo"
 
 export const HttpUserLive = HttpApiBuilder.group(HazelApi, "users", (handlers) =>
@@ -15,7 +14,7 @@ export const HttpUserLive = HttpApiBuilder.group(HazelApi, "users", (handlers) =
 			.handle(
 				"create",
 				Effect.fn(function* ({ payload }) {
-					const _user = yield* CurrentUser
+					const _user = yield* CurrentUser.Context
 
 					const { createdUser, txid } = yield* db
 						.transaction(

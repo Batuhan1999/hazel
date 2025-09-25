@@ -1,10 +1,9 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { Effect, Option } from "effect"
 import { HazelApi, TypingIndicatorNotFoundError } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { TypingIndicatorRepo } from "../repositories/typing-indicator-repo"
 
 export const HttpTypingIndicatorLive = HttpApiBuilder.group(HazelApi, "typingIndicators", (handlers) =>
@@ -15,7 +14,7 @@ export const HttpTypingIndicatorLive = HttpApiBuilder.group(HazelApi, "typingInd
 			.handle(
 				"create",
 				Effect.fn(function* ({ payload }) {
-					const _user = yield* CurrentUser
+					const _user = yield* CurrentUser.Context
 
 					// TODO: Verify the user has permission to type in this channel
 					// This would typically check channel membership, organization membership, etc.
@@ -64,7 +63,7 @@ export const HttpTypingIndicatorLive = HttpApiBuilder.group(HazelApi, "typingInd
 			.handle(
 				"update",
 				Effect.fn(function* ({ payload, path }) {
-					const _user = yield* CurrentUser
+					const _user = yield* CurrentUser.Context
 
 					// TODO: Verify the user has permission to type in this channel
 
@@ -106,7 +105,7 @@ export const HttpTypingIndicatorLive = HttpApiBuilder.group(HazelApi, "typingInd
 			.handle(
 				"delete",
 				Effect.fn(function* ({ path }) {
-					const _user = yield* CurrentUser
+					const _user = yield* CurrentUser.Context
 
 					return yield* db
 						.transaction(

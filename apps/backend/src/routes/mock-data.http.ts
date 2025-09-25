@@ -1,11 +1,10 @@
 import { HttpApiBuilder } from "@effect/platform"
 import { Database } from "@hazel/db"
 import { OrganizationId } from "@hazel/db/schema"
+import { InternalServerError } from "@hazel/effect-lib"
 import { Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { MockDataGenerator } from "../services/mock-data-generator"
 
 export const HttpMockDataLive = HttpApiBuilder.group(HazelApi, "mockData", (handlers) =>
@@ -16,8 +15,6 @@ export const HttpMockDataLive = HttpApiBuilder.group(HazelApi, "mockData", (hand
 		return handlers.handle(
 			"generate",
 			Effect.fn(function* ({ payload }) {
-				yield* CurrentUser
-
 				const { result, txid } = yield* db
 					.transaction(
 						Effect.fnUntraced(function* (tx) {

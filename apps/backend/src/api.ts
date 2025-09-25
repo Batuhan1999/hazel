@@ -1,4 +1,5 @@
 import { HttpApi, HttpApiEndpoint, HttpApiGroup, HttpApiSchema, OpenApi } from "@effect/platform"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
 import {
 	AttachmentGroup,
@@ -15,8 +16,6 @@ import {
 	TypingIndicatorGroup,
 	UserGroup,
 } from "./api/electric/collections"
-import { Authorization } from "./lib/auth"
-import { InternalServerError, UnauthorizedError } from "./lib/errors"
 import { TransactionId } from "./lib/schema"
 
 export class RootGroup extends HttpApiGroup.make("root").add(
@@ -102,7 +101,7 @@ export class MockDataGroup extends HttpApiGroup.make("mockData")
 			),
 	)
 	.prefix("/mock-data")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}
 
 export class HazelApi extends HttpApi.make("HazelApp")
 	.add(ChannelGroup)

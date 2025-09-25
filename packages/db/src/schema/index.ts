@@ -1,6 +1,6 @@
 // Export all tables
 
-export * from "../lib/schema"
+export * from "@hazel/effect-lib"
 export * from "./attachments"
 export * from "./channels"
 export * from "./invitations"

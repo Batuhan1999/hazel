@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { DirectMessageParticipant } from "@hazel/db/models"
 import { DirectMessageParticipantId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class DirectMessageParticipantResponse extends Schema.Class<DirectMessageParticipantResponse>(
@@ -72,4 +71,4 @@ export class DirectMessageParticipantGroup extends HttpApiGroup.make("directMess
 			),
 	)
 	.prefix("/direct-message-participants")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

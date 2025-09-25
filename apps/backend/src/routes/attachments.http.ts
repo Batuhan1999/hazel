@@ -2,12 +2,11 @@ import { FileSystem, HttpApiBuilder } from "@effect/platform"
 import { MultipartUpload } from "@effect-aws/s3"
 import { Database } from "@hazel/db"
 import { AttachmentId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError } from "@hazel/effect-lib"
 import { randomUUIDv7 } from "bun"
 import { Config, Effect } from "effect"
 import { HazelApi } from "../api"
-import { CurrentUser } from "../lib/auth"
 import { generateTransactionId } from "../lib/create-transactionId"
-import { InternalServerError } from "../lib/errors"
 import { AttachmentRepo } from "../repositories/attachment-repo"
 
 export const HttpAttachmentLive = HttpApiBuilder.group(HazelApi, "attachments", (handlers) =>
@@ -19,7 +18,7 @@ export const HttpAttachmentLive = HttpApiBuilder.group(HazelApi, "attachments", 
 			.handle(
 				"upload",
 				Effect.fn(function* ({ payload }) {
-					const user = yield* CurrentUser
+					const user = yield* CurrentUser.Context
 					const fs = yield* FileSystem.FileSystem
 
 					yield* Effect.log("Uploading attachment...")

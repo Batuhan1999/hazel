@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Notification } from "@hazel/db/models"
 import { NotificationId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class NotificationResponse extends Schema.Class<NotificationResponse>("NotificationResponse")({
@@ -70,4 +69,4 @@ export class NotificationGroup extends HttpApiGroup.make("notifications")
 			),
 	)
 	.prefix("/notifications")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

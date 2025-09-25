@@ -5,6 +5,7 @@ export class UnauthorizedError extends Schema.TaggedError<UnauthorizedError>("Un
 	"MessageNotFoundError",
 	{
 		message: Schema.String,
+		detail: Schema.String,
 	},
 	HttpApiSchema.annotations({
 		status: 401,

@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Message } from "@hazel/db/models"
 import { MessageId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 import { ChannelNotFoundError } from "./channels"
 
@@ -70,4 +69,4 @@ export class MessageGroup extends HttpApiGroup.make("messages")
 			),
 	)
 	.prefix("/messages")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}

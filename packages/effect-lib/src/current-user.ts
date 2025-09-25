@@ -1,18 +1,18 @@
 import { HttpApiMiddleware, HttpApiSecurity } from "@effect/platform"
-import { UserId } from "@hazel/db/schema"
-import { Context, Schema } from "effect"
+import { Context as C, Schema as S } from "effect"
 import { UnauthorizedError } from "./errors"
+import { UserId } from "./schema"
 
-export class User extends Schema.Class<User>("User")({
+export class Schema extends S.Class<Schema>("CurrentUserSchema")({
 	id: UserId,
-	role: Schema.Literal("admin", "member"),
+	role: S.Literal("admin", "member"),
 }) {}
 
-export class CurrentUser extends Context.Tag("CurrentUser")<CurrentUser, User>() {}
+export class Context extends C.Tag("CurrentUser")<Context, Schema>() {}
 
 export class Authorization extends HttpApiMiddleware.Tag<Authorization>()("Authorization", {
 	failure: UnauthorizedError,
-	provides: CurrentUser,
+	provides: Context,
 	security: {
 		bearer: HttpApiSecurity.bearer,
 	},

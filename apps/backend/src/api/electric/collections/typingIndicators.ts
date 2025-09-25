@@ -1,9 +1,8 @@
 import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { TypingIndicator } from "@hazel/db/models"
 import { TypingIndicatorId } from "@hazel/db/schema"
+import { CurrentUser, InternalServerError, UnauthorizedError } from "@hazel/effect-lib"
 import { Schema } from "effect"
-import { Authorization } from "../../../lib/auth"
-import { InternalServerError, UnauthorizedError } from "../../../lib/errors"
 import { TransactionId } from "../../../lib/schema"
 
 export class TypingIndicatorResponse extends Schema.Class<TypingIndicatorResponse>("TypingIndicatorResponse")(
@@ -73,4 +72,4 @@ export class TypingIndicatorGroup extends HttpApiGroup.make("typingIndicators")
 			),
 	)
 	.prefix("/typing-indicators")
-	.middleware(Authorization) {}
+	.middleware(CurrentUser.Authorization) {}
