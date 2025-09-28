@@ -6,7 +6,7 @@ import { useMemo, useRef, useState } from "react"
 import { attachmentCollection, channelMemberCollection } from "~/db/collections"
 import { useFileUpload } from "~/hooks/use-file-upload"
 import { useTyping } from "~/hooks/use-typing"
-import { useUser } from "~/lib/auth"
+import { useAuth } from "~/providers/auth-provider"
 import { useChat } from "~/providers/chat-provider"
 import { cx } from "~/utils/cx"
 import { ButtonUtility } from "../base/buttons/button-utility"
@@ -20,9 +20,11 @@ interface MessageComposerProps {
 
 export const MessageComposer = ({ placeholder = "Type a message..." }: MessageComposerProps) => {
 	const { orgId } = useParams({ from: "/_app/$orgId" })
-	const { user } = useUser()
+	const { user } = useAuth()
 	const { sendMessage, replyToMessageId, setReplyToMessageId, channelId } = useChat()
 	const editorRef = useRef<MarkdownEditorRef | null>(null)
+
+	const { login } = useAuth()
 
 	const [attachmentIds, setAttachmentIds] = useState<AttachmentId[]>([])
 

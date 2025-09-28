@@ -1,6 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router"
-import { useAuth } from "@workos-inc/authkit-react"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
+import { useAuth } from "../../providers/auth-provider"
 
 export const Route = createFileRoute("/auth/login")({
 	component: LoginPage,
@@ -12,22 +12,21 @@ export const Route = createFileRoute("/auth/login")({
 })
 
 function LoginPage() {
-	const { user, signIn, isLoading } = useAuth()
+	const { user, login, isLoading } = useAuth()
 	const search = Route.useSearch()
-
-	console.log("user", user)
+	const [error, setError] = useState<string | null>(null)
+	const [isRedirecting, setIsRedirecting] = useState(false)
 
 	useEffect(() => {
-		const searchParams = new URLSearchParams(window.location.search)
-		const context = searchParams.get("context") ?? undefined
-
-		if (!user && !isLoading) {
-			signIn({
-				context,
-				state: { returnTo: search.returnTo || "/" },
+		if (!user && !isLoading && !isRedirecting && !error) {
+			// Attempt to login
+			setIsRedirecting(true)
+			login({ returnTo: location.host + search.returnTo || location.href }).catch((err) => {
+				setError(err.message || "Failed to initiate login")
+				setIsRedirecting(false)
 			})
 		}
-	}, [user, isLoading, signIn, search])
+	}, [user, isLoading, login, search.returnTo, isRedirecting, error])
 
 	if (isLoading) {
 		return (
@@ -39,6 +38,26 @@ function LoginPage() {
 
 	if (user) {
 		return <Navigate to={search.returnTo || "/"} />
+	}
+
+	if (error) {
+		return (
+			<div className="flex h-screen items-center justify-center">
+				<div className="max-w-md text-center">
+					<h1 className="mb-4 font-semibold text-2xl text-red-600">Login Failed</h1>
+					<p className="mb-6 text-gray-600">{error}</p>
+					<button
+						onClick={() => {
+							setError(null)
+							setIsRedirecting(false)
+						}}
+						className="rounded-lg bg-blue-600 px-6 py-2 text-white transition-colors hover:bg-blue-700"
+					>
+						Try Again
+					</button>
+				</div>
+			</div>
+		)
 	}
 
 	return (

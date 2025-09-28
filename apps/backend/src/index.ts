@@ -59,8 +59,8 @@ const DocsRoute = HttpApiScalar.layerHttpLayerRouter({
 const AllRoutes = Layer.mergeAll(HttpApiRoutes, HealthRouter, DocsRoute).pipe(
 	Layer.provide(
 		HttpLayerRouter.cors({
-			allowedOrigins: ["*"],
-			allowedMethods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+			allowedOrigins: ["http://localhost:3000", "https://app.hazel.sh"],
+			allowedMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 			credentials: true,
 		}),
 	),
@@ -135,7 +135,7 @@ HttpLayerRouter.serve(AllRoutes).pipe(
 	),
 	Layer.provide(MainLive),
 	Layer.provide(TracerLive),
-	Layer.provide(AuthorizationLive.pipe(Layer.provide(UserRepo.Default))),
+	Layer.provide(AuthorizationLive.pipe(Layer.provide(UserRepo.Default), Layer.provide(WorkOS.Default))),
 	Layer.provide(BunHttpServer.layerConfig({ port: Config.number("PORT").pipe(Config.withDefault(3003)) })),
 	Layer.launch,
 	BunRuntime.runMain,

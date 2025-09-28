@@ -11,7 +11,7 @@ import "./styles/styles.css"
 import { Toaster } from "./components/application/notifications/toaster.tsx"
 import { Loader } from "./components/loader.tsx"
 import { ThemeProvider } from "./components/theme-provider.tsx"
-import { WorkOsProvider } from "./providers/workos-provider.tsx"
+import { AuthProvider } from "./providers/auth-provider.tsx"
 import reportWebVitals from "./reportWebVitals.ts"
 
 const router = createRouter({
@@ -24,10 +24,10 @@ const router = createRouter({
 	defaultPendingComponent: Loader,
 	Wrap: ({ children }) => (
 		<ThemeProvider>
-			<WorkOsProvider>
+			<AuthProvider>
 				<Toaster />
 				{children}
-			</WorkOsProvider>
+			</AuthProvider>
 		</ThemeProvider>
 	),
 })
