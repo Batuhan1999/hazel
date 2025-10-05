@@ -17,11 +17,10 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@effect/experimental": "^0.54.6",
+		"@effect/experimental": "^0.56.0",
 		"@hazel/effect-lib": "workspace:*",
-		"drizzle-orm": "^0.44.5",
+		"drizzle-orm": "^0.44.6",
 		"effect": "^3.18.2",
-		"postgres": "^3.4.7",
-		"uuid": "^13.0.0"
+		"postgres": "^3.4.7"
 	}
 }

@@ -5,7 +5,6 @@ import { type } from "arktype"
 import { useCallback, useEffect } from "react"
 import { Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
-import { v4 as uuid } from "uuid"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
 import { Button } from "~/components/base/buttons/button"
 import { CloseButton } from "~/components/base/buttons/close-button"
@@ -58,11 +57,11 @@ export const CreateOrganizationModal = ({ isOpen, onOpenChange }: CreateOrganiza
 		onSubmit: async ({ value }) => {
 			try {
 				const tx = organizationCollection.insert({
-					id: OrganizationId.make(uuid()),
+					id: OrganizationId.make(crypto.randomUUID()),
 					name: value.name.trim(),
 					slug: value.slug.trim(),
 					logoUrl: value.logoUrl?.trim() || null,
-					workosId: uuid(),
+					workosId: `temp_${crypto.randomUUID()}`,
 					settings: {},
 					createdAt: new Date(),
 					updatedAt: null,

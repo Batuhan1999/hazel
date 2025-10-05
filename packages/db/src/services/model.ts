@@ -7,7 +7,6 @@ import * as Option from "effect/Option"
 import type { ParseError } from "effect/ParseResult"
 import * as ParseResult from "effect/ParseResult"
 import * as Schema from "effect/Schema"
-import * as Uuid from "uuid"
 import type { DatabaseError, TransactionClient } from "./database"
 
 const { Class, Field, FieldExcept, FieldOnly, Struct, Union, extract, fieldEvolve, fieldFromKey } =
@@ -611,11 +610,11 @@ export const UuidV4WithGenerate = <B extends string | symbol>(
 ): VariantSchema.Overrideable<Uint8Array & Brand<B>, Uint8Array> =>
 	VariantSchema.Overrideable(Schema.Uint8ArrayFromSelf, schema, {
 		generate: Option.match({
-			onNone: () => Effect.sync(() => Uuid.v4({}, new Uint8Array(16))),
+			onNone: () => Effect.sync(() => crypto.randomUUID()),
 			onSome: (id) => Effect.succeed(id as any),
 		}),
 		decode: Schema.Uint8ArrayFromSelf,
-		constructorDefault: () => Uuid.v4({}, new Uint8Array(16)) as any,
+		constructorDefault: () => crypto.randomUUID() as any,
 	})
 
 /**

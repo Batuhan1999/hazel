@@ -10,7 +10,6 @@ import {
 } from "@hazel/db/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
 import { createContext, type ReactNode, useContext, useEffect, useMemo, useRef, useState } from "react"
-import { v4 as uuid } from "uuid"
 import { sendMessage as sendMessageAction } from "~/db/actions"
 import {
 	channelCollection,
@@ -155,7 +154,7 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 		if (!user?.id) return
 
 		messageReactionCollection.insert({
-			id: MessageReactionId.make(uuid()),
+			id: MessageReactionId.make(crypto.randomUUID()),
 			messageId,
 			userId: UserId.make(user.id),
 			emoji,
@@ -173,7 +172,7 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 		if (!user?.id) return
 
 		pinnedMessageCollection.insert({
-			id: PinnedMessageId.make(uuid()),
+			id: PinnedMessageId.make(crypto.randomUUID()),
 			channelId,
 			messageId,
 			pinnedBy: UserId.make(user.id),
@@ -204,7 +203,7 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 			setActiveThreadMessageId(messageId)
 		} else {
 			// Create new thread channel
-			const threadChannelId = ChannelId.make(uuid())
+			const threadChannelId = ChannelId.make(crypto.randomUUID())
 			const tx = channelCollection.insert({
 				id: threadChannelId,
 				organizationId,

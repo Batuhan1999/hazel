@@ -78,8 +78,7 @@
 		"tailwind-merge": "^3.3.1",
 		"tailwindcss": "^4.1.14",
 		"tailwindcss-animate": "^1.0.7",
-		"tailwindcss-react-aria-components": "^2.0.1",
-		"uuid": "^13.0.0"
+		"tailwindcss-react-aria-components": "^2.0.1"
 	},
 	"devDependencies": {
 		"@react-types/overlays": "^3.9.2",

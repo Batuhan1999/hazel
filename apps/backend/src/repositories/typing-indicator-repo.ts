@@ -1,8 +1,7 @@
 import { and, Database, eq, lt, ModelRepository, schema, sql, type TransactionClient } from "@hazel/db"
 import { TypingIndicator } from "@hazel/db/models"
-import { type ChannelId, type ChannelMemberId, policyRequire, type TypingIndicatorId } from "@hazel/db/schema"
+import { type ChannelId, type ChannelMemberId, policyRequire, TypingIndicatorId } from "@hazel/db/schema"
 import { Effect } from "effect"
-import { v4 as uuid } from "uuid"
 import { DatabaseLive } from "../services/database"
 
 type TxFn = <T>(fn: (client: TransactionClient) => Promise<T>) => Effect.Effect<T, any, never>
@@ -58,11 +57,10 @@ export class TypingIndicatorRepo extends Effect.Service<TypingIndicatorRepo>()("
 			db.makeQuery(
 				(execute, _data) =>
 					execute((client) => {
-						const id = uuid() as TypingIndicatorId
 						return client
 							.insert(schema.typingIndicatorsTable)
 							.values({
-								id,
+								id: TypingIndicatorId.make(crypto.randomUUID()),
 								channelId: params.channelId,
 								memberId: params.memberId,
 								lastTyped: params.lastTyped,

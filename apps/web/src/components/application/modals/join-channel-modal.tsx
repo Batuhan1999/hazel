@@ -3,11 +3,9 @@
 import { type ChannelId, ChannelMemberId } from "@hazel/db/schema"
 import { eq, inArray, not, useLiveQuery } from "@tanstack/react-db"
 import { useParams } from "@tanstack/react-router"
-import { DateTime } from "effect"
 import { useState } from "react"
 import { Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
-import { v4 as uuid } from "uuid"
 import { Button } from "~/components/base/buttons/button"
 import { CloseButton } from "~/components/base/buttons/close-button"
 import { Input } from "~/components/base/input/input"
@@ -62,7 +60,7 @@ export const JoinChannelModal = ({ isOpen, setIsOpen }: JoinChannelModalProps) =
 			}
 
 			channelMemberCollection.insert({
-				id: ChannelMemberId.make(uuid()),
+				id: ChannelMemberId.make(crypto.randomUUID()),
 				channelId,
 				userId: user.id,
 				isHidden: false,

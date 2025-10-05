@@ -1,9 +1,8 @@
-import { ChannelId, ChannelMemberId, type OrganizationId } from "@hazel/db/schema"
+import { ChannelId } from "@hazel/db/schema"
 import { useNavigate } from "@tanstack/react-router"
 import { type } from "arktype"
 import { DialogTrigger as AriaDialogTrigger, Heading as AriaHeading } from "react-aria-components"
 import { toast } from "sonner"
-import { v4 as uuid } from "uuid"
 import { Dialog, Modal, ModalOverlay } from "~/components/application/modals/modal"
 import { Button } from "~/components/base/buttons/button"
 import { CloseButton } from "~/components/base/buttons/close-button"
@@ -45,7 +44,7 @@ export const NewChannelModalWrapper = ({ isOpen, setIsOpen }: NewChannelModalWra
 			try {
 				const tx = channelCollection.insert(
 					{
-						id: ChannelId.make(uuid()),
+						id: ChannelId.make(crypto.randomUUID()),
 						name: value.name,
 						type: value.type,
 						organizationId: organizationId!,

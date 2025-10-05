@@ -2,7 +2,6 @@ import type { AttachmentId, ChannelId, OrganizationId } from "@hazel/db/schema"
 import { AttachmentId as AttachmentIdSchema, UserId } from "@hazel/db/schema"
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
-import { v4 as uuid } from "uuid"
 import { IconNotification } from "~/components/application/notifications/notifications"
 import { uploadAttachment } from "~/db/actions"
 import { useAuth } from "~/providers/auth-provider"
@@ -88,7 +87,7 @@ export function useFileUpload({
 				})
 
 				// Generate attachment ID
-				const attachmentId = AttachmentIdSchema.make(uuid())
+				const attachmentId = AttachmentIdSchema.make(crypto.randomUUID())
 
 				// Use the uploadAttachment action
 				await uploadAttachment({

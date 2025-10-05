@@ -7,16 +7,8 @@ import {
 	type OrganizationId,
 	type UserId,
 } from "@hazel/db/schema"
-import {
-	createCollection,
-	createOptimisticAction,
-	eq,
-	inArray,
-	liveQueryCollectionOptions,
-	or,
-} from "@tanstack/react-db"
+import { createOptimisticAction } from "@tanstack/react-db"
 import { Effect } from "effect"
-import { v4 as uuid } from "uuid"
 import { ApiClient } from "~/lib/services/common/api-client"
 import { runtime } from "~/lib/services/common/runtime"
 import {
@@ -35,7 +27,7 @@ export const uploadAttachment = createOptimisticAction<{
 	attachmentId?: AttachmentId
 }>({
 	onMutate: (props) => {
-		const attachmentId = props.attachmentId || AttachmentId.make(uuid())
+		const attachmentId = props.attachmentId || AttachmentId.make(crypto.randomUUID())
 
 		attachmentCollection.insert({
 			id: attachmentId,
@@ -84,7 +76,7 @@ export const sendMessage = createOptimisticAction<{
 	attachmentIds?: AttachmentId[]
 }>({
 	onMutate: (props) => {
-		const messageId = MessageId.make(uuid())
+		const messageId = MessageId.make(crypto.randomUUID())
 
 		messageCollection.insert({
 			id: messageId,
@@ -136,7 +128,7 @@ export const createDmChannel = createOptimisticAction<{
 	currentUserId: UserId
 }>({
 	onMutate: (props) => {
-		const channelId = ChannelId.make(uuid())
+		const channelId = ChannelId.make(crypto.randomUUID())
 		const now = new Date()
 
 		let channelName = props.name
@@ -158,7 +150,7 @@ export const createDmChannel = createOptimisticAction<{
 
 		// Add current user as member
 		channelMemberCollection.insert({
-			id: ChannelMemberId.make(uuid()),
+			id: ChannelMemberId.make(crypto.randomUUID()),
 			channelId: channelId,
 			userId: props.currentUserId,
 			isHidden: false,
@@ -174,7 +166,7 @@ export const createDmChannel = createOptimisticAction<{
 		// Add all participants as members
 		for (const participantId of props.participantIds) {
 			channelMemberCollection.insert({
-				id: ChannelMemberId.make(uuid()),
+				id: ChannelMemberId.make(crypto.randomUUID()),
 				channelId: channelId,
 				userId: participantId,
 				isHidden: false,
@@ -192,7 +184,7 @@ export const createDmChannel = createOptimisticAction<{
 		if (props.type === "direct" && props.participantIds.length > 0) {
 			// Add current user
 			directMessageParticipantCollection.insert({
-				id: DirectMessageParticipantId.make(uuid()),
+				id: DirectMessageParticipantId.make(crypto.randomUUID()),
 				channelId: channelId,
 				userId: props.currentUserId,
 				organizationId: props.organizationId,
@@ -200,7 +192,7 @@ export const createDmChannel = createOptimisticAction<{
 
 			// Add other participant
 			directMessageParticipantCollection.insert({
-				id: DirectMessageParticipantId.make(uuid()),
+				id: DirectMessageParticipantId.make(crypto.randomUUID()),
 				channelId: channelId,
 				userId: props.participantIds[0]!,
 				organizationId: props.organizationId,
