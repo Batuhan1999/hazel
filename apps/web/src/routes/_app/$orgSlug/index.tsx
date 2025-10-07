@@ -1,4 +1,5 @@
 import { useAtomSet } from "@effect-atom/atom-react"
+import type { UserId } from "@hazel/db/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { PhoneCall01 } from "@untitledui/icons"
@@ -18,6 +19,7 @@ import IconMagnifier3 from "~/components/icons/icon-magnifier-3"
 import IconMsgs from "~/components/icons/icon-msgs"
 import { organizationMemberCollection, userCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
+import { findExistingDmChannel } from "~/lib/channels"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
 import { toastExit } from "~/lib/toast-exit"
 import { useAuth } from "~/providers/auth-provider"
@@ -32,7 +34,7 @@ function RouteComponent() {
 	const navigate = useNavigate()
 	const [searchQuery, setSearchQuery] = useState("")
 
-	const createDmChannel = useAtomSet(HazelApiClient.mutation("channels", "create"), {
+	const createDmChannel = useAtomSet(HazelApiClient.mutation("channels", "createDm"), {
 		mode: "promiseExit",
 	})
 
@@ -63,29 +65,44 @@ function RouteComponent() {
 		})
 	}, [membersData, searchQuery])
 
-	const handleOpenChat = async (targetUserId: string) => {
-		if (!targetUserId) return
+	const handleOpenChat = async (targetUserId: string, targetUserName: string) => {
+		if (!targetUserId || !user?.id || !organizationId) return
 
-		toastExit(
-			createDmChannel({
-				payload: {
-					name: "New DM",
-					type: "direct",
-					parentChannelId: null,
-					organizationId: organizationId!,
+		// Check if a DM channel already exists
+		const existingChannel = findExistingDmChannel(user.id, targetUserId)
+
+		if (existingChannel) {
+			// Navigate to existing channel
+			navigate({
+				to: "/$orgSlug/chat/$id",
+				params: { orgSlug, id: existingChannel.id },
+			})
+		} else {
+			// Create new DM channel
+			await toastExit(
+				createDmChannel({
+					payload: {
+						organizationId,
+						participantIds: [targetUserId as UserId],
+						type: "single",
+					},
+				}),
+				{
+					loading: `Starting conversation with ${targetUserName}...`,
+					success: (result) => {
+						// Navigate to the created channel
+						if (result.data.id) {
+							navigate({
+								to: "/$orgSlug/chat/$id",
+								params: { orgSlug, id: result.data.id },
+							})
+						}
+
+						return `Started conversation with ${targetUserName}`
+					},
 				},
-			}),
-			{
-				loading: "Creating conversation...",
-				success: (result) => {
-					if (result.data.id) {
-						navigate({ to: "/$orgSlug/chat/$id", params: { orgSlug, id: result.data.id } })
-					}
-					return "Conversation created"
-				},
-				error: "Failed to create conversation",
-			},
-		)
+			)
+		}
 	}
 
 	return (
@@ -160,7 +177,7 @@ function RouteComponent() {
 								{!isCurrentUser && (
 									<div className="flex items-center gap-2">
 										<ButtonUtility
-											onClick={() => handleOpenChat(member.id)}
+											onClick={() => handleOpenChat(member.id, fullName)}
 											className="inset-ring-0 hidden pressed:bg-tertiary group-hover:bg-tertiary sm:inline-grid"
 											size="sm"
 											icon={IconMsgs}
@@ -172,9 +189,17 @@ function RouteComponent() {
 												icon={IconDots}
 											/>
 											<Dropdown.Popover>
-												<Dropdown.Menu>
+												<Dropdown.Menu
+													onAction={(key) => {
+														if (key === "message") {
+															handleOpenChat(member.id, fullName)
+														}
+													}}
+												>
 													<Dropdown.Section>
-														<Dropdown.Item icon={IconMsgs}>Message</Dropdown.Item>
+														<Dropdown.Item id="message" icon={IconMsgs}>
+															Message
+														</Dropdown.Item>
 														<Dropdown.Item icon={IconCircleDottedUser}>
 															View profile
 														</Dropdown.Item>

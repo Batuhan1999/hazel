@@ -1,5 +1,7 @@
 "use client"
 
+import { useAtomSet } from "@effect-atom/atom-react"
+import type { UserId } from "@hazel/db/schema"
 import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
 import { useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -19,8 +21,12 @@ import {
 	userCollection,
 } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
+import { findExistingDmChannel } from "~/lib/channels"
+import { HazelApiClient } from "~/lib/services/common/atom-client"
+import { toastExit } from "~/lib/toast-exit"
 import { useAuth } from "~/providers/auth-provider"
 import { Avatar } from "./base/avatar/avatar"
+
 import IconBell from "./icons/icon-bell"
 import IconCircleDottedUser from "./icons/icon-circle-dotted-user"
 import IconDashboard from "./icons/icon-dashboard"
@@ -58,6 +64,10 @@ export function CommandPalette(props: Pick<CommandMenuProps, "isOpen" | "onOpenC
 			}
 		}
 	}, [pageHistory])
+
+	const closePalette = useCallback(() => {
+		props.onOpenChange?.(false)
+	}, [props])
 
 	// Reset to home when modal closes/opens
 	useEffect(() => {
@@ -112,8 +122,8 @@ export function CommandPalette(props: Pick<CommandMenuProps, "isOpen" | "onOpenC
 			<CommandMenuSearch placeholder={searchPlaceholder} />
 			<CommandMenuList>
 				{currentPage === "home" && <HomeView navigateToPage={navigateToPage} />}
-				{currentPage === "channels" && <ChannelsView />}
-				{currentPage === "members" && <MembersView />}
+				{currentPage === "channels" && <ChannelsView onClose={closePalette} />}
+				{currentPage === "members" && <MembersView onClose={closePalette} />}
 			</CommandMenuList>
 		</CommandMenu>
 	)
@@ -184,7 +194,7 @@ function HomeView({ navigateToPage }: { navigateToPage: (page: Page) => void }) 
 	)
 }
 
-function ChannelsView() {
+function ChannelsView({ onClose }: { onClose: () => void }) {
 	const { organizationId, slug: orgSlug } = useOrganization()
 	const { user } = useAuth()
 	const navigate = useNavigate()
@@ -219,6 +229,7 @@ function ChannelsView() {
 					textValue={channel.name}
 					onAction={() => {
 						navigate({ to: "/$orgSlug/chat/$id", params: { orgSlug: orgSlug!, id: channel.id } })
+						onClose()
 					}}
 				>
 					<IconHashtag />
@@ -229,10 +240,14 @@ function ChannelsView() {
 	)
 }
 
-function MembersView() {
+function MembersView({ onClose }: { onClose: () => void }) {
 	const { organizationId, slug: orgSlug } = useOrganization()
 	const { user: currentUser } = useAuth()
-	const _navigate = useNavigate()
+	const navigate = useNavigate()
+
+	const createDmChannel = useAtomSet(HazelApiClient.mutation("channels", "createDm"), {
+		mode: "promiseExit",
+	})
 
 	const { data: members } = useLiveQuery(
 		(q) =>
@@ -258,12 +273,51 @@ function MembersView() {
 					<CommandMenuItem
 						key={user.id}
 						textValue={fullName}
-						onAction={() => {
-							// TODO: Navigate to DM or create DM with this user
-							console.log("Navigate to DM with", user.id)
+						onAction={async () => {
+							if (!currentUser?.id) return
+
+							// Check if a DM channel already exists
+							const existingChannel = findExistingDmChannel(currentUser.id, user.id)
+
+							if (existingChannel) {
+								// Navigate to existing channel
+								navigate({
+									to: "/$orgSlug/chat/$id",
+									params: { orgSlug: orgSlug!, id: existingChannel.id },
+								})
+								onClose()
+							} else {
+								// Create new DM channel
+								if (!organizationId || !orgSlug) return
+
+								await toastExit(
+									createDmChannel({
+										payload: {
+											organizationId,
+											participantIds: [user.id as UserId],
+											type: "single",
+										},
+									}),
+									{
+										loading: `Starting conversation with ${user.firstName}...`,
+										success: (result) => {
+											// Navigate to the created channel
+											if (result.data.id) {
+												navigate({
+													to: "/$orgSlug/chat/$id",
+													params: { orgSlug, id: result.data.id },
+												})
+											}
+
+											onClose()
+											return `Started conversation with ${user.firstName}`
+										},
+									},
+								)
+							}
 						}}
 					>
-						<Avatar size="xs" src={user.avatarUrl} alt={fullName} />
+						<Avatar size="xs" className="mr-1" src={user.avatarUrl} alt={fullName} />
 						<CommandMenuLabel>{fullName}</CommandMenuLabel>
 					</CommandMenuItem>
 				)

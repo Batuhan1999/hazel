@@ -1,6 +1,7 @@
+import { useAtomSet } from "@effect-atom/atom-react"
 import type { OrganizationId, OrganizationMemberId, UserId } from "@hazel/db/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { AlertTriangle } from "@untitledui/icons"
 import { useState } from "react"
 import type { SortDescriptor } from "react-aria-components"
@@ -18,10 +19,14 @@ import { CloseButton } from "~/components/base/buttons/close-button"
 import { Dropdown } from "~/components/base/dropdown/dropdown"
 import { FeaturedIcon } from "~/components/foundations/featured-icon/featured-icons"
 import IconCircleDottedUser from "~/components/icons/icon-circle-dotted-user"
+import IconMessage from "~/components/icons/icon-msgs"
 import IconPlus from "~/components/icons/icon-plus"
 import IconTrash from "~/components/icons/icon-trash"
 import { organizationMemberCollection, userCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
+import { findExistingDmChannel } from "~/lib/channels"
+import { HazelApiClient } from "~/lib/services/common/atom-client"
+import { toastExit } from "~/lib/toast-exit"
 import { useAuth } from "~/providers/auth-provider"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/team")({
@@ -42,7 +47,12 @@ function RouteComponent() {
 	} | null>(null)
 	const [removeUserId, setRemoveUserId] = useState<UserId | null>(null)
 
-	const { organizationId } = useOrganization()
+	const { organizationId, slug: orgSlug } = useOrganization()
+	const navigate = useNavigate()
+
+	const createDmChannel = useAtomSet(HazelApiClient.mutation("channels", "createDm"), {
+		mode: "promiseExit",
+	})
 
 	const { data: teamMembers } = useLiveQuery(
 		(q) =>
@@ -98,6 +108,46 @@ function RouteComponent() {
 		if (currentRole === "admin" && targetUserRole === "member") return true
 
 		return false
+	}
+
+	const handleMessageUser = async (targetUserId: UserId, targetUserName: string) => {
+		if (!user?.id || !organizationId || !orgSlug) return
+
+		// Check if a DM channel already exists
+		const existingChannel = findExistingDmChannel(user.id, targetUserId)
+
+		if (existingChannel) {
+			// Navigate to existing channel
+			navigate({
+				to: "/$orgSlug/chat/$id",
+				params: { orgSlug, id: existingChannel.id },
+			})
+		} else {
+			// Create new DM channel
+			await toastExit(
+				createDmChannel({
+					payload: {
+						organizationId,
+						participantIds: [targetUserId],
+						type: "single",
+					},
+				}),
+				{
+					loading: `Starting conversation with ${targetUserName}...`,
+					success: (result) => {
+						// Navigate to the created channel
+						if (result.data.id) {
+							navigate({
+								to: "/$orgSlug/chat/$id",
+								params: { orgSlug, id: result.data.id },
+							})
+						}
+
+						return `Started conversation with ${targetUserName}`
+					},
+				},
+			)
+		}
 	}
 
 	return (
@@ -197,7 +247,12 @@ function RouteComponent() {
 													<Dropdown.Menu
 														onAction={(key) => {
 															const action = key as string
-															if (action === "change-role") {
+															if (action === "message") {
+																handleMessageUser(
+																	member.userId,
+																	`${member.user.firstName} ${member.user.lastName}`,
+																)
+															} else if (action === "change-role") {
 																setChangeRoleUser({
 																	id: member.userId,
 																	name: `${member.user.firstName} ${member.user.lastName}`,
@@ -209,6 +264,12 @@ function RouteComponent() {
 															}
 														}}
 													>
+														<Dropdown.Item
+															id="message"
+															label="Send message"
+															icon={IconMessage}
+														/>
+														<Dropdown.Separator />
 														<Dropdown.Item
 															id="change-role"
 															label="Change role"
