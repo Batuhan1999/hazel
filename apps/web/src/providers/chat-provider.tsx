@@ -1,3 +1,4 @@
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import type { Channel, Message, PinnedMessage } from "@hazel/db/models"
 import {
 	type AttachmentId,
@@ -9,16 +10,12 @@ import {
 	UserId,
 } from "@hazel/db/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef } from "react"
 import {
-	createContext,
-	type ReactNode,
-	useCallback,
-	useContext,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "react"
+	activeThreadChannelIdAtom,
+	activeThreadMessageIdAtom,
+	replyToMessageAtomFamily,
+} from "~/atoms/chat-atoms"
 import { sendMessage as sendMessageAction } from "~/db/actions"
 import {
 	channelCollection,
@@ -75,20 +72,25 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 	const { user } = useAuth()
 	const { playSound } = useNotificationSound()
 
-	// Reply state
-	const [replyToMessageId, setReplyToMessageId] = useState<MessageId | null>(null)
-	// Thread state
-	const [activeThreadChannelId, setActiveThreadChannelId] = useState<ChannelId | null>(null)
-	const [activeThreadMessageId, setActiveThreadMessageId] = useState<MessageId | null>(null)
+	// Reply state - per-channel using Atom.family
+	const replyToMessageId = useAtomValue(replyToMessageAtomFamily(channelId))
+	const setReplyToMessageId = useAtomSet(replyToMessageAtomFamily(channelId))
+
+	// Thread state - global atoms
+	const activeThreadChannelId = useAtomValue(activeThreadChannelIdAtom)
+	const setActiveThreadChannelId = useAtomSet(activeThreadChannelIdAtom)
+	const activeThreadMessageId = useAtomValue(activeThreadMessageIdAtom)
+	const setActiveThreadMessageId = useAtomSet(activeThreadMessageIdAtom)
 
 	const previousMessagesRef = useRef<MessageWithPinned[]>([])
 	const previousChannelIdRef = useRef<ChannelId | null>(null)
 	const prevMessageCountRef = useRef<number>(0)
 
+	// Reset reply state when switching channels
 	useEffect(() => {
 		if (previousChannelIdRef.current && previousChannelIdRef.current !== channelId) {
 			previousMessagesRef.current = []
-			setReplyToMessageId(null)
+			// Reply state is now per-channel via Atom.family, so it auto-resets
 		}
 		previousChannelIdRef.current = channelId
 	}, [channelId])
@@ -148,14 +150,14 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 				attachmentIds: attachments as AttachmentId[] | undefined,
 			})
 
+			// Clear reply state immediately for instant UI feedback
+			setReplyToMessageId(null)
+
 			await tx.isPersisted.promise
 
 			console.log("tx", tx)
-
-			// Clear reply state after sending
-			setReplyToMessageId(null)
 		},
-		[channelId, user?.id, replyToMessageId],
+		[channelId, user?.id, replyToMessageId, setReplyToMessageId],
 	)
 
 	const editMessage = useCallback(async (messageId: MessageId, content: string) => {
@@ -247,18 +249,27 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 				setActiveThreadMessageId(messageId)
 			}
 		},
-		[messages, channelId, organizationId],
+		[
+			messages,
+			channelId,
+			organizationId, // Open the newly created thread
+			setActiveThreadChannelId,
+			setActiveThreadMessageId,
+		],
 	)
 
-	const openThread = useCallback((threadChannelId: ChannelId, originalMessageId: MessageId) => {
-		setActiveThreadChannelId(threadChannelId)
-		setActiveThreadMessageId(originalMessageId)
-	}, [])
+	const openThread = useCallback(
+		(threadChannelId: ChannelId, originalMessageId: MessageId) => {
+			setActiveThreadChannelId(threadChannelId)
+			setActiveThreadMessageId(originalMessageId)
+		},
+		[setActiveThreadChannelId, setActiveThreadMessageId],
+	)
 
 	const closeThread = useCallback(() => {
 		setActiveThreadChannelId(null)
 		setActiveThreadMessageId(null)
-	}, [])
+	}, [setActiveThreadChannelId, setActiveThreadMessageId])
 
 	// Play sound when new messages arrive from other users (only when window is not focused)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: We intentionally only depend on length changes, not the full array
@@ -332,6 +343,7 @@ export function ChatProvider({ channelId, organizationId, children }: ChatProvid
 			activeThreadChannelId,
 			activeThreadMessageId,
 			replyToMessageId,
+			setReplyToMessageId,
 		],
 	)
 
