@@ -6,7 +6,7 @@
 ## Medium Priority Features
 
 - Setup Organization should display better errors 
-- Add toast popup when new app version is available to reload tab
+- Migrate the missing icons to nucleo
 
 
 ### Core Features
@@ -15,10 +15,6 @@
   - Stop user from sending message when upload is in progress
   - Show error if upload fails
   - Fix attachment links (`apps/web/src/components/chat/message-attachments.tsx:59,77,104`)
-
-- [ ] **Real-time Features**
-  - Presence system with Away status
-  - Better presence state implementation (`apps/web/src/components/sidebar-favorite-group.tsx:34`)
 
 - [ ] **Chat Improvements**
   - Better Chat Input with:
@@ -34,7 +30,6 @@
 
 ### UI/UX Improvements
 - [ ] Image Viewer component
-- [ ] Consolidate all icons to use one Icon Library
 
 ## Frontend TODOs (apps/web)
 
