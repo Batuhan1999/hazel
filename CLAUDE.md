@@ -10,6 +10,17 @@ This is a monorepo with the following structure:
 - `packages/db/` - Shared database package using Drizzle ORM and PostgreSQL
 - `.context/` - Git Subtrees for context of how to use specific libraries (In this case Effect and Effect Atom)
 
+## Library Documentation (.context/)
+
+**IMPORTANT**: Always check the `.context/` directory for library-specific documentation and example code before implementing features with these libraries.
+
+Available library contexts:
+- `.context/effect/` - Effect-TS functional programming patterns and examples
+- `.context/effect-atom/` - Effect Atom state management documentation
+- `.context/tanstack-db/` - TanStack-DB
+
+When working with Effect, Effect Atom, or TanStack DB, refer to these directories for best practices, API usage, and implementation patterns.
+
 ## Development Commands
 
 ### Root Level

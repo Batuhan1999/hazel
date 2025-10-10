@@ -1,7 +1,7 @@
 "use client"
 
 import { type ChannelId, ChannelMemberId } from "@hazel/db/schema"
-import { eq, inArray, not, useLiveQuery } from "@tanstack/react-db"
+import { eq, inArray, not, or, useLiveQuery } from "@tanstack/react-db"
 import { useParams } from "@tanstack/react-router"
 import { useState } from "react"
 import { Heading as AriaHeading } from "react-aria-components"
@@ -45,6 +45,7 @@ export const JoinChannelModal = ({ isOpen, setIsOpen }: JoinChannelModalProps) =
 						),
 					),
 				)
+				.where(({ channel }) => or(eq(channel.type, "public"), eq(channel.type, "private")))
 				.select(({ channel }) => ({ ...channel }))
 		},
 		[user?.id, orgSlug],
