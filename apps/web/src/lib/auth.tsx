@@ -43,7 +43,7 @@ const currentUserQueryAtom = HazelApiClient.query("users", "me", {
  * Derived atom that returns the current user
  * Returns null if on a public route or if the query failed
  */
-const userAtom = Atom.make((get) => {
+export const userAtom = Atom.make((get) => {
 	const isPublicRoute = get(isPublicRouteAtom)
 	if (isPublicRoute) {
 		return null

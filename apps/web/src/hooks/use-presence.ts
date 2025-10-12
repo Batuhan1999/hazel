@@ -1,10 +1,11 @@
-import { Atom, Result, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { Atom, Result, useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import { type ChannelId, UserId } from "@hazel/db/schema"
-import { eq, useLiveQuery } from "@tanstack/react-db"
+import { makeQuery } from "@hazel/tanstack-db-atom"
+import { eq } from "@tanstack/db"
 import { DateTime, Duration, Effect, Schedule, Stream } from "effect"
 import { useCallback, useEffect, useRef } from "react"
 import { userPresenceStatusCollection } from "~/db/collections"
-import { useAuth } from "~/lib/auth"
+import { userAtom } from "~/lib/auth"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
 import { router } from "~/main"
 
@@ -143,6 +144,58 @@ const currentChannelIdAtom = Atom.make((get) => {
 	return currentChannelId
 }).pipe(Atom.keepAlive)
 
+/**
+ * Atom that manages the beforeunload event listener
+ * Reads from userAtom and sends beacon to mark user offline when tab closes
+ * Automatically reactive to user changes
+ */
+const beforeUnloadAtom = Atom.make((get) => {
+	const user = get(userAtom)
+
+	// Skip setup if no user
+	if (!user?.id) return null
+
+	const handleBeforeUnload = () => {
+		// Use sendBeacon for reliable delivery even as page unloads
+		const url = `${import.meta.env.VITE_BACKEND_URL}/presence/offline`
+		const blob = new Blob([JSON.stringify({ userId: user.id })], { type: "application/json" })
+		navigator.sendBeacon(url, blob)
+	}
+
+	window.addEventListener("beforeunload", handleBeforeUnload)
+
+	get.addFinalizer(() => {
+		window.removeEventListener("beforeunload", handleBeforeUnload)
+	})
+
+	return user.id
+})
+
+/**
+ * Atom family that queries the current user's presence status from TanStack DB
+ * Returns Result<PresenceData[]> that automatically updates when data changes
+ */
+const currentUserPresenceAtomFamily = Atom.family((userId: string) =>
+	makeQuery((q) =>
+		q
+			.from({ presence: userPresenceStatusCollection })
+			.where(({ presence }) => eq(presence.userId, UserId.make(userId)))
+			.orderBy(({ presence }) => presence.updatedAt, "desc")
+			.limit(1),
+	),
+)
+
+/**
+ * Atom that automatically queries presence for the current user
+ * Reads from userAtom and returns the presence data
+ */
+const currentUserPresenceAtom = Atom.make((get) => {
+	const user = get(userAtom)
+	if (!user?.id) return Result.initial(false)
+
+	return get(currentUserPresenceAtomFamily(user.id))
+})
+
 // ============================================================================
 // Mutation Atoms
 // ============================================================================
@@ -165,21 +218,12 @@ const updateActiveChannelMutation = HazelApiClient.mutation("presence", "updateA
  * Hook for managing the current user's presence status
  */
 export function usePresence() {
-	const { user } = useAuth()
+	// Read user directly from atom instead of useAuth hook
+	const user = useAtomValue(userAtom)
 
-	// Query current presence from DB (still using TanStack for real-time sync)
-	const { data: presenceData } = useLiveQuery(
-		(q) =>
-			user?.id
-				? q
-						.from({ presence: userPresenceStatusCollection })
-						.where(({ presence }) => eq(presence.userId, UserId.make(user.id)))
-						.orderBy(({ presence }) => presence.updatedAt, "desc")
-						.limit(1)
-				: undefined,
-		[user?.id],
-	)
-
+	// Query current presence from atom (uses TanStack DB integration)
+	const presenceResult = useAtomValue(currentUserPresenceAtom)
+	const presenceData = Result.getOrElse(presenceResult, () => [])
 	const currentPresence = presenceData?.[0]
 
 	// Read computed status (unwrap Result)
@@ -249,23 +293,9 @@ export function usePresence() {
 		return () => clearInterval(interval)
 	}, [user?.id, currentPresence?.id, computedStatus, updateStatus])
 
-	// Mark user offline when tab closes
-	useEffect(() => {
-		if (!user?.id) return
-
-		const handleBeforeUnload = () => {
-			// Use sendBeacon for reliable delivery even as page unloads
-			const url = `${import.meta.env.VITE_BACKEND_URL}/presence/offline`
-			const blob = new Blob([JSON.stringify({ userId: user.id })], { type: "application/json" })
-			navigator.sendBeacon(url, blob)
-		}
-
-		window.addEventListener("beforeunload", handleBeforeUnload)
-
-		return () => {
-			window.removeEventListener("beforeunload", handleBeforeUnload)
-		}
-	}, [user?.id])
+	// Mark user offline when tab closes using atom-based listener
+	// Atom reads from userAtom directly, so it's automatically reactive
+	useAtomMount(beforeUnloadAtom)
 
 	// Ref to track previous status for manual updates
 	const previousManualStatusRef = useRef<PresenceStatus>("online")
@@ -311,16 +341,9 @@ export function usePresence() {
  * Hook to get another user's presence
  */
 export function useUserPresence(userId: string) {
-	const { data: presenceData } = useLiveQuery(
-		(q) =>
-			q
-				.from({ presence: userPresenceStatusCollection })
-				.where(({ presence }) => eq(presence.userId, UserId.make(userId)))
-				.orderBy(({ presence }) => presence.updatedAt, "desc")
-				.limit(1),
-		[userId],
-	)
-
+	// Use the atom family to query this user's presence
+	const presenceResult = useAtomValue(currentUserPresenceAtomFamily(userId))
+	const presenceData = Result.getOrElse(presenceResult, () => [])
 	const presence = presenceData?.[0]
 
 	return {

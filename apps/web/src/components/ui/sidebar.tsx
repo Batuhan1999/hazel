@@ -1,4 +1,4 @@
-import { useAtomValue } from "@effect-atom/atom-react"
+import { useAtomMount, useAtomValue } from "@effect-atom/atom-react"
 import { Slot } from "@radix-ui/react-slot"
 import { LeftIndent01 } from "@untitledui/icons"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -7,6 +7,7 @@ import { Button as PrimitiveButton } from "react-aria-components"
 import {
 	setMobileSidebarOpen,
 	setSidebarOpen,
+	sidebarKeyboardShortcutAtomFamily,
 	sidebarOpenAtom,
 	sidebarOpenMobileAtom,
 	sidebarStateAtom,
@@ -25,17 +26,6 @@ import { Input } from "../base/input/input"
 const SIDEBAR_WIDTH = "21rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
-const SIDEBAR_KEYBOARD_SHORTCUT = "b"
-
-type SidebarContextProps = {
-	state: "expanded" | "collapsed"
-	open: boolean
-	setOpen: (open: boolean) => void
-	openMobile: boolean
-	setOpenMobile: (open: boolean) => void
-	isMobile: boolean
-	toggleSidebar: () => void
-}
 
 /**
  * Hook to access sidebar state from atoms
@@ -68,23 +58,9 @@ function useSidebar() {
 function SidebarProvider({ className, style, children, ...props }: React.ComponentProps<"div">) {
 	const isMobile = useIsMobile()
 
-	// Helper to toggle the sidebar (mobile or desktop depending on screen size)
-	const toggleSidebar = React.useCallback(() => {
-		return isMobile ? toggleMobileSidebar() : toggleSidebarAtom()
-	}, [isMobile])
-
-	// Adds a keyboard shortcut to toggle the sidebar
-	React.useEffect(() => {
-		const handleKeyDown = (event: KeyboardEvent) => {
-			if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
-				event.preventDefault()
-				toggleSidebar()
-			}
-		}
-
-		window.addEventListener("keydown", handleKeyDown)
-		return () => window.removeEventListener("keydown", handleKeyDown)
-	}, [toggleSidebar])
+	// Adds a keyboard shortcut to toggle the sidebar using atom-based listener
+	const keyboardShortcutAtom = sidebarKeyboardShortcutAtomFamily(isMobile)
+	useAtomMount(keyboardShortcutAtom)
 
 	return (
 		<div
