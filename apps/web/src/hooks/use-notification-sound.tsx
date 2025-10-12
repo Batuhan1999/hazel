@@ -1,7 +1,7 @@
 import { BrowserKeyValueStore } from "@effect/platform-browser"
-import { Atom, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { Atom, useAtomMount, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import { Schema } from "effect"
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useRef } from "react"
 
 interface NotificationSoundSettings {
 	enabled: boolean
@@ -34,6 +34,28 @@ const notificationSettingsAtom = Atom.kvs({
 	}),
 })
 
+// Atom that manages the audio element lifecycle
+// Creates/updates audio element and applies volume when settings change
+const audioElementAtom = Atom.make<HTMLAudioElement | null>((get) => {
+	const settings = get(notificationSettingsAtom)
+	if (typeof window === "undefined") return null
+
+	const soundFile = settings?.soundFile || "notification01"
+	const volume = settings?.volume ?? 0.5
+
+	// Create audio element
+	const audio = new Audio(`/sounds/${soundFile}.mp3`)
+	audio.volume = volume
+
+	// Cleanup on atom disposal or when dependencies change
+	get.addFinalizer(() => {
+		audio.pause()
+		audio.src = ""
+	})
+
+	return audio
+}).pipe(Atom.keepAlive)
+
 export function useNotificationSound() {
 	const settings = useAtomValue(notificationSettingsAtom) || {
 		enabled: true,
@@ -43,44 +65,17 @@ export function useNotificationSound() {
 	}
 	const setSettings = useAtomSet(notificationSettingsAtom)
 
-	const audioRef = useRef<HTMLAudioElement | null>(null)
+	// Mount the audio element atom to activate it
+	useAtomMount(audioElementAtom)
+
+	// Get the audio element from the atom
+	const audioElement = useAtomValue(audioElementAtom)
+
 	const lastPlayedRef = useRef<number>(0)
 	const isPlayingRef = useRef<boolean>(false)
 
-	// Initialize or update audio element when sound file changes
-	useEffect(() => {
-		if (typeof window === "undefined") return
-
-		// Only create new audio element if file changed or doesn't exist
-		if (
-			!audioRef.current ||
-			audioRef.current.src !== `${window.location.origin}/sounds/${settings.soundFile}.mp3`
-		) {
-			if (audioRef.current) {
-				audioRef.current.pause()
-			}
-			const audio = new Audio(`/sounds/${settings.soundFile}.mp3`)
-			audioRef.current = audio
-		}
-
-		// Cleanup
-		return () => {
-			if (audioRef.current) {
-				audioRef.current.pause()
-				audioRef.current = null
-			}
-		}
-	}, [settings.soundFile])
-
-	// Update volume separately to avoid recreating audio element
-	useEffect(() => {
-		if (audioRef.current) {
-			audioRef.current.volume = settings.volume
-		}
-	}, [settings.volume])
-
 	const playSound = useCallback(async () => {
-		if (!settings.enabled || !audioRef.current) return
+		if (!settings.enabled || !audioElement) return
 
 		// Check cooldown
 		const now = Date.now()
@@ -96,15 +91,15 @@ export function useNotificationSound() {
 			lastPlayedRef.current = now
 
 			// Reset and play
-			audioRef.current.currentTime = 0
-			await audioRef.current.play()
+			audioElement.currentTime = 0
+			await audioElement.play()
 		} catch (error) {
 			// Handle autoplay policy restrictions
 			console.warn("Failed to play notification sound:", error)
 		} finally {
 			isPlayingRef.current = false
 		}
-	}, [settings.enabled, settings.cooldownMs])
+	}, [settings.enabled, settings.cooldownMs, audioElement])
 
 	const updateSettings = useCallback(
 		(updates: Partial<NotificationSoundSettings>) => {
@@ -122,15 +117,15 @@ export function useNotificationSound() {
 	)
 
 	const testSound = useCallback(async () => {
-		if (!audioRef.current) return
+		if (!audioElement) return
 
 		try {
-			audioRef.current.currentTime = 0
-			await audioRef.current.play()
+			audioElement.currentTime = 0
+			await audioElement.play()
 		} catch (error) {
 			console.warn("Failed to play test sound:", error)
 		}
-	}, [])
+	}, [audioElement])
 
 	return {
 		settings,
