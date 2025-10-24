@@ -38,7 +38,7 @@ function createMutableCollection<T extends object>(
 	utils: {
 		insert: (item: T) => void
 		update: (key: string | number, item: T) => void
-		delete: (key: string | number) => void
+		delete: (key: string | number, item: T) => void
 	}
 } {
 	let begin: () => void
@@ -67,7 +67,7 @@ function createMutableCollection<T extends object>(
 		startSync: true,
 	}
 
-	const collection = createCollection(config)
+	const collection = createCollection<T>(config)
 
 	return {
 		collection,
@@ -82,7 +82,7 @@ function createMutableCollection<T extends object>(
 				write!({ type: "update", value: item })
 				commit!()
 			},
-			delete: (_key: string | number, item: T) => {
+			delete: (key: string | number, item: T) => {
 				begin!()
 				write!({ type: "delete", value: item })
 				commit!()

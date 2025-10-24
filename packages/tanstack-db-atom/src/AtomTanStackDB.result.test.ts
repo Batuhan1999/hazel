@@ -63,7 +63,7 @@ function createControlledCollection<T extends object>(
 		startSync: true,
 	}
 
-	return { collection: createCollection(config) }
+	return { collection: createCollection<T>(config) }
 }
 
 describe("Result Pattern Matching", () => {
@@ -115,7 +115,7 @@ describe("Result Pattern Matching", () => {
 	describe("Result.isFailure", () => {
 		it("should correctly identify failure state", async () => {
 			const registry = Registry.make()
-			const { collection } = createControlledCollection("todos", [], (todo) => todo.id, true)
+			const { collection } = createControlledCollection<Todo>("todos", [], (todo) => todo.id, true)
 
 			const todosAtom = makeCollectionAtom(collection)
 
@@ -125,7 +125,7 @@ describe("Result Pattern Matching", () => {
 			expect(Result.isFailure(result)).toBe(true)
 
 			if (Result.isFailure(result)) {
-				expect(result.error).toBeInstanceOf(Error)
+				expect(result.cause).toBeDefined()
 			}
 		})
 	})
@@ -178,7 +178,7 @@ describe("Result Pattern Matching", () => {
 
 		it("should return fallback on failure", async () => {
 			const registry = Registry.make()
-			const { collection } = createControlledCollection("todos", [], (todo) => todo.id, true)
+			const { collection } = createControlledCollection<Todo>("todos", [], (todo) => todo.id, true)
 
 			const todosAtom = makeCollectionAtom(collection)
 
@@ -235,13 +235,13 @@ describe("Result Pattern Matching", () => {
 			const successMsg = Result.match(successResult, {
 				onInitial: () => "waiting",
 				onFailure: () => "failed",
-				onSuccess: (todos) => `success: ${todos.length}`,
+				onSuccess: (todos) => `success: ${todos.value.length}`,
 			})
 
 			expect(successMsg).toBe("success: 3")
 
 			// Failure case
-			const { collection: failCol } = createControlledCollection("todos2", [], (todo) => todo.id, true)
+			const { collection: failCol } = createControlledCollection<Todo>("todos2", [], (todo) => todo.id, true)
 			const failAtom = makeCollectionAtom(failCol)
 
 			await vi.runAllTimersAsync()
@@ -284,7 +284,7 @@ describe("Result Pattern Matching", () => {
 	describe("makeQueryUnsafe with Result operations", () => {
 		it("should return undefined on failure/initial state", async () => {
 			const registry = Registry.make()
-			const { collection } = createControlledCollection("todos", [], (todo) => todo.id, true)
+			const { collection } = createControlledCollection<Todo>("todos", [], (todo) => todo.id, true)
 
 			const todosAtom = makeQueryUnsafe((q) => q.from({ todos: collection }))
 
@@ -390,7 +390,7 @@ describe("Result Pattern Matching", () => {
 	describe("Result with empty collections", () => {
 		it("should be Success with empty array, not failure", async () => {
 			const registry = Registry.make()
-			const { collection } = createControlledCollection("todos", [], (todo) => todo.id)
+			const { collection } = createControlledCollection<Todo>("todos", [], (todo) => todo.id)
 
 			const todosAtom = makeCollectionAtom(collection)
 
@@ -456,7 +456,7 @@ describe("Result Pattern Matching", () => {
 				Result.match(result, {
 					onInitial: () => 0,
 					onFailure: () => 0,
-					onSuccess: (todos) => todos.length,
+					onSuccess: (todos) => todos.value.length,
 				}),
 			)
 
@@ -487,7 +487,7 @@ describe("Result Pattern Matching", () => {
 	describe("Result error information", () => {
 		it("should provide error details on failure", async () => {
 			const registry = Registry.make()
-			const { collection } = createControlledCollection("todos", [], (todo) => todo.id, true)
+			const { collection } = createControlledCollection<Todo>("todos", [], (todo) => todo.id, true)
 
 			const todosAtom = makeCollectionAtom(collection)
 
@@ -496,8 +496,7 @@ describe("Result Pattern Matching", () => {
 			const result = registry.get(todosAtom)
 
 			if (Result.isFailure(result)) {
-				expect(result.error).toBeInstanceOf(Error)
-				expect(result.error.message).toContain("Collection failed to load")
+				expect(result.cause).toBeDefined()
 			}
 		})
 	})

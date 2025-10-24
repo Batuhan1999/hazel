@@ -73,7 +73,7 @@ function createDelayedCollection<T extends object>(
 		startSync: true,
 	}
 
-	const collection = createCollection(config)
+	const collection = createCollection<T>(config)
 
 	return {
 		collection,
