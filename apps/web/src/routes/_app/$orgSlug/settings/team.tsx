@@ -198,8 +198,15 @@ function RouteComponent() {
 											)}
 											alt={`${member.user.firstName} ${member.user.lastName}`}
 											className="size-9 rounded-md *:rounded-md"
-											// TODO: Readd
-											status={"online"}
+											status={
+												member.presence?.status === "online"
+													? "online"
+													: member.presence?.status === "away" ||
+															member.presence?.status === "busy" ||
+															member.presence?.status === "dnd"
+														? "online"
+														: "offline"
+											}
 										/>
 										<div className="flex flex-col">
 											<span className="font-medium text-primary text-sm/6">

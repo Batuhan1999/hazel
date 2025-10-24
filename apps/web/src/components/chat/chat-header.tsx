@@ -3,6 +3,7 @@ import { Tooltip, TooltipTrigger } from "~/components/base/tooltip/tooltip"
 import IconHashtag from "~/components/icons/icon-hashtag"
 import { useChannel } from "~/db/hooks"
 import { useChat } from "~/hooks/use-chat"
+import { useUserPresence } from "~/hooks/use-presence"
 import { useAuth } from "~/lib/auth"
 import { ButtonUtility } from "../base/buttons/button-utility"
 import IconPhone from "../icons/icon-phone"
@@ -11,11 +12,6 @@ import { PinnedMessagesModal } from "./pinned-messages-modal"
 export function ChatHeader() {
 	const { channelId } = useChat()
 	const { user } = useAuth()
-
-	// TODO: XD
-	const { isUserOnline } = {
-		isUserOnline: (..._args: any[]) => true,
-	}
 
 	const { channel } = useChannel(channelId)
 
@@ -29,6 +25,8 @@ export function ChatHeader() {
 
 	const isDirectMessage = channel.type === "direct" || channel.type === "single"
 	const otherMembers = channel.members.filter((member) => member.userId !== user?.id)
+	const firstMemberId = otherMembers[0]?.userId!
+	const { isOnline } = useUserPresence(firstMemberId)
 
 	return (
 		<div className="flex h-14 flex-shrink-0 items-center justify-between border-sidebar-border border-b bg-sidebar px-4">
@@ -40,7 +38,7 @@ export function ChatHeader() {
 								size="sm"
 								src={otherMembers[0]?.user.avatarUrl}
 								alt={`${otherMembers[0]?.user.firstName} ${otherMembers[0]?.user.lastName}`}
-								status={isUserOnline(otherMembers[0]?.userId!) ? "online" : "offline"}
+								status={isOnline ? "online" : "offline"}
 							/>
 						)}
 						<div>

@@ -12,12 +12,6 @@
 
 
 ### Core Features
-- [ ] **File Upload**
-  - Display a preview of the file being uploaded with progress indicator
-  - Stop user from sending message when upload is in progress
-  - Show error if upload fails
-  - Fix attachment links (`apps/web/src/components/chat/message-attachments.tsx:59,77,104`)
-
 - [ ] **Chat Improvements**
   - Better Chat Input with:
     - Enhanced code highlighting
@@ -35,7 +29,6 @@
 ## Frontend TODOs (apps/web)
 
 - Update Icons
-- Command Palette not using tsr nav to navigate
 
 ### Chat Components
 - [ ] **Message Features**
