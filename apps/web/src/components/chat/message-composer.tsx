@@ -26,8 +26,6 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 	const { sendMessage, replyToMessageId, setReplyToMessageId, channelId } = useChat()
 	const editorRef = useRef<MarkdownEditorRef | null>(null)
 
-	const { login } = useAuth()
-
 	const [attachmentIds, setAttachmentIds] = useState<AttachmentId[]>([])
 
 	// Get current user's channel member
@@ -53,7 +51,7 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 		memberId: currentChannelMember?.id || null,
 	})
 
-	const { uploads, uploadFiles, removeUpload, retryUpload } = useFileUpload({
+	const { uploads, removeUpload, retryUpload, clearUploads } = useFileUpload({
 		organizationId: organizationId!,
 		channelId: channelId,
 		onUploadComplete: (attachmentId) => {
@@ -92,6 +90,8 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 		// Stop typing when message is sent
 		stopTyping()
 		setAttachmentIds([])
+		// Clear upload previews
+		clearUploads()
 	}
 
 	return (

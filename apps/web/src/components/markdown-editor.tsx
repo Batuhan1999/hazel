@@ -129,6 +129,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 		const handleSubmit = async () => {
 			if (!onSubmit) return
 
+			// Check if any uploads are in progress
+			const isUploading = uploads.some((upload) => upload.status === "uploading")
+			if (isUploading) {
+				// Don't submit while uploads are in progress
+				return
+			}
+
 			const textContent = editor.api.markdown.serialize().trim()
 
 			function isEffectivelyEmpty(str: string) {
@@ -151,7 +158,12 @@ export const MarkdownEditor = forwardRef<MarkdownEditorRef, MarkdownEditorProps>
 		const handleKeyDown = (event: React.KeyboardEvent) => {
 			if (event.key === "Enter" && !event.shiftKey) {
 				event.preventDefault()
-				handleSubmit()
+
+				// Check if any uploads are in progress
+				const isUploading = uploads.some((upload) => upload.status === "uploading")
+				if (!isUploading) {
+					handleSubmit()
+				}
 			}
 		}
 

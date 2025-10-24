@@ -56,7 +56,8 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 	const handleDownload = () => {
 		// Create a temporary anchor element to trigger download
 		const link = document.createElement("a")
-		link.href = "TODO LINK"
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		link.href = `${publicUrl}/${attachment.id}`
 		link.download = attachment.fileName
 		link.target = "_blank"
 		document.body.appendChild(link)
@@ -70,11 +71,14 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 
 	if (isImage && !imageError) {
 		// Display image with preview
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		const imageUrl = `${publicUrl}/${attachment.id}`
+
 		return (
 			<div className="group relative inline-block">
 				<div className="relative overflow-hidden rounded-lg bg-secondary">
 					<img
-						src={"TODO LINK"}
+						src={imageUrl}
 						alt={attachment.fileName}
 						className="h-48 w-64 object-cover"
 						onError={() => setImageError(true)}
@@ -97,11 +101,14 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 
 	if (isVideo) {
 		// Display video player
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		const videoUrl = `${publicUrl}/${attachment.id}`
+
 		return (
 			<div className="group relative inline-block">
 				<div className="relative overflow-hidden rounded-lg bg-secondary">
-					{/** biome-ignore lint/a11y/useMediaCaption: <explanation> */}
-					<video src={"TODO LINK"} className="h-48 w-64 object-cover" controls preload="metadata">
+					{/** biome-ignore lint/a11y/useMediaCaption: video caption not required for chat attachments */}
+					<video src={videoUrl} className="h-48 w-64 object-cover" controls preload="metadata">
 						Your browser does not support the video tag.
 					</video>
 					<div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity group-hover:opacity-100">

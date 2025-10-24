@@ -22,6 +22,16 @@ export class AttachmentNotFoundError extends Schema.TaggedError<AttachmentNotFou
 	}),
 ) {}
 
+export class AttachmentUploadError extends Schema.TaggedError<AttachmentUploadError>("AttachmentUploadError")(
+	"AttachmentUploadError",
+	{
+		message: Schema.String,
+	},
+	HttpApiSchema.annotations({
+		status: 500,
+	}),
+) {}
+
 export class AttachmentGroup extends HttpApiGroup.make("attachments")
 	.add(
 		HttpApiEndpoint.post("upload", "/upload")
@@ -35,6 +45,7 @@ export class AttachmentGroup extends HttpApiGroup.make("attachments")
 				),
 			)
 			.addSuccess(AttachmentResponse)
+			.addError(AttachmentUploadError)
 			.addError(UnauthorizedError)
 			.addError(InternalServerError),
 	)

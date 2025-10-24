@@ -2,10 +2,11 @@ import { FileSystem, HttpApiBuilder } from "@effect/platform"
 import { MultipartUpload } from "@effect-aws/s3"
 import { Database } from "@hazel/db"
 import { AttachmentId } from "@hazel/db/schema"
-import { CurrentUser, InternalServerError, policyUse, withRemapDbErrors } from "@hazel/effect-lib"
+import { CurrentUser, policyUse, withRemapDbErrors } from "@hazel/effect-lib"
 import { randomUUIDv7 } from "bun"
 import { Config, Effect } from "effect"
 import { HazelApi } from "../api"
+import { AttachmentUploadError } from "../api/electric/collections/attachments"
 import { generateTransactionId } from "../lib/create-transactionId"
 import { AttachmentPolicy } from "../policies/attachment-policy"
 import { AttachmentRepo } from "../repositories/attachment-repo"
@@ -41,10 +42,23 @@ export const HttpAttachmentLive = HttpApiBuilder.group(HazelApi, "attachments", 
 							},
 							{ queueSize: 3 },
 						)
-						// TODO: Map errors
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(error) =>
+									new AttachmentUploadError({
+										message: `Failed to upload file to R2: ${error}`,
+									}),
+							),
+						)
 
-					const stats = yield* fs.stat(payload.file.path).pipe(Effect.orDie)
+					const stats = yield* fs.stat(payload.file.path).pipe(
+						Effect.mapError(
+							(error) =>
+								new AttachmentUploadError({
+									message: `Failed to read file stats: ${error}`,
+								}),
+						),
+					)
 
 					const { createdAttachment, txid } = yield* db
 						.transaction(
