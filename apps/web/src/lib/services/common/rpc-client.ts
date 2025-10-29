@@ -41,7 +41,7 @@ const CustomFetchLive = FetchHttpClient.layer.pipe(
 
 export const RpcProtocolLive = RpcClientBuilder.layerProtocolHttp({
 	url: httpUrl,
-}).pipe(Layer.provide(CustomFetchLive), Layer.provide(RpcSerialization.layerNdjson))
+}).pipe(Layer.provide(CustomFetchLive), Layer.provide(RpcSerialization.layerJson))
 
 // export const RpcProtocolLive = RpcClientBuilder.layerProtocolSocket({
 // 	retryTransientErrors: true, // Auto-reconnect on connection issues

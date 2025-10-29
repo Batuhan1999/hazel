@@ -2,6 +2,8 @@
 
 ## High Priority Features
 
+- Fix Results never resolving in collections.ts effect
+
 
 ## Medium Priority Features
 
