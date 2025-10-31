@@ -13,6 +13,7 @@ import "./lib/registry"
 
 import { Toaster } from "./components/application/notifications/toaster.tsx"
 import { ThemeProvider } from "./components/theme-provider.tsx"
+import { Loader } from "./components/loader.tsx"
 
 import reportWebVitals from "./reportWebVitals.ts"
 
@@ -23,6 +24,9 @@ export const router = createRouter({
 	scrollRestoration: true,
 	defaultStructuralSharing: true,
 	defaultPreloadStaleTime: 0,
+	defaultPendingMs: 300,
+	defaultPendingMinMs: 300,
+	defaultPendingComponent: Loader,
 	Wrap: ({ children }) => (
 		<ThemeProvider>
 			<Toaster />
