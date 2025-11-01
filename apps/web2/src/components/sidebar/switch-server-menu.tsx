@@ -1,8 +1,6 @@
-import { useAtom, useAtomSet } from "@effect-atom/atom-react"
 import type { OrganizationId } from "@hazel/db/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
-import { useNavigate } from "@tanstack/react-router"
-import { switchOrganizationMutation } from "~/atoms/organization-atoms"
+import { toast } from "sonner"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
@@ -13,11 +11,8 @@ import { SidebarLabel } from "../ui/sidebar"
 
 export const SwitchServerMenu = () => {
 	const { user } = useAuth()
-	const navigate = useNavigate()
+
 	const { organizationId: currentOrgId } = useOrganization()
-	const switchOrg = useAtomSet(switchOrganizationMutation, {
-		mode: "promiseExit",
-	})
 
 	const { data: userOrganizations } = useLiveQuery(
 		(q) =>
@@ -31,7 +26,7 @@ export const SwitchServerMenu = () => {
 		[user?.id],
 	)
 
-	const handleSelectionChange = async (keys: "all" | Set<React.Key>) => {
+	const handleSelectionChange = (keys: "all" | Set<React.Key>) => {
 		if (keys === "all" || keys.size === 0) return
 
 		const selectedOrgId = Array.from(keys)[0] as OrganizationId
@@ -40,17 +35,18 @@ export const SwitchServerMenu = () => {
 		const selectedOrg = userOrganizations?.find((row) => row.org.id === selectedOrgId)
 		if (!selectedOrg) return
 
-		try {
-			// Call the backend to verify membership
-			await switchOrg({ payload: { organizationId: selectedOrgId } })
+		// Show loading toast
+		toast.loading(`Switching to ${selectedOrg.org.name}...`)
 
-			// Navigate to the organization
-			const route = getOrganizationRoute(selectedOrg.org)
-			await navigate(route)
-		} catch (error) {
-			console.error("Failed to switch organization:", error)
-			// TODO: Show error toast to user
-		}
+		// Build the return URL (full frontend URL)
+		const route = getOrganizationRoute(selectedOrg.org)
+		const frontendUrl = window.location.origin
+		const returnUrl = `${frontendUrl}${route.to}`
+
+		// Redirect to backend login endpoint with the organization ID
+		// WorkOS will handle the organization switch and redirect back
+		const backendUrl = import.meta.env.VITE_BACKEND_URL
+		window.location.href = `${backendUrl}/auth/login?organizationId=${selectedOrgId}&returnTo=${encodeURIComponent(returnUrl)}`
 	}
 
 	return (

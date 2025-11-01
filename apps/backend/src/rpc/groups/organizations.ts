@@ -37,26 +37,6 @@ export class OrganizationSlugAlreadyExistsError extends Schema.TaggedError<Organ
 	},
 ) {}
 
-/**
- * Response schema for organization switch operation.
- */
-export class SwitchOrganizationResponse extends Schema.Class<SwitchOrganizationResponse>(
-	"SwitchOrganizationResponse",
-)({
-	success: Schema.Boolean,
-}) {}
-
-/**
- * Error thrown when user is not a member of the organization they're trying to switch to.
- */
-export class NotOrganizationMemberError extends Schema.TaggedError<NotOrganizationMemberError>()(
-	"NotOrganizationMemberError",
-	{
-		message: Schema.String,
-		organizationId: OrganizationId,
-	},
-) {}
-
 export class OrganizationRpcs extends RpcGroup.make(
 	Rpc.make("organization.create", {
 		payload: Organization.Model.jsonCreate,
@@ -96,11 +76,5 @@ export class OrganizationRpcs extends RpcGroup.make(
 			UnauthorizedError,
 			InternalServerError,
 		),
-	}).middleware(AuthMiddleware),
-
-	Rpc.make("organization.switch", {
-		payload: Schema.Struct({ organizationId: OrganizationId }),
-		success: SwitchOrganizationResponse,
-		error: Schema.Union(NotOrganizationMemberError, UnauthorizedError, InternalServerError),
 	}).middleware(AuthMiddleware),
 ) {}

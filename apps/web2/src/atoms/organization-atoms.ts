@@ -19,8 +19,3 @@ export const deleteOrganizationMutation = HazelRpcClient.mutation("organization.
  * Mutation atom for setting organization slug
  */
 export const setOrganizationSlugMutation = HazelRpcClient.mutation("organization.setSlug")
-
-/**
- * Mutation atom for switching active organization
- */
-export const switchOrganizationMutation = HazelRpcClient.mutation("organization.switch")
