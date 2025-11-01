@@ -13,7 +13,9 @@ import { Route as AppLayoutRouteImport } from './routes/_app/layout'
 import { Route as AppIndexRouteImport } from './routes/_app/index'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AppOrgSlugLayoutRouteImport } from './routes/_app/$orgSlug/layout'
+import { Route as AppOnboardingIndexRouteImport } from './routes/_app/onboarding/index'
 import { Route as AppOrgSlugIndexRouteImport } from './routes/_app/$orgSlug/index'
+import { Route as AppOnboardingSetupOrganizationRouteImport } from './routes/_app/onboarding/setup-organization'
 import { Route as AppOrgSlugNotificationsRouteImport } from './routes/_app/$orgSlug/notifications'
 
 const AppLayoutRoute = AppLayoutRouteImport.update({
@@ -35,11 +37,22 @@ const AppOrgSlugLayoutRoute = AppOrgSlugLayoutRouteImport.update({
   path: '/$orgSlug',
   getParentRoute: () => AppLayoutRoute,
 } as any)
+const AppOnboardingIndexRoute = AppOnboardingIndexRouteImport.update({
+  id: '/onboarding/',
+  path: '/onboarding/',
+  getParentRoute: () => AppLayoutRoute,
+} as any)
 const AppOrgSlugIndexRoute = AppOrgSlugIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AppOrgSlugLayoutRoute,
 } as any)
+const AppOnboardingSetupOrganizationRoute =
+  AppOnboardingSetupOrganizationRouteImport.update({
+    id: '/onboarding/setup-organization',
+    path: '/onboarding/setup-organization',
+    getParentRoute: () => AppLayoutRoute,
+  } as any)
 const AppOrgSlugNotificationsRoute = AppOrgSlugNotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
@@ -51,13 +64,17 @@ export interface FileRoutesByFullPath {
   '/auth/login': typeof AuthLoginRoute
   '/': typeof AppIndexRoute
   '/$orgSlug/notifications': typeof AppOrgSlugNotificationsRoute
+  '/onboarding/setup-organization': typeof AppOnboardingSetupOrganizationRoute
   '/$orgSlug/': typeof AppOrgSlugIndexRoute
+  '/onboarding': typeof AppOnboardingIndexRoute
 }
 export interface FileRoutesByTo {
   '/auth/login': typeof AuthLoginRoute
   '/': typeof AppIndexRoute
   '/$orgSlug/notifications': typeof AppOrgSlugNotificationsRoute
+  '/onboarding/setup-organization': typeof AppOnboardingSetupOrganizationRoute
   '/$orgSlug': typeof AppOrgSlugIndexRoute
+  '/onboarding': typeof AppOnboardingIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -66,7 +83,9 @@ export interface FileRoutesById {
   '/auth/login': typeof AuthLoginRoute
   '/_app/': typeof AppIndexRoute
   '/_app/$orgSlug/notifications': typeof AppOrgSlugNotificationsRoute
+  '/_app/onboarding/setup-organization': typeof AppOnboardingSetupOrganizationRoute
   '/_app/$orgSlug/': typeof AppOrgSlugIndexRoute
+  '/_app/onboarding/': typeof AppOnboardingIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -75,9 +94,17 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/'
     | '/$orgSlug/notifications'
+    | '/onboarding/setup-organization'
     | '/$orgSlug/'
+    | '/onboarding'
   fileRoutesByTo: FileRoutesByTo
-  to: '/auth/login' | '/' | '/$orgSlug/notifications' | '/$orgSlug'
+  to:
+    | '/auth/login'
+    | '/'
+    | '/$orgSlug/notifications'
+    | '/onboarding/setup-organization'
+    | '/$orgSlug'
+    | '/onboarding'
   id:
     | '__root__'
     | '/_app'
@@ -85,7 +112,9 @@ export interface FileRouteTypes {
     | '/auth/login'
     | '/_app/'
     | '/_app/$orgSlug/notifications'
+    | '/_app/onboarding/setup-organization'
     | '/_app/$orgSlug/'
+    | '/_app/onboarding/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -123,12 +152,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppOrgSlugLayoutRouteImport
       parentRoute: typeof AppLayoutRoute
     }
+    '/_app/onboarding/': {
+      id: '/_app/onboarding/'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AppOnboardingIndexRouteImport
+      parentRoute: typeof AppLayoutRoute
+    }
     '/_app/$orgSlug/': {
       id: '/_app/$orgSlug/'
       path: '/'
       fullPath: '/$orgSlug/'
       preLoaderRoute: typeof AppOrgSlugIndexRouteImport
       parentRoute: typeof AppOrgSlugLayoutRoute
+    }
+    '/_app/onboarding/setup-organization': {
+      id: '/_app/onboarding/setup-organization'
+      path: '/onboarding/setup-organization'
+      fullPath: '/onboarding/setup-organization'
+      preLoaderRoute: typeof AppOnboardingSetupOrganizationRouteImport
+      parentRoute: typeof AppLayoutRoute
     }
     '/_app/$orgSlug/notifications': {
       id: '/_app/$orgSlug/notifications'
@@ -156,11 +199,15 @@ const AppOrgSlugLayoutRouteWithChildren =
 interface AppLayoutRouteChildren {
   AppOrgSlugLayoutRoute: typeof AppOrgSlugLayoutRouteWithChildren
   AppIndexRoute: typeof AppIndexRoute
+  AppOnboardingSetupOrganizationRoute: typeof AppOnboardingSetupOrganizationRoute
+  AppOnboardingIndexRoute: typeof AppOnboardingIndexRoute
 }
 
 const AppLayoutRouteChildren: AppLayoutRouteChildren = {
   AppOrgSlugLayoutRoute: AppOrgSlugLayoutRouteWithChildren,
   AppIndexRoute: AppIndexRoute,
+  AppOnboardingSetupOrganizationRoute: AppOnboardingSetupOrganizationRoute,
+  AppOnboardingIndexRoute: AppOnboardingIndexRoute,
 }
 
 const AppLayoutRouteWithChildren = AppLayoutRoute._addFileChildren(
