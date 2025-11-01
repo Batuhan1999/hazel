@@ -4,23 +4,16 @@ import type { OrganizationId } from "@hazel/db/schema"
 import {
 	AdjustmentsHorizontalIcon,
 	ArrowRightEndOnRectangleIcon,
-	ArrowRightStartOnRectangleIcon,
 	CalendarDaysIcon,
-	ChartPieIcon,
-	ChatBubbleLeftRightIcon,
 	ChatBubbleOvalLeftEllipsisIcon,
 	ChevronUpDownIcon,
 	Cog6ToothIcon,
-	DocumentTextIcon,
-	ExclamationTriangleIcon,
 	FaceSmileIcon,
 	FolderPlusIcon,
 	MagnifyingGlassIcon,
-	MegaphoneIcon,
 	PlusCircleIcon,
 	PlusIcon,
 	ShieldCheckIcon,
-	SpeakerWaveIcon,
 	UserGroupIcon,
 	UserPlusIcon,
 	UsersIcon,
@@ -30,22 +23,12 @@ import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
 import { useMemo, useState } from "react"
 import type { Selection } from "react-aria-components"
 import { Button as PrimitiveButton } from "react-aria-components"
-import { twJoin } from "tailwind-merge"
-import { servers } from "~/components/nav-sidebar"
+import { NavUser } from "~/components/nav-user"
+import { servers } from "~/components/sidebar/nav-sidebar"
 import { Avatar } from "~/components/ui/avatar"
 import { Button } from "~/components/ui/button"
-
 import { Keyboard } from "~/components/ui/keyboard"
-import {
-	Menu,
-	MenuContent,
-	MenuHeader,
-	MenuItem,
-	MenuLabel,
-	MenuSection,
-	MenuSeparator,
-	MenuTrigger,
-} from "~/components/ui/menu"
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuSection, MenuSeparator } from "~/components/ui/menu"
 import { Modal, ModalBody, ModalClose, ModalContent, ModalFooter, ModalHeader } from "~/components/ui/modal"
 import {
 	Sidebar,
@@ -62,6 +45,7 @@ import { Strong } from "~/components/ui/text"
 import { channelCollection, channelMemberCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
+import IconHashtag from "../icons/icon-hashtag"
 
 const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 	const { user } = useAuth()
@@ -92,7 +76,7 @@ const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 	}, [userChannels])
 
 	return (
-		<SidebarSection label="Channels">
+		<SidebarSection>
 			<div className="col-span-full flex items-center justify-between gap-x-2 pl-2.5 text-muted-fg text-xs/5">
 				<Strong>Channels</Strong>
 				<Button intent="plain" isCircle size="sq-sm">
@@ -101,7 +85,7 @@ const ChannelGroup = (props: { organizationId: OrganizationId }) => {
 			</div>
 			{channels.map((channel) => (
 				<SidebarItem key={channel.id} href={`#/chat/${channel.id}`} tooltip={channel.name}>
-					<ChatBubbleOvalLeftEllipsisIcon />
+					<IconHashtag />
 					<SidebarLabel>{channel.name}</SidebarLabel>
 				</SidebarItem>
 			))}
@@ -138,7 +122,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 	}, [userDmChannels])
 
 	return (
-		<SidebarSection label="Direct Messages">
+		<SidebarSection>
 			<div className="col-span-full flex items-center justify-between gap-x-2 pl-2.5 text-muted-fg text-xs/5">
 				<Strong>Direct Messages</Strong>
 				<Button intent="plain" isCircle size="sq-sm">
@@ -147,7 +131,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 			</div>
 			{dmChannels.map((channel) => (
 				<SidebarItem key={channel.id} href={`#/chat/${channel.id}`} tooltip={channel.name}>
-					<ChatBubbleLeftRightIcon />
+					<IconHashtag />
 					<SidebarLabel>{channel.name}</SidebarLabel>
 				</SidebarItem>
 			))}
@@ -160,6 +144,7 @@ export function ChannelsSidebar() {
 	const { isMobile } = useSidebar()
 	const currentServer = [...isSelected][0]
 	const { organizationId } = useOrganization()
+
 	return (
 		<Sidebar collapsible="none" className="flex flex-1">
 			<SidebarHeader className="border-b py-4">
@@ -251,10 +236,6 @@ export function ChannelsSidebar() {
 								<MenuSeparator />
 
 								<MenuSection>
-									<MenuItem href="#">
-										<ExclamationTriangleIcon />
-										<MenuLabel>Report server</MenuLabel>
-									</MenuItem>
 									<MenuItem intent="danger" href="#">
 										<ArrowRightEndOnRectangleIcon />
 										<MenuLabel>Leave server</MenuLabel>
@@ -284,16 +265,7 @@ export function ChannelsSidebar() {
 							<SidebarLabel>Members</SidebarLabel>
 						</SidebarItem>
 					</SidebarSection>
-					<SidebarSection label="Information">
-						<SidebarItem href="#">
-							<MegaphoneIcon />
-							<SidebarLabel>Announcements</SidebarLabel>
-						</SidebarItem>
-						<SidebarItem href="#">
-							<DocumentTextIcon />
-							<SidebarLabel>Rules</SidebarLabel>
-						</SidebarItem>
-					</SidebarSection>
+
 					{organizationId && (
 						<>
 							<ChannelGroup organizationId={organizationId} />
@@ -303,64 +275,7 @@ export function ChannelsSidebar() {
 				</SidebarSectionGroup>
 			</SidebarContent>
 			<SidebarFooter className="flex flex-row justify-between gap-4 group-data-[state=collapsed]:flex-col">
-				<Menu>
-					<MenuTrigger
-						className="flex w-full items-center justify-between rounded-lg border bg-accent/20 px-2 py-1 hover:bg-accent/50"
-						aria-label="Profile"
-					>
-						<div className="flex items-center gap-x-2">
-							<Avatar
-								className={twJoin([
-									"[--avatar-radius:7%] group-data-[state=collapsed]:size-6 group-data-[state=collapsed]:*:size-6",
-									"size-8 *:size-8",
-								])}
-								isSquare
-								src="https://design.intentui.com/images/blocks/avatar/woman.webp"
-							/>
-
-							<div className="in-data-[collapsible=dock]:hidden text-sm">
-								<SidebarLabel>Poppy Ellsworth</SidebarLabel>
-								<span className="-mt-0.5 block text-muted-fg">ellsworth@domain.com</span>
-							</div>
-						</div>
-						<ChevronUpDownIcon data-slot="chevron" className="size-4" />
-					</MenuTrigger>
-					<MenuContent
-						className="in-data-[collapsible=collapsed]:min-w-56 min-w-(--trigger-width)"
-						placement="bottom right"
-					>
-						<MenuSection>
-							<MenuHeader separator>
-								<span className="block">Poppy Ellsworth</span>
-								<span className="font-normal text-muted-fg">ellsworth@domain.com</span>
-							</MenuHeader>
-						</MenuSection>
-
-						<MenuItem href="#dashboard">
-							<ChartPieIcon />
-							<MenuLabel>Dashboard</MenuLabel>
-						</MenuItem>
-						<MenuItem href="#settings">
-							<Cog6ToothIcon />
-							<MenuLabel>Settings</MenuLabel>
-						</MenuItem>
-						<MenuItem href="#security">
-							<ShieldCheckIcon />
-							<MenuLabel>Security</MenuLabel>
-						</MenuItem>
-						<MenuSeparator />
-
-						<MenuItem href="#contact">
-							<ChatBubbleLeftRightIcon />
-							<MenuLabel>Customer support</MenuLabel>
-						</MenuItem>
-						<MenuSeparator />
-						<MenuItem href="#logout">
-							<ArrowRightStartOnRectangleIcon />
-							<MenuLabel>Log out</MenuLabel>
-						</MenuItem>
-					</MenuContent>
-				</Menu>
+				<NavUser />
 			</SidebarFooter>
 		</Sidebar>
 	)

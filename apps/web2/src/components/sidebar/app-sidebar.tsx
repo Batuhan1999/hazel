@@ -1,5 +1,5 @@
-import { ChannelsSidebar } from "~/components/channels-sidebar"
-import { NavSidebar } from "~/components/nav-sidebar"
+import { ChannelsSidebar } from "~/components/sidebar/channels-sidebar"
+import { NavSidebar } from "~/components/sidebar/nav-sidebar"
 import { Sidebar } from "~/components/ui/sidebar"
 
 export function AppSidebar() {
