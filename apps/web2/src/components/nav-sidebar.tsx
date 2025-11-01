@@ -1,6 +1,7 @@
 import { twJoin } from "tailwind-merge"
 import IconDashboard from "~/components/icons/icon-dashboard"
 import IconMsgs from "~/components/icons/icon-msgs"
+import { Logo } from "~/components/logo"
 import { Avatar } from "~/components/ui/avatar"
 import { Link } from "~/components/ui/link"
 import {
@@ -91,12 +92,8 @@ export function NavSidebar() {
 			className="hidden w-[calc(var(--sidebar-width-dock)+1px)] md:flex md:border-r"
 		>
 			<SidebarHeader className="h-14 px-3 py-4">
-				<Link href="#" className="font-semibold">
-					<Avatar
-						className="bg-primary-subtle outline-hidden [--avatar-size:--spacing(7)]"
-						isSquare
-						src="https://design.intentui.com/logo"
-					/>
+				<Link href="#" className="flex items-center justify-center">
+					<Logo className="size-7" />
 				</Link>
 			</SidebarHeader>
 			<SidebarSeparator className="hidden sm:block" />
