@@ -19,6 +19,12 @@
   },
   "iconLibrary": "lucide",
   "registries": {
-    "@intentui": "https://intentui.com/r/{name}"
+    "@intentui": "https://intentui.com/r/{name}",
+    "@irsyadadl": {
+      "url": "https://design.intentui.com/r/{name}",
+      "headers": {
+        "Authorization": "Bearer ${REGISTRY_TOKEN}"
+      }
+    }
   }
 }
