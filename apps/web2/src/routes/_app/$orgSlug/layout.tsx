@@ -37,7 +37,9 @@ function RouteComponent() {
 			}
 		>
 			<AppSidebar />
-			<SidebarInset>{/* <Outlet /> */}</SidebarInset>
+			<SidebarInset>
+				<Outlet />
+			</SidebarInset>
 		</SidebarProvider>
 	)
 }

@@ -20,9 +20,12 @@ import {
 import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
 import { useMemo, useState } from "react"
 import { Button as PrimitiveButton } from "react-aria-components"
+import IconHashtag from "~/components/icons/icon-hashtag"
 import { CreateChannelModal } from "~/components/modals/create-channel-modal"
 import { CreateDmModal } from "~/components/modals/create-dm-modal"
 import { JoinChannelModal } from "~/components/modals/join-channel-modal"
+import { ChannelItem } from "~/components/sidebar/channel-item"
+import { FavoriteSection } from "~/components/sidebar/favorite-section"
 import { SwitchServerMenu } from "~/components/sidebar/switch-server-menu"
 import { UserMenu } from "~/components/sidebar/user-menu"
 import { Avatar } from "~/components/ui/avatar"
@@ -52,7 +55,6 @@ import { Strong } from "~/components/ui/text"
 import { channelCollection, channelMemberCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
-import IconHashtag from "../icons/icon-hashtag"
 
 const ChannelGroup = (props: {
 	organizationId: OrganizationId
@@ -84,7 +86,7 @@ const ChannelGroup = (props: {
 
 	const channels = useMemo(() => {
 		if (!userChannels) return []
-		return userChannels.map((row) => row.channel)
+		return userChannels.map((row) => ({ channel: row.channel, member: row.member }))
 	}, [userChannels])
 
 	if (!slug) return null
@@ -109,15 +111,8 @@ const ChannelGroup = (props: {
 					</MenuContent>
 				</Menu>
 			</div>
-			{channels.map((channel) => (
-				<SidebarItem
-					key={channel.id}
-					href={`/${slug}/chat/${channel.id}` as "/"}
-					tooltip={channel.name}
-				>
-					<IconHashtag />
-					<SidebarLabel>{channel.name}</SidebarLabel>
-				</SidebarItem>
+			{channels.map(({ channel, member }) => (
+				<ChannelItem key={channel.id} channel={channel} member={member} />
 			))}
 		</SidebarSection>
 	)
@@ -186,7 +181,8 @@ export function ChannelsSidebar() {
 										isSquare
 										size="sm"
 										src={
-											organization?.logoUrl || `https://avatar.vercel.sh/${organizationId}`
+											organization?.logoUrl ||
+											`https://avatar.vercel.sh/${organizationId}`
 										}
 									/>
 									{organization?.name}
@@ -288,6 +284,7 @@ export function ChannelsSidebar() {
 
 						{organizationId && (
 							<>
+								<FavoriteSection organizationId={organizationId} />
 								<ChannelGroup
 									organizationId={organizationId}
 									onCreateChannel={() => setModalType("create")}

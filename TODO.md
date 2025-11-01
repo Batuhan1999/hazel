@@ -1,5 +1,9 @@
 # Project TODOs
 
+
+# UI REWORK
+- Apperance Setitngs page 
+
 ## High Priority Features
 
 - Electric proxy
