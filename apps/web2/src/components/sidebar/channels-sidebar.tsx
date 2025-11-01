@@ -21,6 +21,7 @@ import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
 import { useMemo, useState } from "react"
 import { Button as PrimitiveButton } from "react-aria-components"
 import { CreateChannelModal } from "~/components/modals/create-channel-modal"
+import { CreateDmModal } from "~/components/modals/create-dm-modal"
 import { JoinChannelModal } from "~/components/modals/join-channel-modal"
 import { SwitchServerMenu } from "~/components/sidebar/switch-server-menu"
 import { UserMenu } from "~/components/sidebar/user-menu"
@@ -122,7 +123,7 @@ const ChannelGroup = (props: {
 	)
 }
 
-const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
+const DmChannelGroup = (props: { organizationId: OrganizationId; onCreateDm: () => void }) => {
 	const { user } = useAuth()
 
 	const { data: userDmChannels } = useLiveQuery(
@@ -154,7 +155,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 		<SidebarSection>
 			<div className="col-span-full flex items-center justify-between gap-x-2 pl-2.5 text-muted-fg text-xs/5">
 				<Strong>Direct Messages</Strong>
-				<Button intent="plain" isCircle size="sq-sm">
+				<Button intent="plain" isCircle size="sq-sm" onPress={props.onCreateDm}>
 					<PlusIcon />
 				</Button>
 			</div>
@@ -171,7 +172,7 @@ const DmChannelGroup = (props: { organizationId: OrganizationId }) => {
 export function ChannelsSidebar() {
 	const { isMobile } = useSidebar()
 	const { organizationId, organization } = useOrganization()
-	const [modalType, setModalType] = useState<"create" | "join" | null>(null)
+	const [modalType, setModalType] = useState<"create" | "join" | "dm" | null>(null)
 
 	return (
 		<>
@@ -292,7 +293,10 @@ export function ChannelsSidebar() {
 									onCreateChannel={() => setModalType("create")}
 									onJoinChannel={() => setModalType("join")}
 								/>
-								<DmChannelGroup organizationId={organizationId} />
+								<DmChannelGroup
+									organizationId={organizationId}
+									onCreateDm={() => setModalType("dm")}
+								/>
 							</>
 						)}
 					</SidebarSectionGroup>
@@ -308,6 +312,10 @@ export function ChannelsSidebar() {
 
 			{modalType === "join" && (
 				<JoinChannelModal isOpen={true} onOpenChange={(isOpen) => !isOpen && setModalType(null)} />
+			)}
+
+			{modalType === "dm" && (
+				<CreateDmModal isOpen={true} onOpenChange={(isOpen) => !isOpen && setModalType(null)} />
 			)}
 		</>
 	)
