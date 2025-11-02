@@ -2,8 +2,7 @@
 
 
 # UI REWORK
-- Settings Pages
-- Commandbar
+- Settings Pages (TEST TES TEST)
 - Onboarding
 
 ## High Priority Features

@@ -1,7 +1,7 @@
 import { XMarkIcon } from "@heroicons/react/20/solid"
 import { and, eq, inArray, useLiveQuery } from "@tanstack/react-db"
 import { FileIcon } from "@untitledui/file-icons"
-import { useMemo, useRef, useState } from "react"
+import { useMemo, useRef } from "react"
 import { Button } from "~/components/ui/button"
 import { Loader } from "~/components/ui/loader"
 import { cn } from "~/lib/utils"
@@ -10,7 +10,7 @@ import { useTyping } from "~/hooks/use-typing"
 import { useAuth } from "~/lib/auth"
 import { useChat } from "~/providers/chat-provider"
 import { formatFileSize, getFileTypeFromName } from "~/utils/file-utils"
-import { MessageComposerActions } from "./message-composer-actions"
+import { MarkdownEditor, type MarkdownEditorRef } from "~/components/markdown-editor"
 import { ReplyIndicator } from "./reply-indicator"
 
 interface MessageComposerProps {
@@ -30,8 +30,7 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 		uploadingFiles,
 	} = useChat()
 
-	const [content, setContent] = useState("")
-	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const editorRef = useRef<MarkdownEditorRef>(null)
 
 	const { data: channelMembersData } = useLiveQuery(
 		(q) =>
@@ -64,20 +63,11 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 		[attachmentIds],
 	)
 
-	const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-		setContent(e.target.value)
-		handleContentChange(e.target.value)
+	const handleUpdate = (content: string) => {
+		handleContentChange(content)
 	}
 
-	const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-		// Submit on Enter (without Shift)
-		if (e.key === "Enter" && !e.shiftKey) {
-			e.preventDefault()
-			handleSubmit()
-		}
-	}
-
-	const handleSubmit = async () => {
+	const handleSubmit = async (content: string) => {
 		if (!content.trim()) return
 
 		sendMessage({
@@ -85,29 +75,8 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 		})
 		stopTyping()
 
-		// Clear textarea
-		setContent("")
-		if (textareaRef.current) {
-			textareaRef.current.value = ""
-		}
-	}
-
-	const handleEmojiSelect = (emoji: string) => {
-		// Insert emoji at cursor position
-		const textarea = textareaRef.current
-		if (!textarea) return
-
-		const start = textarea.selectionStart
-		const end = textarea.selectionEnd
-		const newContent = content.slice(0, start) + emoji + content.slice(end)
-
-		setContent(newContent)
-
-		// Set cursor position after emoji
-		setTimeout(() => {
-			textarea.selectionStart = textarea.selectionEnd = start + emoji.length
-			textarea.focus()
-		}, 0)
+		// Clear editor
+		editorRef.current?.clearContent()
 	}
 
 
@@ -186,7 +155,7 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 					</div>
 				)}
 
-				{/* Container for reply indicator */}
+				{/* Container for reply indicator and attachment preview */}
 				{replyToMessageId && (
 					<ReplyIndicator
 						className={
@@ -198,28 +167,18 @@ export const MessageComposer = ({ placeholder = "Type a message..." }: MessageCo
 						onClose={() => setReplyToMessageId(null)}
 					/>
 				)}
-
-				{/* Textarea Container */}
-				<div
+				<MarkdownEditor
+					ref={editorRef}
+					placeholder={placeholder}
 					className={cn(
-						"overflow-hidden rounded-lg border border-border bg-bg shadow-sm",
+						"w-full",
 						(replyToMessageId || attachmentIds.length > 0 || uploadingFiles.length > 0) &&
-							"rounded-t-none border-t-0",
+							"rounded-t-none",
 					)}
-				>
-					<textarea
-						ref={textareaRef}
-						placeholder={placeholder}
-						value={content}
-						onChange={handleChange}
-						onKeyDown={handleKeyDown}
-						disabled={isUploading}
-						className="min-h-[80px] w-full resize-none border-0 bg-transparent px-3 py-2 text-fg outline-none focus:ring-0"
-						aria-label="Message input"
-					/>
-
-					<MessageComposerActions onEmojiSelect={handleEmojiSelect} onSubmit={handleSubmit} />
-				</div>
+					onSubmit={handleSubmit}
+					onUpdate={handleUpdate}
+					isUploading={isUploading}
+				/>
 			</div>
 		</div>
 	)

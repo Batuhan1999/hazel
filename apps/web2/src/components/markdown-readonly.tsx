@@ -1,23 +1,29 @@
 "use client"
 
-import { memo } from "react"
+import { PlateView, usePlateViewEditor } from "platejs/react"
+import { memo, useMemo } from "react"
 import { cn } from "~/lib/utils"
+import { BasicBlocksKitStatic } from "./editor/plugins/basic-blocks-kit-static"
+import { BasicMarksKitStatic } from "./editor/plugins/basic-marks-kit-static"
+import { CodeBlockKit } from "./editor/plugins/code-block-kit"
+import { MarkdownKit } from "./editor/plugins/markdown-kit"
 
-/**
- * Simple markdown-like text renderer
- * TODO: Migrate full PlateJS markdown renderer from web app when needed
- * For now, renders text with basic formatting preserved
- */
 export const MarkdownReadonly = memo(({ content, className }: { content: string; className?: string }) => {
+	const editor = usePlateViewEditor({
+		plugins: [...BasicBlocksKitStatic, ...BasicMarksKitStatic, ...MarkdownKit, ...CodeBlockKit],
+	})
+
+	const editorValue = useMemo(() => editor.api.markdown.deserialize(content), [editor, content])
+
 	return (
-		<div
+		<PlateView
+			editor={editor}
+			value={editorValue}
 			className={cn(
-				"w-full select-text whitespace-pre-wrap break-words text-fg text-sm",
+				"w-full cursor-text select-text whitespace-pre-wrap break-words text-sm",
 				"[&_strong]:font-bold",
 				className,
 			)}
-		>
-			{content}
-		</div>
+		/>
 	)
 })

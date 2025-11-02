@@ -7,6 +7,7 @@ import { Avatar } from "../ui/avatar"
 import IconClose from "../icons/icon-close"
 import { MarkdownReadonly } from "../markdown-readonly"
 import { MessageList } from "./message-list"
+import { MessageComposer } from "./message-composer"
 import { TypingIndicator } from "./typing-indicator"
 
 interface ThreadPanelProps {
@@ -70,10 +71,7 @@ function ThreadContent({ threadChannelId, originalMessageId, onClose }: ThreadPa
 
 			{/* Thread Composer */}
 			<div className="border-border border-t bg-bg px-4 py-3">
-				{/* Note: MessageComposer needs to be migrated separately */}
-				<div className="rounded-lg border border-border bg-secondary p-3">
-					<p className="text-muted-fg text-sm">Message composer to be migrated...</p>
-				</div>
+				<MessageComposer placeholder="Reply in thread..." />
 				<TypingIndicator />
 			</div>
 		</div>

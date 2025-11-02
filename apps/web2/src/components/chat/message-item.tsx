@@ -13,6 +13,7 @@ import { useEmojiStats } from "~/hooks/use-emoji-stats"
 import { useAuth } from "~/lib/auth"
 import { cn } from "~/lib/utils"
 import IconPin from "~/components/icons/icon-pin"
+import { MarkdownReadonly } from "~/components/markdown-readonly"
 import { InlineThreadPreview } from "./inline-thread-preview"
 import { MessageAttachments } from "./message-attachments"
 import { MessageReplySection } from "./message-reply-section"
@@ -132,7 +133,7 @@ export function MessageItem({
 							</div>
 						</div>
 					) : (
-						<div className="text-base text-fg">{message.content}</div>
+						<MarkdownReadonly content={message.content} />
 					)}
 
 					{/* Attachments */}
