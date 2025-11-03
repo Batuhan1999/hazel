@@ -1,4 +1,4 @@
-import { HttpApiBuilder } from "@effect/platform"
+import { FetchHttpClient, HttpApiBuilder, HttpClient } from "@effect/platform"
 import { Effect } from "effect"
 import metascraper from "metascraper"
 import metascraperDescription from "metascraper-description"
@@ -19,25 +19,17 @@ const scraper = metascraper([
 	metascraperPublisher(),
 ])
 
-// Validate if an image URL is accessible
-async function validateImageUrl(url: string): Promise<boolean> {
-	try {
-		const response = await fetch(url, {
-			method: "HEAD",
-			signal: AbortSignal.timeout(5000),
-			headers: {
-				"User-Agent": "Mozilla/5.0 (compatible; HazelBot/1.0; +https://hazel.chat/bot)",
-			},
-		})
-
-		// Check if response is OK and content-type is an image
-		if (!response.ok) return false
-
-		const contentType = response.headers.get("content-type")
-		return contentType ? contentType.startsWith("image/") : false
-	} catch {
-		return false
-	}
+// Validate if an image URL is accessible using HttpClient
+function validateImageUrl(url: string): Effect.Effect<boolean> {
+	return HttpClient.head(url).pipe(
+		Effect.andThen((response) => {
+			const contentType = response.headers["content-type"]
+			return contentType ? contentType.startsWith("image/") : false
+		}),
+		Effect.timeout("1 seconds"),
+		Effect.catchAll(() => Effect.succeed(false)),
+		Effect.provide(FetchHttpClient.layer),
+	)
 }
 
 // Extract meta tag content from HTML
@@ -48,10 +40,7 @@ function extractMetaTag(html: string, property: string): string | null {
 		"i",
 	)
 	// Try name attribute (twitter:image uses name)
-	const nameRegex = new RegExp(
-		`<meta[^>]*name=["']${property}["'][^>]*content=["']([^"']+)["'][^>]*>`,
-		"i",
-	)
+	const nameRegex = new RegExp(`<meta[^>]*name=["']${property}["'][^>]*content=["']([^"']+)["'][^>]*>`, "i")
 	// Also try reverse order (content before property/name)
 	const reversePropertyRegex = new RegExp(
 		`<meta[^>]*content=["']([^"']+)["'][^>]*property=["']${property}["'][^>]*>`,
@@ -90,8 +79,7 @@ export const HttpLinkPreviewLive = HttpApiBuilder.group(HazelApi, "linkPreview",
 				try: async () => {
 					const response = await fetch(targetUrl, {
 						headers: {
-							"User-Agent":
-								"Mozilla/5.0 (compatible; HazelBot/1.0; +https://hazel.chat/bot)",
+							"User-Agent": "Mozilla/5.0 (compatible; HazelBot/1.0; +https://hazel.chat/bot)",
 						},
 						signal: AbortSignal.timeout(10000),
 					})
@@ -134,7 +122,7 @@ export const HttpLinkPreviewLive = HttpApiBuilder.group(HazelApi, "linkPreview",
 			let validImageUrl: string | undefined
 			for (const imageUrl of imageCandidates) {
 				yield* Effect.log(`Validating image: ${imageUrl}`)
-				const isValid = yield* Effect.promise(() => validateImageUrl(imageUrl))
+				const isValid = yield* validateImageUrl(imageUrl)
 				if (isValid) {
 					validImageUrl = imageUrl
 					yield* Effect.log(`Valid image found: ${imageUrl}`)
