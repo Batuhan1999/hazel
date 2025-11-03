@@ -1,7 +1,8 @@
-import { ExclamationTriangleIcon } from "@heroicons/react/20/solid"
 import { useAtomSet } from "@effect-atom/atom-react"
+import { ExclamationTriangleIcon } from "@heroicons/react/20/solid"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
+import { IconServers } from "~/components/icons/icon-servers"
 import { Button } from "~/components/ui/button"
 import {
 	Dialog,
@@ -15,7 +16,6 @@ import {
 import { Modal, ModalContent } from "~/components/ui/modal"
 import { SectionHeader } from "~/components/ui/section-header"
 import { SectionLabel } from "~/components/ui/section-label"
-import IconServers from "~/components/icons/icon-servers"
 import { useOrganization } from "~/hooks/use-organization"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
 import { toastExit } from "~/lib/toast-exit"
@@ -78,7 +78,8 @@ function DebugSettings() {
 						<div className="flex-1">
 							<p className="font-medium text-warning">Development Tools Only</p>
 							<p className="mt-1 text-fg text-sm">
-								These tools are intended for development and testing purposes only. Use with caution.
+								These tools are intended for development and testing purposes only. Use with
+								caution.
 							</p>
 						</div>
 					</div>
@@ -102,8 +103,8 @@ function DebugSettings() {
 									<div className="flex-1">
 										<h3 className="font-medium text-fg">Generate Sample Data</h3>
 										<p className="mt-1 text-muted-fg text-sm">
-											Quickly populate your organization with realistic test data including users,
-											channels, and messages.
+											Quickly populate your organization with realistic test data
+											including users, channels, and messages.
 										</p>
 										<Button
 											size="sm"
@@ -146,15 +147,20 @@ function DebugSettings() {
 									<span>{import.meta.env.MODE || "development"}</span>
 								</div>
 								<div>
-									<span className="text-muted-fg">Organization ID:</span> <span>{organizationId}</span>
+									<span className="text-muted-fg">Organization ID:</span>{" "}
+									<span>{organizationId}</span>
 								</div>
 								<div>
 									<span className="text-muted-fg">Backend URL:</span>{" "}
-									<span className="break-all">{import.meta.env.VITE_BACKEND_URL || "N/A"}</span>
+									<span className="break-all">
+										{import.meta.env.VITE_BACKEND_URL || "N/A"}
+									</span>
 								</div>
 								<div>
 									<span className="text-muted-fg">Electric URL:</span>{" "}
-									<span className="break-all">{import.meta.env.VITE_ELECTRIC_URL || "N/A"}</span>
+									<span className="break-all">
+										{import.meta.env.VITE_ELECTRIC_URL || "N/A"}
+									</span>
 								</div>
 							</div>
 						</div>
@@ -168,7 +174,9 @@ function DebugSettings() {
 					<Dialog>
 						<DialogHeader>
 							<DialogTitle>Generate Mock Data</DialogTitle>
-							<DialogDescription>Create sample data for development and testing</DialogDescription>
+							<DialogDescription>
+								Create sample data for development and testing
+							</DialogDescription>
 						</DialogHeader>
 
 						<DialogBody>
@@ -195,7 +203,11 @@ function DebugSettings() {
 							<DialogClose intent="secondary" isDisabled={isGeneratingMockData}>
 								Cancel
 							</DialogClose>
-							<Button intent="primary" onPress={handleGenerateMockData} isPending={isGeneratingMockData}>
+							<Button
+								intent="primary"
+								onPress={handleGenerateMockData}
+								isPending={isGeneratingMockData}
+							>
 								{isGeneratingMockData ? "Generating..." : "Generate Data"}
 							</Button>
 						</DialogFooter>
