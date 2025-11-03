@@ -8,12 +8,10 @@ import {
 	Cog6ToothIcon,
 	FaceSmileIcon,
 	FolderPlusIcon,
-	MagnifyingGlassIcon,
 	PlusCircleIcon,
 	PlusIcon,
 	ShieldCheckIcon,
 	UserGroupIcon,
-	UserPlusIcon,
 	UsersIcon,
 	WrenchScrewdriverIcon,
 } from "@heroicons/react/20/solid"
@@ -21,6 +19,7 @@ import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
 import { useMemo, useState } from "react"
 import { Button as PrimitiveButton } from "react-aria-components"
 import IconHashtag from "~/components/icons/icon-hashtag"
+import IconMagnifier from "~/components/icons/icon-magnifier-3"
 import { CreateChannelModal } from "~/components/modals/create-channel-modal"
 import { CreateDmModal } from "~/components/modals/create-dm-modal"
 import { EmailInviteModal } from "~/components/modals/email-invite-modal"
@@ -50,6 +49,7 @@ import {
 	SidebarHeader,
 	SidebarItem,
 	SidebarLabel,
+	SidebarLink,
 	SidebarSection,
 	SidebarSectionGroup,
 	useSidebar,
@@ -265,20 +265,18 @@ export function ChannelsSidebar() {
 				<SidebarContent>
 					<SidebarSectionGroup>
 						<SidebarSection aria-label="Goto">
-							<SidebarItem href="/">
-								<CalendarDaysIcon />
-								<SidebarLabel>Events</SidebarLabel>
-							</SidebarItem>
 							<SidebarItem>
-								<MagnifyingGlassIcon />
+								<IconMagnifier />
 								<SidebarLabel>Browse channels</SidebarLabel>
 								<Keyboard className="-translate-y-1/2 absolute top-1/2 right-2 font-mono text-muted-fg text-xs">
 									⌘K
 								</Keyboard>
 							</SidebarItem>
-							<SidebarItem href="/">
-								<UsersIcon />
-								<SidebarLabel>Members</SidebarLabel>
+							<SidebarItem>
+								<SidebarLink to="/$orgSlug" params={{ orgSlug: slug }}>
+									<UsersIcon />
+									<SidebarLabel>Members</SidebarLabel>
+								</SidebarLink>
 							</SidebarItem>
 						</SidebarSection>
 

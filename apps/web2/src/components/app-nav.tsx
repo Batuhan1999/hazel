@@ -2,9 +2,9 @@
 
 import {
   ChatBubbleOvalLeftEllipsisIcon,
-  MagnifyingGlassIcon,
   UsersIcon,
 } from "@heroicons/react/20/solid"
+import IconMagnifier from "~/components/icons/icon-magnifier-3"
 import { BellSlashIcon } from "@heroicons/react/24/outline"
 import { Button as PrimitiveButton } from "~/components/ui/button"
 import { Separator } from "~/components/ui/separator"
@@ -20,7 +20,7 @@ export function AppNav({ openCmd }: { openCmd: (open: boolean) => void }) {
       </div>
       <div className="flex items-center gap-x-1.5">
         <Button onPress={() => openCmd(true)} aria-label="Search...">
-          <MagnifyingGlassIcon />
+          <IconMagnifier />
         </Button>
         <Button aria-label="Threads">
           <ChatBubbleOvalLeftEllipsisIcon />

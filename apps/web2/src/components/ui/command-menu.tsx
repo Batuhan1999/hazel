@@ -1,7 +1,7 @@
 "use client"
 
-import { MagnifyingGlassIcon } from "@heroicons/react/20/solid"
 import { createContext, use, useEffect } from "react"
+import IconMagnifier from "~/components/icons/icon-magnifier-3"
 import type {
   AutocompleteProps,
   CollectionRenderer,
@@ -150,7 +150,7 @@ const CommandMenuSearch = ({ className, placeholder, ...props }: CommandMenuSear
       {isPending ? (
         <Loader className="size-4.5" variant="spin" />
       ) : (
-        <MagnifyingGlassIcon
+        <IconMagnifier
           data-slot="command-menu-search-icon"
           className="size-5 shrink-0 text-muted-fg"
         />

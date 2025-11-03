@@ -1,6 +1,7 @@
 "use client"
 
-import { MagnifyingGlassIcon, XMarkIcon } from "@heroicons/react/20/solid"
+import { XMarkIcon } from "@heroicons/react/20/solid"
+import IconMagnifier from "~/components/icons/icon-magnifier-3"
 import type { InputProps, SearchFieldProps } from "react-aria-components"
 import { Button, SearchField as SearchFieldPrimitive } from "react-aria-components"
 import { twJoin } from "tailwind-merge"
@@ -21,7 +22,7 @@ export function SearchField({ className, ...props }: SearchFieldProps) {
 export function SearchInput(props: InputProps) {
   return (
     <InputGroup className="[--input-gutter-end:--spacing(8)]">
-      <MagnifyingGlassIcon className="in-disabled:opacity-50" />
+      <IconMagnifier className="in-disabled:opacity-50" />
       <Input {...props} />
       <Button
         className={twJoin(
