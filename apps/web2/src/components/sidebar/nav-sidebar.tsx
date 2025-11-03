@@ -7,11 +7,13 @@ import {
 	SidebarContent,
 	SidebarHeader,
 	SidebarItem,
+	SidebarLink,
 	SidebarSection,
 	SidebarSectionGroup,
 	SidebarSeparator,
 	useSidebar,
 } from "~/components/ui/sidebar"
+import { useOrganization } from "~/hooks/use-organization"
 
 export const servers = [
 	{
@@ -85,6 +87,8 @@ export const servers = [
 export function NavSidebar() {
 	const { isMobile } = useSidebar()
 
+	const { slug } = useOrganization()
+
 	return (
 		<Sidebar
 			collapsible="none"
@@ -100,7 +104,6 @@ export function NavSidebar() {
 				<SidebarSectionGroup>
 					<SidebarSection className="p-2! *:data-[slot=sidebar-section-inner]:gap-y-2">
 						<SidebarItem
-							href="/"
 							aria-label="Home"
 							className="size-9 justify-items-center"
 							tooltip={{
@@ -108,10 +111,20 @@ export function NavSidebar() {
 								hidden: isMobile,
 							}}
 						>
-							<IconDashboard className="size-5" />
+							<SidebarLink
+								to="/$orgSlug"
+								params={{ orgSlug: slug }}
+								activeOptions={{
+									exact: true,
+								}}
+								activeProps={{
+									className: "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+								}}
+							>
+								<IconDashboard className="size-5" />
+							</SidebarLink>
 						</SidebarItem>
 						<SidebarItem
-							href="/"
 							aria-label="Chat"
 							className="size-9 justify-items-center"
 							tooltip={{
@@ -119,7 +132,18 @@ export function NavSidebar() {
 								hidden: isMobile,
 							}}
 						>
-							<IconMsgs className="size-5" />
+							<SidebarLink
+								to="/$orgSlug/chat"
+								params={{ orgSlug: slug }}
+								activeOptions={{
+									exact: true,
+								}}
+								activeProps={{
+									className: "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+								}}
+							>
+								<IconMsgs className="size-5" />
+							</SidebarLink>
 						</SidebarItem>
 					</SidebarSection>
 				</SidebarSectionGroup>
