@@ -175,11 +175,9 @@ export function insertMention(
 		focus: target.focus,
 	}
 
-	// Determine the actual userId based on type
-	const actualUserId = mentionType === "user" ? userId : mentionType
-
-	// Create mention node with markdown link format
-	const mentionText = `@[${displayName}](${actualUserId})`
+	// Create mention with appropriate prefix based on type
+	const mentionText =
+		mentionType === "user" ? `@[userId:${userId}]` : `@[directive:${mentionType}]`
 
 	// Select the mention range and delete it
 	Transforms.select(editor, range)
@@ -226,28 +224,28 @@ export function isMentionElement(node: any): node is MentionElement {
  * Check if text contains mention markdown pattern
  */
 export function hasMentionPattern(text: string): boolean {
-	return /@\[([^\]]+)\]\(([^)]+)\)/.test(text)
+	return /@\[(userId|directive):([^\]]+)\]/.test(text)
 }
 
 /**
  * Extract mentions from text
- * Returns array of matches with userId and displayName
+ * Returns array of matches with prefix and value
  */
 export function extractMentions(
 	text: string,
-): Array<{ userId: string; displayName: string; fullMatch: string }> {
-	const mentions: Array<{ userId: string; displayName: string; fullMatch: string }> = []
-	const pattern = /@\[([^\]]+)\]\(([^)]+)\)/g
+): Array<{ prefix: "userId" | "directive"; value: string; fullMatch: string }> {
+	const mentions: Array<{ prefix: "userId" | "directive"; value: string; fullMatch: string }> = []
+	const pattern = /@\[(userId|directive):([^\]]+)\]/g
 	let match: RegExpExecArray | null
 
 	while ((match = pattern.exec(text)) !== null) {
-		const displayName = match[1]
-		const userId = match[2]
+		const prefix = match[1] as "userId" | "directive"
+		const value = match[2]
 
-		if (displayName && userId) {
+		if (prefix && value) {
 			mentions.push({
-				displayName,
-				userId,
+				prefix,
+				value,
 				fullMatch: match[0],
 			})
 		}

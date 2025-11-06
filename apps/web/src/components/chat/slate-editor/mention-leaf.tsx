@@ -28,14 +28,16 @@ export function MentionLeaf({ interactive = false, mode = "composer", leaf, chil
 	const markdownType = (leaf as any).type as MarkdownDecorationType | undefined
 	const isMention = markdownType === "mention"
 
-	// Extract userId from the mention text
+	// Extract mention details from the text
 	const text = (leaf as any).text as string
 	const mentions = text ? extractMentions(text) : []
 	const mention = mentions[0]
-	const userId = mention?.userId
+	const prefix = mention?.prefix
+	const value = mention?.value
 
-	// Skip popover for special mentions
-	const isSpecialMention = userId === "channel" || userId === "here"
+	// Detect special mentions by prefix
+	const isSpecialMention = prefix === "directive"
+	const userId = isSpecialMention ? undefined : value
 
 	// Determine if we should fetch user data
 	const shouldFetchUser = isMention && userId && !isSpecialMention
@@ -59,16 +61,17 @@ export function MentionLeaf({ interactive = false, mode = "composer", leaf, chil
 		)
 	}
 
-	// For special mentions (@channel, @here), render with the display name
+	// For special mentions (@channel, @here), value is the directive name
 	if (isSpecialMention) {
 		return (
 			<MarkdownLeaf {...props} leaf={leaf} mode={mode}>
-				@{mention?.displayName || children}
+				@{value || children}
 			</MarkdownLeaf>
 		)
 	}
 
-	const fullName = user ? `${user.firstName} ${user.lastName}` : mention?.displayName || "Unknown"
+	// For regular mentions, fetch display name from user data
+	const fullName = user ? `${user.firstName} ${user.lastName}` : "Unknown"
 
 	// If not interactive, just render the mention text without popover
 	if (!interactive) {

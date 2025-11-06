@@ -100,6 +100,37 @@ const withAutoformat = (editor: CustomEditor): CustomEditor => {
 					} as Partial<CustomElement>)
 					return
 				}
+
+				// Check for subtext pattern (-#)
+				if (beforeText === "-#") {
+					Transforms.select(editor, range)
+					Transforms.delete(editor)
+					Transforms.setNodes(editor, { type: "subtext" } as Partial<CustomElement>)
+					return
+				}
+
+				// Check for unordered list pattern (- or *)
+				if (beforeText === "-" || beforeText === "*") {
+					Transforms.select(editor, range)
+					Transforms.delete(editor)
+					Transforms.setNodes(editor, {
+						type: "list-item",
+						ordered: false,
+					} as Partial<CustomElement>)
+					return
+				}
+
+				// Check for ordered list pattern (1. 2. etc)
+				const orderedListMatch = beforeText.match(/^(\d+)\.$/)
+				if (orderedListMatch) {
+					Transforms.select(editor, range)
+					Transforms.delete(editor)
+					Transforms.setNodes(editor, {
+						type: "list-item",
+						ordered: true,
+					} as Partial<CustomElement>)
+					return
+				}
 			}
 		}
 
@@ -156,6 +187,18 @@ const Element = (props: RenderElementProps) => {
 			)
 		case "code-block":
 			return <CodeBlockElement {...props} showControls={false} />
+		case "subtext":
+			return (
+				<p {...attributes} className="my-0 text-muted-fg text-xs">
+					{children}
+				</p>
+			)
+		case "list-item":
+			return (
+				<li {...attributes} className="my-0.5 ml-4">
+					{children}
+				</li>
+			)
 		default:
 			return <p {...attributes}>{children}</p>
 	}
@@ -318,6 +361,19 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 
 					// Same for code blocks
 					if (element.type === "code-block") {
+						const isAtStart = Editor.isStart(editor, selection.anchor, path)
+
+						if (isAtStart) {
+							event.preventDefault()
+							Transforms.setNodes(editor, { type: "paragraph" } as Partial<CustomElement>, {
+								at: path,
+							})
+							return
+						}
+					}
+
+					// Same for list items and subtext
+					if (element.type === "list-item" || element.type === "subtext") {
 						const isAtStart = Editor.isStart(editor, selection.anchor, path)
 
 						if (isAtStart) {
@@ -504,8 +560,13 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 						return
 					}
 
-					// Submit from paragraphs and blockquotes
-					if (element.type === "paragraph" || element.type === "blockquote") {
+					// Submit from paragraphs, blockquotes, lists, and subtext
+					if (
+						element.type === "paragraph" ||
+						element.type === "blockquote" ||
+						element.type === "list-item" ||
+						element.type === "subtext"
+					) {
 						event.preventDefault()
 						if (!isUploading) {
 							handleSubmit()

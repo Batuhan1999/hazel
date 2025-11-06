@@ -24,15 +24,26 @@ const MARKDOWN_PATTERNS = [
 		type: "underline" as const,
 	},
 	{
+		pattern: /(_)([^_]+)(_)/g,
+		type: "italic" as const,
+	},
+	{
+		pattern: /(==)([^=]+)(==)/g,
+		type: "highlight" as const,
+	},
+	{
 		pattern: /(\|\|)([^|]+)(\|\|)/g,
 		type: "spoiler" as const,
 	},
 ] as const
 
-// Mention pattern: @[Display Name](userId)
-const MENTION_PATTERN = /@\[([^\]]+)\]\(([^)]+)\)/g
+// Mention pattern: @[userId:theID] or @[directive:channel]
+const MENTION_PATTERN = /@\[(userId|directive):([^\]]+)\]/g
 
-export type MarkdownDecorationType = (typeof MARKDOWN_PATTERNS)[number]["type"] | "mention"
+// Link pattern: [text](url)
+export const LINK_PATTERN = /\[([^\]]+)\]\(([^)]+)\)/g
+
+export type MarkdownDecorationType = (typeof MARKDOWN_PATTERNS)[number]["type"] | "mention" | "link"
 
 export interface MarkdownRange extends BaseRange {
 	[key: string]: unknown
@@ -66,13 +77,29 @@ export function decorateMarkdown(entry: [node: any, path: number[]], parentEleme
 	for (const match of mentionMatches) {
 		if (match.index === undefined) continue
 
-		const fullMatch = match[0] // Full match: @[Name](userId)
+		const fullMatch = match[0] // Full match: @[userId:theID] or @[directive:channel]
 
 		// Mark entire mention as a single range
 		ranges.push({
 			anchor: { path, offset: match.index },
 			focus: { path, offset: match.index + fullMatch.length },
 			type: "mention",
+			isMarker: false,
+		})
+	}
+
+	// Decorate links (also high priority)
+	const linkMatches = text.matchAll(LINK_PATTERN)
+	for (const match of linkMatches) {
+		if (match.index === undefined) continue
+
+		const fullMatch = match[0] // Full match: [text](url)
+
+		// Mark entire link as a single range
+		ranges.push({
+			anchor: { path, offset: match.index },
+			focus: { path, offset: match.index + fullMatch.length },
+			type: "link",
 			isMarker: false,
 		})
 	}
@@ -92,15 +119,15 @@ export function decorateMarkdown(entry: [node: any, path: number[]], parentEleme
 			// Skip if the markers are escaped or incomplete
 			if (!openMarker || !content || !closeMarker) continue
 
-			// Skip if this overlaps with a mention
-			const mentionOverlap = ranges.some(
+			// Skip if this overlaps with a mention or link
+			const specialOverlap = ranges.some(
 				(range) =>
-					range.type === "mention" &&
+					(range.type === "mention" || range.type === "link") &&
 					match.index !== undefined &&
 					match.index < range.focus.offset &&
 					match.index + fullMatch.length > range.anchor.offset,
 			)
-			if (mentionOverlap) continue
+			if (specialOverlap) continue
 
 			// Opening marker range
 			ranges.push({
@@ -187,8 +214,15 @@ export function MarkdownLeaf({ attributes, children, leaf, mode = "composer" }: 
 					case "underline":
 						className = "underline"
 						break
+					case "highlight":
+						className = "bg-yellow-9/30 dark:bg-yellow-9/20 rounded px-0.5"
+						break
 					case "spoiler":
 						className = "bg-muted blur-sm hover:blur-none transition-all"
+						break
+					case "link":
+						// Style links with primary color and underline
+						className = "text-primary underline cursor-pointer hover:text-primary-hover"
 						break
 					case "mention":
 						// Style mentions with blue background and text

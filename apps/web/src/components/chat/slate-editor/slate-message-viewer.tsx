@@ -41,6 +41,18 @@ const Element = (props: RenderElementProps) => {
 			)
 		case "code-block":
 			return <CodeBlockElement {...props} showControls={true} />
+		case "subtext":
+			return (
+				<p {...attributes} className="my-0 text-muted-fg text-xs">
+					{children}
+				</p>
+			)
+		case "list-item":
+			return (
+				<li {...attributes} className="my-0.5 ml-4">
+					{children}
+				</li>
+			)
 		default:
 			return <p {...attributes}>{children}</p>
 	}

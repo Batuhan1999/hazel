@@ -17,33 +17,49 @@ export interface CodeBlockElement {
 	children: CustomText[]
 }
 
+export interface SubtextElement {
+	type: "subtext"
+	children: CustomText[]
+}
+
+export interface ListItemElement {
+	type: "list-item"
+	ordered?: boolean
+	children: CustomText[]
+}
+
 export interface CustomText {
 	text: string
 }
 
-export type CustomElement = ParagraphElement | BlockquoteElement | CodeBlockElement
+export type CustomElement =
+	| ParagraphElement
+	| BlockquoteElement
+	| CodeBlockElement
+	| SubtextElement
+	| ListItemElement
 export type CustomDescendant = CustomElement | CustomText
 
 /**
  * Extract mentions from markdown text
- * Returns array of { userId, displayName } for each mention found
+ * Returns array of { prefix, value } for each mention found
  */
 export function extractMentionsFromMarkdown(
 	markdown: string,
-): Array<{ userId: string; displayName: string }> {
-	const mentions: Array<{ userId: string; displayName: string }> = []
-	const pattern = /@\[([^\]]+)\]\(([^)]+)\)/g
+): Array<{ prefix: "userId" | "directive"; value: string }> {
+	const mentions: Array<{ prefix: "userId" | "directive"; value: string }> = []
+	const pattern = /@\[(userId|directive):([^\]]+)\]/g
 	let match: RegExpExecArray | null
 
 	// biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
 	while ((match = pattern.exec(markdown)) !== null) {
-		const displayName = match[1]
-		const userId = match[2]
+		const prefix = match[1] as "userId" | "directive"
+		const value = match[2]
 
-		if (displayName && userId) {
+		if (prefix && value) {
 			mentions.push({
-				displayName,
-				userId,
+				prefix,
+				value,
 			})
 		}
 	}
@@ -55,7 +71,7 @@ export function extractMentionsFromMarkdown(
  * Check if text contains mention pattern
  */
 export function hasMentionPattern(text: string): boolean {
-	return /@\[([^\]]+)\]\(([^)]+)\)/.test(text)
+	return /@\[(userId|directive):([^\]]+)\]/.test(text)
 }
 
 /**
@@ -86,6 +102,12 @@ export function serializeToMarkdown(nodes: CustomDescendant[]): string {
 					const lang = element.language || ""
 					return `\`\`\`${lang}\n${text}\n\`\`\``
 				}
+				case "subtext":
+					// Prefix with -#
+					return `-# ${text}`
+				case "list-item":
+					// Prefix with - for unordered or number for ordered
+					return element.ordered ? `1. ${text}` : `- ${text}`
 				default:
 					return text
 			}
@@ -168,6 +190,41 @@ export function deserializeFromMarkdown(markdown: string): CustomDescendant[] {
 				type: "blockquote",
 				children: [{ text: quoteLines.join("\n") }],
 			})
+			continue
+		}
+
+		// Check for subtext (-#)
+		if (line.startsWith("-# ")) {
+			const subtextContent = line.slice(3) // Remove "-# "
+			nodes.push({
+				type: "subtext",
+				children: [{ text: subtextContent }],
+			})
+			i++
+			continue
+		}
+
+		// Check for unordered list (- or *)
+		if (line.match(/^[-*] /)) {
+			const listContent = line.slice(2) // Remove "- " or "* "
+			nodes.push({
+				type: "list-item",
+				ordered: false,
+				children: [{ text: listContent }],
+			})
+			i++
+			continue
+		}
+
+		// Check for ordered list (1. 2. etc)
+		if (line.match(/^\d+\. /)) {
+			const listContent = line.replace(/^\d+\. /, "") // Remove number and ". "
+			nodes.push({
+				type: "list-item",
+				ordered: true,
+				children: [{ text: listContent }],
+			})
+			i++
 			continue
 		}
 
