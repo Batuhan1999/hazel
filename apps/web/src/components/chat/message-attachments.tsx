@@ -4,7 +4,6 @@ import { FileIcon } from "@untitledui/file-icons"
 import { Download01 } from "@untitledui/icons"
 import { useState } from "react"
 import { useAttachments } from "~/db/hooks"
-import { cn } from "~/lib/utils"
 import { formatFileSize, getFileTypeFromName } from "~/utils/file-utils"
 import { Button } from "../ui/button"
 
@@ -34,11 +33,12 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 
 	// Check if it's an image or video based on extension
 	const isImage = ["jpg", "png", "gif", "webp", "svg"].includes(fileType)
+
 	const isVideo = ["mp4", "webm"].includes(fileType)
 
 	if (isImage && !imageError) {
 		// Display image with preview
-		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://cdn.hazel.sh"
 		const imageUrl = `${publicUrl}/${attachment.id}`
 
 		return (
