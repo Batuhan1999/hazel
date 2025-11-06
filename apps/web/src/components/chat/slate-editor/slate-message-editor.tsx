@@ -257,13 +257,9 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 
 		// Clear content and focus
 		const resetAndFocus = useCallback(() => {
-			// Reset the editor
-			Transforms.delete(editor, {
-				at: {
-					anchor: Editor.start(editor, []),
-					focus: Editor.end(editor, []),
-				},
-			})
+			// Directly reset the editor's children to force complete state clear
+			editor.children = createEmptyValue()
+			editor.onChange()
 
 			// Set the value to empty (this updates React state)
 			setValue(createEmptyValue())

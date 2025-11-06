@@ -331,10 +331,19 @@ export function createEmptyValue(): CustomDescendant[] {
 export function isValueEmpty(nodes: CustomDescendant[]): boolean {
 	if (!nodes || nodes.length === 0) return true
 
-	const text = serializeToMarkdown(nodes).trim()
+	// Check if any node has actual text content
+	for (const node of nodes) {
+		if ("text" in node) {
+			// Text node - check if it has non-whitespace content
+			if (node.text.trim().length > 0) return false
+		} else {
+			// Element node - check if it has text content
+			const element = node as CustomElement
+			const textContent = Node.string(element).trim()
 
-	// Remove normal whitespace + zero-width + non-breaking spaces
-	const cleaned = text.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, "")
+			if (textContent.length > 0) return false
+		}
+	}
 
-	return cleaned.length === 0
+	return true
 }
