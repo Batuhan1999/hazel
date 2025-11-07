@@ -31,10 +31,13 @@ function ImageAttachmentItem({ attachment, imageCount, index, onClick }: ImageAt
 
 	return (
 		<>
+			{/** biome-ignore lint/a11y/useKeyWithClickEvents: <explanation> */}
 			<img
 				src={imageUrl}
 				alt={attachment.fileName}
-				className={imageCount === 1 ? "h-auto max-h-[300px] w-auto" : "size-full object-cover"}
+				className={
+					imageCount === 1 ? "max-h-[300px] max-w-full object-contain" : "size-full object-cover"
+				}
 				onError={() => setImageError(true)}
 				onClick={onClick}
 			/>
@@ -147,13 +150,13 @@ export function MessageAttachments({ messageId }: MessageAttachmentsProps) {
 
 	// Get wrapper classes for each image based on count and index
 	const getImageWrapperClass = (count: number, index: number) => {
+		// Single image: use aspect-auto to match image dimensions (no aspect-square)
+		if (count === 1) {
+			return "group relative aspect-auto cursor-pointer overflow-hidden rounded-md border border-border transition-opacity hover:opacity-90 col-span-2"
+		}
+
 		const baseClasses =
 			"group relative aspect-square cursor-pointer overflow-hidden rounded-md border border-border transition-opacity hover:opacity-90"
-
-		// Single image: col-span-2, aspect-auto, max-w-[400px]
-		if (count === 1) {
-			return `${baseClasses} col-span-2 aspect-auto max-w-[400px]`
-		}
 
 		// 3 images: first image spans 2 columns and 2 rows
 		if (count === 3 && index === 0) {
@@ -167,9 +170,7 @@ export function MessageAttachments({ messageId }: MessageAttachmentsProps) {
 		<div className="mt-2 flex flex-col gap-2">
 			{/* Images in Discord-style grid */}
 			{images.length > 0 && (
-				<div
-					className={`grid max-w-lg gap-1 ${images.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}
-				>
+				<div className={`grid max-w-lg gap-1 ${images.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
 					{images.slice(0, 4).map((attachment, index) => (
 						<div key={attachment.id} className={getImageWrapperClass(images.length, index)}>
 							<ImageAttachmentItem
