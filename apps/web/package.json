@@ -24,7 +24,7 @@
 		"@hazel/effect-electric-db-collection": "workspace:*",
 		"@hazel/tanstack-db-atom": "workspace:*",
 		"@heroicons/react": "^2.2.0",
-		"@legendapp/list": "2.1.0-beta.5",
+		"@legendapp/list": "2.1.0-beta.8",
 		"@paper-design/shaders-react": "^0.0.61",
 		"@platejs/ai": "^51.0.1",
 		"@platejs/autoformat": "^51.0.0",
