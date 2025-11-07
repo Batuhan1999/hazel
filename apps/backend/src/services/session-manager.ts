@@ -221,8 +221,8 @@ export class SessionManager extends Effect.Service<SessionManager>()("SessionMan
 			const { res, session } = yield* authenticateSession(sessionCookie, workOsCookiePassword)
 
 			if (session.authenticated) {
-				const organizationId = session.organizationId
-					? OrganizationId.make(session.organizationId)
+				const organizationId = session.externalOrganizationId
+					? OrganizationId.make(session.externalOrganizationId)
 					: undefined
 
 				const sessionData: AuthenticatedSession = {
