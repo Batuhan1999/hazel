@@ -26,7 +26,6 @@
 ### Core Features
 - [ ] **Chat Improvements**
   - Better Chat Input with:
-    - Embeds (YouTube, Twitter, etc.)
     - Slash commands
 
 

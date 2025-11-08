@@ -8,8 +8,16 @@ import { toast } from "sonner"
 import type { MessageWithPinned } from "~/atoms/chat-query-atoms"
 import { processedReactionsAtomFamily } from "~/atoms/message-atoms"
 import IconPin from "~/components/icons/icon-pin"
-import { extractTweetId, extractUrls, isTweetUrl, LinkPreview } from "~/components/link-preview"
+import {
+	extractTweetId,
+	extractUrls,
+	extractYoutubeVideoId,
+	isTweetUrl,
+	isYoutubeUrl,
+	LinkPreview,
+} from "~/components/link-preview"
 import { TweetEmbed } from "~/components/tweet-embed"
+import { YoutubeEmbed } from "~/components/youtube-embed"
 import { messageCollection } from "~/db/collections"
 import { useChat } from "~/hooks/use-chat"
 import { useEmojiStats } from "~/hooks/use-emoji-stats"
@@ -137,11 +145,14 @@ export function MessageItem({
 					) : (
 						<>
 							<SlateMessageViewer content={message.content} />
-							{/* Tweet Embeds and Link Previews */}
+							{/* Tweet Embeds, YouTube Embeds, and Link Previews */}
 							{(() => {
 								const urls = extractUrls(message.content)
 								const tweetUrls = urls.filter((url) => isTweetUrl(url))
-								const nonTweetUrls = urls.filter((url) => !isTweetUrl(url))
+								const youtubeUrls = urls.filter((url) => isYoutubeUrl(url))
+								const otherUrls = urls.filter(
+									(url) => !isTweetUrl(url) && !isYoutubeUrl(url),
+								)
 
 								return (
 									<>
@@ -157,9 +168,16 @@ export function MessageItem({
 												/>
 											) : null
 										})}
-										{/* Render last non-tweet URL as link preview */}
-										{nonTweetUrls.length > 0 && nonTweetUrls[nonTweetUrls.length - 1] && (
-											<LinkPreview url={nonTweetUrls[nonTweetUrls.length - 1]!} />
+										{/* Render all YouTube embeds */}
+										{youtubeUrls.map((url) => {
+											const videoId = extractYoutubeVideoId(url)
+											return videoId ? (
+												<YoutubeEmbed key={url} videoId={videoId} url={url} />
+											) : null
+										})}
+										{/* Render last other URL as link preview */}
+										{otherUrls.length > 0 && otherUrls[otherUrls.length - 1] && (
+											<LinkPreview url={otherUrls[otherUrls.length - 1]!} />
 										)}
 									</>
 								)

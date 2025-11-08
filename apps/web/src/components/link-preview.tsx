@@ -116,3 +116,70 @@ export function extractTweetId(url: string): string | null {
 		return null
 	}
 }
+
+export function isYoutubeUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url)
+		const isYoutubeDomain =
+			parsed.hostname === "youtube.com" ||
+			parsed.hostname === "www.youtube.com" ||
+			parsed.hostname === "youtu.be" ||
+			parsed.hostname === "www.youtu.be"
+		return isYoutubeDomain
+	} catch {
+		return false
+	}
+}
+
+export function extractYoutubeVideoId(url: string): string | null {
+	try {
+		const parsed = new URL(url)
+
+		// Handle youtu.be short links
+		if (parsed.hostname === "youtu.be" || parsed.hostname === "www.youtu.be") {
+			const videoId = parsed.pathname.slice(1) // Remove leading slash
+			return videoId || null
+		}
+
+		// Handle youtube.com/watch?v= format
+		if (parsed.hostname.includes("youtube.com")) {
+			const videoId = parsed.searchParams.get("v")
+			return videoId || null
+		}
+
+		return null
+	} catch {
+		return null
+	}
+}
+
+export function extractYoutubeTimestamp(url: string): number | null {
+	try {
+		const parsed = new URL(url)
+		const tParam = parsed.searchParams.get("t")
+
+		if (!tParam) return null
+
+		// Handle formats like "42s", "1m30s", "1h2m3s", or just "42" (seconds)
+		let seconds = 0
+
+		// Try parsing numeric seconds directly
+		const numericMatch = tParam.match(/^(\d+)$/)
+		if (numericMatch?.[1]) {
+			return Number.parseInt(numericMatch[1], 10)
+		}
+
+		// Parse time formats
+		const hours = tParam.match(/(\d+)h/)
+		const minutes = tParam.match(/(\d+)m/)
+		const secs = tParam.match(/(\d+)s/)
+
+		if (hours?.[1]) seconds += Number.parseInt(hours[1], 10) * 3600
+		if (minutes?.[1]) seconds += Number.parseInt(minutes[1], 10) * 60
+		if (secs?.[1]) seconds += Number.parseInt(secs[1], 10)
+
+		return seconds > 0 ? seconds : null
+	} catch {
+		return null
+	}
+}
