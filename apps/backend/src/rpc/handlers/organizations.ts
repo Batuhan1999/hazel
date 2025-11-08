@@ -6,7 +6,7 @@ import {
 	withRemapDbErrors,
 	withSystemActor,
 } from "@hazel/effect-lib"
-import { Effect } from "effect"
+import { Effect, Option } from "effect"
 import { generateTransactionId } from "../../lib/create-transactionId"
 import { OrganizationPolicy } from "../../policies/organization-policy"
 import { OrganizationMemberRepo } from "../../repositories/organization-member-repo"
@@ -113,6 +113,22 @@ export const OrganizationRpcLive = OrganizationRpcs.toLayer(
 							}
 
 							const user = userOption.value
+
+							// Check if slug already exists
+							if (payload.slug) {
+								const existingOrganization = yield* OrganizationRepo.findBySlug(
+									payload.slug,
+								).pipe(withSystemActor)
+
+								if (Option.isSome(existingOrganization)) {
+									return yield* Effect.fail(
+										new OrganizationSlugAlreadyExistsError({
+											message: `Organization slug '${payload.slug}' is already taken`,
+											slug: payload.slug,
+										}),
+									)
+								}
+							}
 
 							// Create organization in local database first
 							const createdOrganization = yield* OrganizationRepo.insert({
