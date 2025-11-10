@@ -1,13 +1,8 @@
+import { FetchHttpClient, HttpClient } from "@effect/platform"
 import { Effect, Schema } from "effect"
 
 const SYNDICATION_URL = "https://cdn.syndication.twimg.com"
 const TWEET_ID_REGEX = /^[0-9]+$/
-
-// Tweet response schema
-export class TweetData extends Schema.Class<TweetData>("TweetData")({
-	// Core fields - using Schema.Any for now since the full Tweet type is complex
-	// You can expand this schema based on your needs
-}) {}
 
 export class TwitterApiError extends Schema.TaggedError<TwitterApiError>("TwitterApiError")(
 	"TwitterApiError",
@@ -76,100 +71,103 @@ function buildTweetUrl(id: string): string {
 }
 
 /**
- * Fetch tweet from Twitter syndication API
+ * Twitter API Service
+ * Provides methods to interact with Twitter's syndication API
  */
-export function fetchTweet(
-	id: string,
-): Effect.Effect<any, TwitterApiError> {
-	return Effect.gen(function* () {
-		// Validate tweet ID
-		yield* validateTweetId(id)
+export class TwitterApi extends Effect.Service<TwitterApi>()("TwitterApi", {
+	effect: Effect.gen(function* () {
+		const httpClient = yield* HttpClient.HttpClient
 
-		// Build URL
-		const url = buildTweetUrl(id)
+		return {
+			/**
+			 * Fetch tweet data from Twitter syndication API
+			 */
+			fetchTweet: (id: string): Effect.Effect<any, TwitterApiError> =>
+				Effect.gen(function* () {
+					// Validate tweet ID
+					yield* validateTweetId(id)
 
-		// Fetch from Twitter API with required headers
-		const response = yield* Effect.tryPromise({
-			try: () =>
-				fetch(url, {
-					headers: {
-						"User-Agent": "Mozilla/5.0 (compatible; TwitterBot/1.0)",
-						Referer: "https://platform.twitter.com/",
-					},
-				}),
-			catch: (error) =>
-				new TwitterApiError({
-					message: `Network error: ${error instanceof Error ? error.message : String(error)}`,
-					status: 0,
-					data: undefined,
-				}),
-		})
+					// Build URL
+					const url = buildTweetUrl(id)
 
-		// Parse response
-		const isJson = response.headers.get("content-type")?.includes("application/json")
-		const data: any = isJson
-			? yield* Effect.tryPromise({
-					try: () => response.json(),
-					catch: (error) =>
+					// Make HTTP request with required headers
+					const response = yield* httpClient
+						.get(url, {
+							headers: {
+								"User-Agent": "Mozilla/5.0 (compatible; TwitterBot/1.0)",
+								Referer: "https://platform.twitter.com/",
+							},
+						})
+						.pipe(
+							Effect.mapError(
+								(error) =>
+									new TwitterApiError({
+										message: `Network error: ${String(error)}`,
+										status: 0,
+										data: undefined,
+									}),
+							),
+						)
+
+					// Parse JSON response
+					const data: any = yield* response.json.pipe(
+						Effect.catchAll(() => Effect.succeed(undefined)),
+					)
+
+					// Handle successful response
+					if (response.status >= 200 && response.status < 300) {
+						// Check for tombstone (deleted tweet)
+						if (data?.__typename === "TweetTombstone") {
+							return yield* Effect.fail(
+								new TwitterApiError({
+									message: "Tweet has been deleted",
+									status: 404,
+									data,
+								}),
+							)
+						}
+
+						// Check for empty response (not found)
+						if (data && Object.keys(data).length === 0) {
+							return yield* Effect.fail(
+								new TwitterApiError({
+									message: "Tweet not found",
+									status: 404,
+									data,
+								}),
+							)
+						}
+
+						// Return tweet data
+						return data
+					}
+
+					// Handle 404
+					if (response.status === 404) {
+						return yield* Effect.fail(
+							new TwitterApiError({
+								message: "Tweet not found",
+								status: 404,
+								data,
+							}),
+						)
+					}
+
+					// Handle other errors
+					const errorMessage =
+						data && typeof data.error === "string"
+							? data.error
+							: `Failed to fetch tweet from "${url}" with status ${response.status}`
+
+					return yield* Effect.fail(
 						new TwitterApiError({
-							message: `Failed to parse JSON: ${error instanceof Error ? error.message : String(error)}`,
+							message: errorMessage,
 							status: response.status,
-							data: undefined,
+							data,
 						}),
-				})
-			: undefined
-
-		// Handle successful response
-		if (response.ok) {
-			// Check for tombstone (deleted tweet)
-			if (data?.__typename === "TweetTombstone") {
-				return yield* Effect.fail(
-					new TwitterApiError({
-						message: "Tweet has been deleted",
-						status: 404,
-						data,
-					}),
-				)
-			}
-
-			// Check for empty response (not found)
-			if (data && Object.keys(data).length === 0) {
-				return yield* Effect.fail(
-					new TwitterApiError({
-						message: "Tweet not found",
-						status: 404,
-						data,
-					}),
-				)
-			}
-
-			// Return tweet data
-			return data
-		}
-
-		// Handle 404
-		if (response.status === 404) {
-			return yield* Effect.fail(
-				new TwitterApiError({
-					message: "Tweet not found",
-					status: 404,
-					data,
+					)
 				}),
-			)
 		}
-
-		// Handle other errors - FIX THE BUG HERE
-		const errorMessage =
-			data && typeof data.error === "string"
-				? data.error
-				: `Failed to fetch tweet from "${url}" with status ${response.status}`
-
-		return yield* Effect.fail(
-			new TwitterApiError({
-				message: errorMessage,
-				status: response.status,
-				data,
-			}),
-		)
-	})
-}
+	}),
+	dependencies: [FetchHttpClient.layer],
+}) {}

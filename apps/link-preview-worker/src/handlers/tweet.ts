@@ -3,7 +3,7 @@ import { Effect } from "effect"
 import { LinkPreviewApi } from "../api"
 import { KVCache } from "../cache"
 import { TweetError } from "../declare"
-import { fetchTweet, TwitterApiError } from "../services/twitter"
+import { TwitterApi, TwitterApiError } from "../services/twitter"
 
 export const HttpTweetLive = HttpApiBuilder.group(LinkPreviewApi, "tweet", (handlers) =>
 	handlers.handle(
@@ -12,6 +12,7 @@ export const HttpTweetLive = HttpApiBuilder.group(LinkPreviewApi, "tweet", (hand
 			const tweetId = urlParams.id
 			const cacheKey = `tweet:${tweetId}`
 			const cache = yield* KVCache
+			const twitterApi = yield* TwitterApi
 
 			// Check cache first
 			const cachedData = yield* cache.get<any>(cacheKey).pipe(Effect.catchAll(() => Effect.succeed(null)))
@@ -23,8 +24,8 @@ export const HttpTweetLive = HttpApiBuilder.group(LinkPreviewApi, "tweet", (hand
 
 			yield* Effect.log(`Cache miss - fetching tweet data for ID: ${tweetId}`)
 
-			// Fetch tweet data using custom Twitter service
-			const tweet = yield* fetchTweet(tweetId).pipe(
+			// Fetch tweet data using Twitter service
+			const tweet = yield* twitterApi.fetchTweet(tweetId).pipe(
 				Effect.mapError((error) => {
 					// Convert TwitterApiError to TweetError
 					if (error instanceof TwitterApiError) {
