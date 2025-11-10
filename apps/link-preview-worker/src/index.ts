@@ -2,7 +2,6 @@ import { HttpApiBuilder, HttpServer } from "@effect/platform"
 import { Layer, Logger, pipe } from "effect"
 import { LinkPreviewApi } from "./api"
 import { makeKVCacheLayer } from "./cache"
-import type { Env } from "./declare"
 import { HttpAppLive, HttpLinkPreviewLive, HttpTweetLive } from "./handle"
 
 const HttpLive = HttpApiBuilder.api(LinkPreviewApi).pipe(
@@ -13,6 +12,11 @@ const makeHttpLiveWithKV = (env: Env) =>
 	pipe(
 		HttpApiBuilder.Router.Live,
 		Layer.provideMerge(HttpLive),
+		Layer.provideMerge(
+			HttpApiBuilder.middlewareCors({
+				allowedOrigins: ["*"],
+			}),
+		),
 		Layer.provideMerge(HttpServer.layerContext),
 		Layer.provide(makeKVCacheLayer(env.LINK_CACHE)),
 		Layer.provide(Logger.pretty),
