@@ -46,7 +46,7 @@ export class DatabaseError extends Data.TaggedError("DatabaseError")<{
 		return `DatabaseError: ${this.cause.message}`
 	}
 
-	public get message() {
+	public override get message() {
 		return this.cause.message
 	}
 }
