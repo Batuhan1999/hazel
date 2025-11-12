@@ -16,10 +16,10 @@
 		"./models": "./src/models/index.ts"
 	},
 	"dependencies": {
+		"@effect/cluster": "catalog:effect",
 		"@effect/experimental": "catalog:effect",
 		"@effect/platform": "catalog:effect",
 		"@effect/rpc": "catalog:effect",
-		"@effect/cluster": "catalog:effect",
 		"@effect/workflow": "catalog:effect",
 		"@hazel/schema": "workspace:*",
 		"drizzle-orm": "^0.44.7",
