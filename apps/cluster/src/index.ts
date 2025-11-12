@@ -38,7 +38,7 @@ const WorkflowApiLive = HttpApiBuilder.api(Cluster.WorkflowApi).pipe(
 	HttpServer.withLogAddress,
 )
 
-const port = 3020
+const _port = 3020
 
 // Main server layer with CORS enabled
 const ServerLayer = HttpApiBuilder.serve(
@@ -50,7 +50,14 @@ const ServerLayer = HttpApiBuilder.serve(
 	Layer.provide(WorkflowApiLive),
 	Layer.provide(AllWorkflows),
 	Layer.provide(Logger.pretty),
-	Layer.provide(BunHttpServer.layer({ port })),
+	Layer.provide(
+		BunHttpServer.layerConfig(
+			Config.all({
+				port: Config.number("PORT").pipe(Config.withDefault(3020)),
+				idleTimeout: Config.succeed(120),
+			}),
+		),
+	),
 	Layer.provide(FetchHttpClient.layer),
 )
 
