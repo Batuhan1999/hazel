@@ -138,6 +138,14 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 									},
 								})
 								.pipe(
+									Effect.tapError((err) =>
+										Effect.logError("Failed to execute notification workflow", {
+											error: err.message,
+											messageId: event.record.id,
+											channelId: event.record.channelId,
+											authorId: event.record.authorId,
+										}),
+									),
 									Effect.catchTags({
 										HttpApiDecodeError: (_error) =>
 											Effect.fail(
@@ -176,6 +184,6 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 				yield* Effect.logInfo("Sequin webhook batch processed successfully", {
 					eventCount: payload.data.length,
 				})
-			}).pipe(withSystemActor),
+			}),
 		),
 )
