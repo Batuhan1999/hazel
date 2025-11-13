@@ -138,59 +138,31 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 									},
 								})
 								.pipe(
-									// Catch and remap HTTP/API errors before forking
 									Effect.catchTags({
-										HttpApiDecodeError: (error) =>
-											Effect.gen(function* () {
-												yield* Effect.logError("Failed to decode workflow response", {
-													error: error.message,
-													messageId: event.record.id,
-												})
-												return yield* Effect.fail(
-													new InternalServerError({
-														message: "Failed to execute notification workflow",
-													}),
-												)
-											}),
-										ParseError: (error) =>
-											Effect.gen(function* () {
-												yield* Effect.logError("Failed to parse workflow response", {
-													error: error.message,
-													messageId: event.record.id,
-												})
-												return yield* Effect.fail(
-													new InternalServerError({
-														message: "Failed to execute notification workflow",
-													}),
-												)
-											}),
-										RequestError: (error) =>
-											Effect.gen(function* () {
-												yield* Effect.logError("Failed to send workflow request", {
-													error: error.message,
-													messageId: event.record.id,
-												})
-												return yield* Effect.fail(
-													new InternalServerError({
-														message: "Failed to execute notification workflow",
-													}),
-												)
-											}),
-										ResponseError: (error) =>
-											Effect.gen(function* () {
-												yield* Effect.logError(
-													"Failed to receive workflow response",
-													{
-														error: error.message,
-														messageId: event.record.id,
-													},
-												)
-												return yield* Effect.fail(
-													new InternalServerError({
-														message: "Failed to execute notification workflow",
-													}),
-												)
-											}),
+										HttpApiDecodeError: (_error) =>
+											Effect.fail(
+												new InternalServerError({
+													message: "Failed to execute notification workflow",
+												}),
+											),
+										ParseError: (_error) =>
+											Effect.fail(
+												new InternalServerError({
+													message: "Failed to execute notification workflow",
+												}),
+											),
+										RequestError: (_error) =>
+											Effect.fail(
+												new InternalServerError({
+													message: "Failed to execute notification workflow",
+												}),
+											),
+										ResponseError: (_error) =>
+											Effect.fail(
+												new InternalServerError({
+													message: "Failed to execute notification workflow",
+												}),
+											),
 									}),
 									// Fork to avoid blocking the webhook response
 									// Errors are already caught and remapped above
