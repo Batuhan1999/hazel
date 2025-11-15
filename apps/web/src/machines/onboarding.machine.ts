@@ -4,13 +4,13 @@ import { assign, fromPromise, setup } from "xstate"
 
 // Context type
 export interface OnboardingContext {
-	orgId?: string
-	createdOrgId?: string
+	orgId?: OrganizationId
+	createdOrgId?: OrganizationId
 	orgSlug?: string
 	useCases: string[]
 	role?: string
 	organization?: {
-		id: string
+		id: OrganizationId
 		name?: string
 		slug?: string
 	}
@@ -51,16 +51,16 @@ export type OnboardingEvent =
 			data: { emails: string[] }
 	  }
 	| { type: "INVITE_TEAM_SKIP" }
-	| { type: "ORG_CREATED"; data: { orgId: string } }
+	| { type: "ORG_CREATED"; data: { orgId: OrganizationId } }
 	| { type: "COMPLETION_SUCCESS"; data: { slug: string } }
 	| { type: "COMPLETION_ERROR"; error: string }
 	| { type: "RETRY" }
 
 // Input type (initial context from props)
 export interface OnboardingInput {
-	orgId?: string
+	orgId?: OrganizationId
 	organization?: {
-		id: string
+		id: OrganizationId
 		name?: string
 		slug?: string
 	}
@@ -71,10 +71,10 @@ export interface OnboardingServices {
 	createOrganization: (data: {
 		name: string
 		slug: string
-	}) => Promise<Exit.Exit<{ data: { id: string } }, unknown>>
+	}) => Promise<Exit.Exit<{ data: { id: OrganizationId } }, unknown>>
 	setOrganizationSlug: (data: { id: OrganizationId; slug: string }) => Promise<Exit.Exit<unknown, unknown>>
 	completeOnboarding: (data: {
-		orgId: string
+		orgId: OrganizationId
 		role: string
 		useCases: string[]
 		emails: string[]
@@ -89,14 +89,14 @@ export const onboardingMachine = setup({
 	},
 	actors: {
 		handleOrgSetup: fromPromise(
-			async (_: { input: { orgId?: string; createdOrgId?: string; name: string; slug: string } }) => {
-				return {} as { orgId: string }
+			async (_: { input: { orgId?: OrganizationId; createdOrgId?: OrganizationId; name: string; slug: string } }) => {
+				return {} as { orgId: OrganizationId }
 			},
 		),
 		handleCompletion: fromPromise(
 			async (_: {
 				input: {
-					orgId?: string
+					orgId?: OrganizationId
 					role: string
 					useCases: string[]
 					emails: string[]

@@ -7,6 +7,7 @@ import { Exit } from "effect"
 import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { fromPromise } from "xstate"
+import { createInvitationMutation } from "~/atoms/invitation-atoms"
 import { createOrganizationMutation, setOrganizationSlugMutation } from "~/atoms/organization-atoms"
 import { updateUserMutation } from "~/atoms/user-atoms"
 import { InviteTeamStep } from "~/components/onboarding/invite-team-step"
@@ -32,6 +33,7 @@ function RouteComponent() {
 	const createOrganization = useAtomSet(createOrganizationMutation, { mode: "promiseExit" })
 	const setOrganizationSlugAction = useAtomSet(setOrganizationSlugMutation, { mode: "promiseExit" })
 	const updateUser = useAtomSet(updateUserMutation, { mode: "promiseExit" })
+	const createInvitation = useAtomSet(createInvitationMutation, { mode: "promiseExit" })
 
 	// Track transition direction for animations
 	const [direction, setDirection] = useState<"forward" | "backward">("forward")
@@ -62,7 +64,12 @@ function RouteComponent() {
 				async ({
 					input,
 				}: {
-					input: { orgId?: string; createdOrgId?: string; name: string; slug: string }
+					input: {
+						orgId?: OrganizationId
+						createdOrgId?: OrganizationId
+						name: string
+						slug: string
+					}
 				}) => {
 					let effectiveOrgId = input.orgId || input.createdOrgId
 
@@ -86,7 +93,7 @@ function RouteComponent() {
 						// If orgId exists, just update the slug
 						const result = await setOrganizationSlugAction({
 							payload: {
-								id: effectiveOrgId as OrganizationId,
+								id: effectiveOrgId,
 								slug: input.slug,
 							},
 						})
@@ -104,7 +111,7 @@ function RouteComponent() {
 					input,
 				}: {
 					input: {
-						orgId?: string
+						orgId?: OrganizationId
 						role: string
 						useCases: string[]
 						emails: string[]
@@ -133,10 +140,36 @@ function RouteComponent() {
 					// TODO: For creators, create default channels (#general, #announcements)
 					// This requires implementing channel creation RPC or backend logic
 
-					// TODO: Send team invites
-					// This would require a backend RPC endpoint or WorkOS API integration
+					// Send team invites
 					if (input.emails.length > 0) {
-						console.log("TODO: Send invites to:", input.emails)
+						let successCount = 0
+						let errorCount = 0
+
+						for (const email of input.emails) {
+							try {
+								const result = await createInvitation({
+									payload: {
+										organizationId: input.orgId,
+										email: email,
+										role: "member",
+									},
+								})
+
+								if (Exit.isSuccess(result)) {
+									successCount++
+								} else {
+									errorCount++
+									console.error(`Failed to invite ${email}:`, result.cause)
+								}
+							} catch (error) {
+								errorCount++
+								console.error(`Failed to invite ${email}:`, error)
+							}
+						}
+
+						console.log(
+							`Sent ${successCount} invitation${successCount !== 1 ? "s" : ""}${errorCount > 0 ? `, ${errorCount} failed` : ""}`,
+						)
 					}
 
 					// Determine the slug to use for navigation
