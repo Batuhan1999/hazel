@@ -89,26 +89,28 @@ export const ChannelMemberRpcLive = ChannelMemberRpcs.toLayer(
 						withRemapDbErrors("ChannelMember", "select"),
 					)
 
-					// If member exists, clear the notification count
-					if (memberOption._tag === "Some") {
-						yield* db
-							.transaction(
-								Effect.gen(function* () {
+					// Wrap the update and transaction ID generation in a single transaction
+					const result = yield* db
+						.transaction(
+							Effect.gen(function* () {
+								// If member exists, clear the notification count
+								if (memberOption._tag === "Some") {
 									yield* ChannelMemberRepo.update({
 										id: memberOption.value.id,
 										notificationCount: 0,
-									})
-								}),
-							)
-							.pipe(
-								policyUse(ChannelMemberPolicy.canUpdate(memberOption.value.id)),
-								withRemapDbErrors("ChannelMember", "update"),
-							)
-					}
+									}).pipe(
+										policyUse(ChannelMemberPolicy.canUpdate(memberOption.value.id)),
+									)
+								}
 
-					const txid = yield* generateTransactionId()
+								const txid = yield* generateTransactionId()
 
-					return { transactionId: txid }
+								return { transactionId: txid }
+							}),
+						)
+						.pipe(withRemapDbErrors("ChannelMember", "update"))
+
+					return result
 				}),
 		}
 	}),
