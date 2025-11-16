@@ -160,6 +160,7 @@ function HomeView({
 	onClose: () => void
 }) {
 	const { slug: orgSlug } = useOrganization()
+	const { user } = useAuth()
 	const navigate = useNavigate()
 
 	return (
@@ -198,7 +199,10 @@ function HomeView({
 				</CommandMenuItem>
 				<CommandMenuItem
 					onAction={() => {
-						navigate({ to: "/$orgSlug/settings/profile", params: { orgSlug: orgSlug! } })
+						navigate({
+							to: "/$orgSlug/profile/$userId",
+							params: { orgSlug: orgSlug!, userId: user?.id || "" },
+						})
 						onClose()
 					}}
 					textValue="profile"

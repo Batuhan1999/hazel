@@ -1,5 +1,6 @@
 import { Result, useAtomValue } from "@effect-atom/atom-react"
 import type { UserId } from "@hazel/schema"
+import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { Button as PrimitiveButton } from "react-aria-components"
 import { toast } from "sonner"
@@ -13,6 +14,7 @@ import { DropdownLabel, DropdownSeparator } from "~/components/ui/dropdown"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu"
 import { Popover, PopoverContent } from "~/components/ui/popover"
 import { Textarea } from "~/components/ui/textarea"
+import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import { cn } from "~/lib/utils"
 
@@ -22,6 +24,8 @@ interface UserProfilePopoverProps {
 
 export function UserProfilePopover({ userId }: UserProfilePopoverProps) {
 	const { user: currentUser } = useAuth()
+	const navigate = useNavigate()
+	const { slug: orgSlug } = useOrganization()
 
 	const userPresenceResult = useAtomValue(userWithPresenceAtomFamily(userId))
 	const data = Result.getOrElse(userPresenceResult, () => [])
@@ -179,7 +183,16 @@ export function UserProfilePopover({ userId }: UserProfilePopoverProps) {
 					<div className="mt-4 flex flex-col gap-y-4">
 						<div className="flex items-center gap-2">
 							{isOwnProfile ? (
-								<Button size="sm" className="w-full">
+								<Button
+									size="sm"
+									className="w-full"
+									onPress={() => {
+										navigate({
+											to: "/$orgSlug/profile/$userId",
+											params: { orgSlug, userId },
+										})
+									}}
+								>
 									Edit profile
 								</Button>
 							) : (

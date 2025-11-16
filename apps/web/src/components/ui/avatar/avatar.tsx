@@ -203,7 +203,7 @@ export const Avatar = ({
 			data-avatar
 			data-slot="avatar"
 			className={cx(
-				"relative inline-flex shrink-0 items-center justify-center bg-muted outline-transparent",
+				"relative inline-flex shrink-0 items-center justify-center overflow-visible bg-muted outline-transparent",
 				isSquare ? "rounded-xl" : "rounded-full",
 				// Focus styles
 				focusable && "ring-ring group-focus-visible:outline-2 group-focus-visible:outline-offset-2",

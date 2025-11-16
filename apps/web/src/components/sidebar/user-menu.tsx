@@ -64,10 +64,16 @@ export function UserMenu() {
 					</MenuHeader>
 				</MenuSection>
 
-				<MenuItem>
+				<MenuItemLink
+					to="/$orgSlug/profile/$userId"
+					params={{
+						orgSlug: orgSlug,
+						userId: user?.id || "",
+					}}
+				>
 					<IconProfiles2 />
 					<MenuLabel>Profile</MenuLabel>
-				</MenuItem>
+				</MenuItemLink>
 				<MenuItemLink
 					to="/$orgSlug/settings"
 					params={{
