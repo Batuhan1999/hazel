@@ -1,6 +1,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@import './theme.css';
+
 @plugin 'tailwindcss-react-aria-components';
 
 /*
@@ -133,7 +135,7 @@ If you want to use the typography plugin, uncomment the line below.
   --bg: var(--color-white);
   --fg: var(--color-zinc-950);
 
-  --primary: var(--color-teal-600);
+  --primary: var(--color-brand-600);
   --primary-fg: oklch(1 0 0);
   --primary-subtle: theme('color-teal-500/15%');
   --primary-subtle-fg: var(--color-teal-700);
@@ -210,7 +212,7 @@ If you want to use the typography plugin, uncomment the line below.
   --bg: oklch(0.19 0.006 285.885);
   --fg: var(--color-zinc-50);
 
-  --primary: oklch(0.6 0.118 184.704);
+  --primary: var(--color-brand-600);
   --primary-fg: oklch(1 0 0);
   --primary-subtle: theme('color-teal-500/10%');
   --primary-subtle-fg: var(--color-teal-300);
