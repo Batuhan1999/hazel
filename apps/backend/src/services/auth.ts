@@ -107,8 +107,6 @@ export const AuthorizationLive = Layer.effect(
 										lastName: workosUser.lastName || "",
 										avatarUrl: workosUser.profilePictureUrl || "",
 										userType: "user",
-										status: "online" as const,
-										lastSeen: new Date(),
 										settings: null,
 										isOnboarded: false,
 										deletedAt: null,

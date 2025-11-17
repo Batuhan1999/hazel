@@ -1,8 +1,6 @@
 import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core"
 import type { UserId } from "@hazel/schema"
 
-export const userStatusEnum = pgEnum("user_status", ["online", "offline", "away"])
-
 export const userTypeEnum = pgEnum("user_type", ["user", "machine"])
 
 export const usersTable = pgTable(
@@ -15,8 +13,6 @@ export const usersTable = pgTable(
 		lastName: varchar({ length: 100 }).notNull(),
 		avatarUrl: text().notNull(),
 		userType: userTypeEnum().notNull().default("user"),
-		status: userStatusEnum().notNull().default("offline"),
-		lastSeen: timestamp({ mode: "date", withTimezone: true }).notNull().defaultNow(),
 		settings: jsonb().$type<Record<string, any>>(),
 		isOnboarded: boolean().notNull().default(false),
 		createdAt: timestamp({ mode: "date", withTimezone: true }).notNull().defaultNow(),

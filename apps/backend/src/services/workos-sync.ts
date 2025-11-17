@@ -99,8 +99,6 @@ export class WorkOSSync extends Effect.Service<WorkOSSync>()("WorkOSSync", {
 									workosUser.profilePictureUrl ||
 									`https://avatar.vercel.sh/${workosUser.id}.svg`,
 								userType: "user",
-								status: "offline" as const,
-								lastSeen: new Date(),
 								settings: null,
 								isOnboarded: false,
 								deletedAt: null,

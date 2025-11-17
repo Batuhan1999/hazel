@@ -1,4 +1,5 @@
 import { Result, useAtomValue } from "@effect-atom/atom-react"
+import type { UserId } from "@hazel/schema"
 import { createFileRoute } from "@tanstack/react-router"
 import { type } from "arktype"
 import { useEffect } from "react"
@@ -32,7 +33,7 @@ function ProfilePage() {
 	const { userId } = Route.useParams()
 	const { user: currentUser } = useAuth()
 
-	const userPresenceResult = useAtomValue(userWithPresenceAtomFamily(userId))
+	const userPresenceResult = useAtomValue(userWithPresenceAtomFamily(userId as UserId))
 	const data = Result.getOrElse(userPresenceResult, () => [])
 	const result = data[0]
 	const user = result?.user
