@@ -203,6 +203,22 @@
         "web-vitals": "^5.1.0",
       },
     },
+    "packages/bot-sdk": {
+      "name": "@hazel/bot-sdk",
+      "version": "0.1.0",
+      "dependencies": {
+        "@effect/platform": "catalog:effect",
+        "@effect/platform-bun": "catalog:effect",
+        "@effect/rpc": "catalog:effect",
+        "@hazel/domain": "workspace:*",
+        "effect": "catalog:effect",
+      },
+      "devDependencies": {
+        "@effect/language-service": "catalog:effect",
+        "@types/node": "^24.10.1",
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/db": {
       "name": "@hazel/db",
       "version": "0.0.0",
@@ -645,6 +661,8 @@
     "@formatjs/intl-localematcher": ["@formatjs/intl-localematcher@0.6.2", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-XOMO2Hupl0wdd172Y06h6kLpBz6Dv+J4okPLl4LPtzbr8f66WbIoy4ev98EBuZ6ZK4h5ydTN6XneT4QVpD7cdA=="],
 
     "@hazel/backend": ["@hazel/backend@workspace:apps/backend"],
+
+    "@hazel/bot-sdk": ["@hazel/bot-sdk@workspace:packages/bot-sdk"],
 
     "@hazel/db": ["@hazel/db@workspace:packages/db"],
 
