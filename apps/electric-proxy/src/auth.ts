@@ -1,5 +1,5 @@
 import { WorkOS } from "@workos-inc/node"
-import { Effect, Schema } from "effect"
+import { Config, Effect, Redacted, Schema } from "effect"
 import { decodeJwt } from "jose"
 
 /**
@@ -49,16 +49,41 @@ function parseCookie(cookieHeader: string, cookieName: string): string | null {
 
 /**
  * Validate a WorkOS sealed session cookie and return authenticated user
+ * Uses Effect Config to read environment variables
  */
 export function validateSession(
 	request: Request,
-	env: {
-		WORKOS_API_KEY: string
-		WORKOS_CLIENT_ID: string
-		WORKOS_COOKIE_PASSWORD: string
-	},
 ): Effect.Effect<AuthenticatedUser, AuthenticationError> {
 	return Effect.gen(function* () {
+		// Read configuration from environment
+		const workosApiKey = yield* Config.string("WORKOS_API_KEY").pipe(
+			Effect.mapError(
+				(error) =>
+					new AuthenticationError({
+						message: "WORKOS_API_KEY not configured",
+						detail: String(error),
+					}),
+			),
+		)
+		const workosClientId = yield* Config.string("WORKOS_CLIENT_ID").pipe(
+			Effect.mapError(
+				(error) =>
+					new AuthenticationError({
+						message: "WORKOS_CLIENT_ID not configured",
+						detail: String(error),
+					}),
+			),
+		)
+		const workOsCookiePassword = yield* Config.redacted("WORKOS_COOKIE_PASSWORD").pipe(
+			Effect.mapError(
+				(error) =>
+					new AuthenticationError({
+						message: "WORKOS_COOKIE_PASSWORD not configured",
+						detail: String(error),
+					}),
+			),
+		)
+
 		// Extract cookie from request
 		const cookieHeader = request.headers.get("Cookie")
 		if (!cookieHeader) {
@@ -81,8 +106,8 @@ export function validateSession(
 		}
 
 		// Initialize WorkOS client
-		const workos = new WorkOS(env.WORKOS_API_KEY, {
-			clientId: env.WORKOS_CLIENT_ID,
+		const workos = new WorkOS(workosApiKey, {
+			clientId: workosClientId,
 		})
 
 		// Load sealed session
@@ -90,7 +115,7 @@ export function validateSession(
 			try: async () =>
 				workos.userManagement.loadSealedSession({
 					sessionData: sessionCookie,
-					cookiePassword: env.WORKOS_COOKIE_PASSWORD,
+					cookiePassword: Redacted.value(workOsCookiePassword),
 				}),
 			catch: (error) =>
 				new AuthenticationError({

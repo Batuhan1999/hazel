@@ -56,21 +56,8 @@ const handleRequest = (request: Request, env: Env) =>
 			})
 		}
 
-		if (!env.WORKOS_API_KEY || !env.WORKOS_CLIENT_ID || !env.WORKOS_COOKIE_PASSWORD) {
-			return new Response("WorkOS configuration missing", {
-				status: 500,
-				headers: getCorsHeaders(request, allowedOrigin),
-			})
-		}
-
-		console.log("env", env)
-
-		// Authenticate user
-		const _user = yield* validateSession(request, {
-			WORKOS_API_KEY: env.WORKOS_API_KEY,
-			WORKOS_CLIENT_ID: env.WORKOS_CLIENT_ID,
-			WORKOS_COOKIE_PASSWORD: env.WORKOS_COOKIE_PASSWORD,
-		})
+		// Authenticate user - Config validation happens inside validateSession
+		const _user = yield* validateSession(request)
 		// TODO: Use user context for table-specific WHERE clause filtering
 
 		// Extract and validate table parameter
