@@ -113,9 +113,8 @@ export default {
 		// Create Database layer
 		const DatabaseLive = Layer.unwrapEffect(
 			Effect.gen(function* () {
-				const dbUrl = yield* Config.string("DATABASE_URL")
 				return Database.layer({
-					url: Redacted.make(dbUrl),
+					url: Redacted.make(env.HYPERDRIVE.connectionString),
 					ssl: false,
 				})
 			}),

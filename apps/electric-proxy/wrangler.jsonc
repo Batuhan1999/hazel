@@ -19,11 +19,17 @@
 			"custom_domain": true
 		}
 	],
-	
-	"placement": { "mode": "smart" },
-	
+	"hyperdrive": [
+		{
+			"binding": "HYPERDRIVE",
+			"id": "8f2b1e43f91746c494480d2516720909",
+			"localConnectionString": "postgresql://user:password@localhost:5432/app"
+		}
+	],
+	"placement": {
+		"mode": "smart"
+	},
 	"vars": {
-		"DATABASE_URL": "",
 		"ELECTRIC_URL": "http://localhost:3333",
 		"WORKOS_API_KEY": "",
 		"WORKOS_CLIENT_ID": "",
