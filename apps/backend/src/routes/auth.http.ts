@@ -137,14 +137,14 @@ export const HttpAuthLive = HttpApiBuilder.group(HazelApi, "auth", (handlers) =>
 					})
 					.pipe(Effect.orDie, withSystemActor)
 
-				const isSecure = Bun.env.NODE_ENV === "production"
+				const isSecure = true // Always use secure cookies with HTTPS proxy
 
 				yield* HttpApiBuilder.securitySetCookie(
 					CurrentUser.Cookie,
 					Redacted.make(authResponse.sealedSession!),
 					{
 						secure: isSecure,
-						sameSite: "lax",
+						sameSite: "none", // Allow cross-port cookies for localhost dev
 						domain: cookieDomain,
 						path: "/",
 					},
@@ -166,8 +166,8 @@ export const HttpAuthLive = HttpApiBuilder.group(HazelApi, "auth", (handlers) =>
 				const logoutUrl = yield* workos.getLogoutUrl().pipe(Effect.orDie)
 
 				yield* HttpApiBuilder.securitySetCookie(CurrentUser.Cookie, Redacted.make(""), {
-					secure: Bun.env.NODE_ENV === "production",
-					sameSite: "lax",
+					secure: true, // Always use secure cookies with HTTPS proxy
+					sameSite: "none", // Allow cross-port cookies for localhost dev
 					domain: cookieDomain,
 					path: "/",
 					maxAge: 0,

@@ -30,8 +30,8 @@ export const AuthorizationLive = Layer.effect(
 							CurrentUser.Cookie,
 							Redacted.make(result.refreshedSession),
 							{
-								secure: Bun.env.NODE_ENV === "production",
-								sameSite: "lax",
+								secure: true, // Always use secure cookies with HTTPS proxy
+								sameSite: "none", // Allow cross-port cookies for localhost dev
 								domain: cookieDomain,
 								path: "/",
 							},

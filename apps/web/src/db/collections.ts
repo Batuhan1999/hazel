@@ -33,6 +33,8 @@ export const organizationCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Organization.Model.json),
 		getKey: (item) => item.id,
@@ -74,6 +76,7 @@ export const invitationCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Invitation.Model.json),
 		getKey: (item) => item.id,
@@ -132,6 +135,7 @@ export const messageCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Message.Model.json),
 		getKey: (item) => item.id,
@@ -178,6 +182,7 @@ export const messageReactionCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(MessageReaction.Model.json),
 		getKey: (item) => item.id,
@@ -225,6 +230,7 @@ export const pinnedMessageCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(PinnedMessage.Model.json),
 		getKey: (item) => item.id,
@@ -273,6 +279,7 @@ export const notificationCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Notification.Model.json),
 		getKey: (item) => item.id,
@@ -319,6 +326,7 @@ export const userCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(User.Model.json),
 		getKey: (item) => item.id,
@@ -357,6 +365,7 @@ export const organizationMemberCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(OrganizationMember.Model.json),
 		getKey: (item) => item.id,
@@ -404,6 +413,7 @@ export const channelCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Channel.Model.json),
 		getKey: (item) => item.id,
@@ -452,6 +462,7 @@ export const channelMemberCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(ChannelMember.Model.json),
 		getKey: (item) => item.id,
@@ -499,6 +510,7 @@ export const attachmentCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(Attachment.Model.json),
 		getKey: (item) => item.id,
@@ -526,6 +538,7 @@ export const typingIndicatorCollection = createCollection(
 			params: {
 				table: "typing_indicators",
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(TypingIndicator.Model.json),
 		getKey: (item) => item.id,
@@ -580,6 +593,7 @@ export const userPresenceStatusCollection = createCollection(
 			parser: {
 				timestamptz: (date) => new Date(date),
 			},
+			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
 		},
 		schema: Schema.standardSchemaV1(UserPresenceStatus.Model.json),
 		getKey: (item) => item.id,

@@ -27,7 +27,13 @@
 	 */
 	"vars": {
 		// Electric URL will be overridden by .dev.vars for local development
-		"ELECTRIC_URL": "http://localhost:3333"
+		"ELECTRIC_URL": "http://localhost:3333",
+		// WorkOS credentials - use secrets for production
+		"WORKOS_API_KEY": "",
+		"WORKOS_CLIENT_ID": "",
+		"WORKOS_COOKIE_PASSWORD": "",
+		// CORS configuration
+		"ALLOWED_ORIGIN": ""
 	}
 	/**
 	 * Note: Use secrets to store sensitive data.

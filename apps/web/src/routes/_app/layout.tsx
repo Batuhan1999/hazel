@@ -18,6 +18,8 @@ function RouteComponent() {
 
 	// Redirect unauthenticated users directly to backend login endpoint
 	// This skips the intermediate "Redirecting to login..." page
+
+	// return <div>Hello</div>
 	if (!user && !isLoading) {
 		const returnTo = encodeURIComponent(window.location.href)
 		const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"

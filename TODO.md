@@ -1,5 +1,6 @@
 # Today
-
+- Electric Proxy Auth + Table Queries
+- Electric Proxy Table Queries for Bots 
 
 
 # Project TODOs

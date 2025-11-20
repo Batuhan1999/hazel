@@ -12,3 +12,10 @@ localhost:5133 {
     X-Accel-Buffering "no"
   }
 }
+
+localhost:3004 {
+  reverse_proxy localhost:3003 {
+    # WebSocket: disable buffering for immediate bidirectional communication
+    flush_interval -1
+  }
+}
