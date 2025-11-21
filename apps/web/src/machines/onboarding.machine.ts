@@ -282,7 +282,7 @@ export const onboardingMachine = setup({
 							}
 							return {
 								orgId: context.orgId,
-								createdOrgId: context.createdOrgId,
+								createdOrgId: context.createdOrgId || (event.data.organizationId as OrganizationId),
 								name: event.data.name,
 								slug: event.data.slug,
 							}
