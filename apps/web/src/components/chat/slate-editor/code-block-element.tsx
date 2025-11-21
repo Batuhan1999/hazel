@@ -1,9 +1,12 @@
 import { useState } from "react"
 import type { RenderElementProps } from "slate-react"
+import type { Text } from "slate"
 import IconCheck from "~/components/icons/icon-check"
 import IconCopy from "~/components/icons/icon-copy"
+import type { CodeBlockElement as CodeBlockElementType } from "./types"
 
 export interface CodeBlockElementProps extends RenderElementProps {
+	element: CodeBlockElementType
 	/** Whether to show copy button and language badge (default: true) */
 	showControls?: boolean
 }
@@ -17,8 +20,8 @@ export function CodeBlockElement({
 	const [copied, setCopied] = useState(false)
 
 	// Extract the text content from the code block
-	const codeText = element.children.map((child: any) => child.text).join("")
-	const language = (element as any).language || "plaintext"
+	const codeText = element.children.map((child) => (child as Text).text || "").join("")
+	const language = element.language || "plaintext"
 
 	const handleCopy = async () => {
 		try {

@@ -12,8 +12,9 @@ export interface AuthorizedActor<Entity extends string, Action extends string> e
 	}
 }
 
-export const authorizedActor = (user: typeof CurrentUser.Schema.Type): AuthorizedActor<any, any> =>
-	user as any
+export const authorizedActor = <Entity extends string = string, Action extends string = string>(
+	user: typeof CurrentUser.Schema.Type,
+): AuthorizedActor<Entity, Action> => user as AuthorizedActor<Entity, Action>
 
 export const policy = <Entity extends string, Action extends string, E, R>(
 	entity: Entity,
@@ -40,12 +41,12 @@ export const policyCompose =
 	<Actor2 extends AuthorizedActor<any, any>, E2, R2>(
 		self: Effect.Effect<Actor2, E2, R2>,
 	): Effect.Effect<Actor | Actor2, E | UnauthorizedError, R | CurrentUser.Context> =>
-		Effect.zipRight(self, that) as any
+		Effect.zipRight(self, that) as Effect.Effect<Actor | Actor2, E | UnauthorizedError, R | CurrentUser.Context>
 
 export const policyUse =
 	<Actor extends AuthorizedActor<any, any>, E, R>(policy: Effect.Effect<Actor, E, R>) =>
 	<A, E2, R2>(effect: Effect.Effect<A, E2, R2>): Effect.Effect<A, E | E2, Exclude<R2, Actor> | R> =>
-		policy.pipe(Effect.zipRight(effect)) as any
+		policy.pipe(Effect.zipRight(effect)) as Effect.Effect<A, E | E2, Exclude<R2, Actor> | R>
 
 export interface PolicyEffect<A, E, R, Requirement> extends Effect.Effect<A, E, R | Requirement> {
 	_Requirement: Requirement
@@ -65,4 +66,5 @@ export const policyRequire =
 
 export const withSystemActor = <A, E, R>(
 	effect: Effect.Effect<A, E, R>,
-): Effect.Effect<A, E, Exclude<R, AuthorizedActor<any, any>>> => effect as any
+): Effect.Effect<A, E, Exclude<R, AuthorizedActor<any, any>>> =>
+	effect as Effect.Effect<A, E, Exclude<R, AuthorizedActor<any, any>>>

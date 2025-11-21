@@ -23,7 +23,8 @@ import "prismjs/components/prism-swift"
 import "prismjs/components/prism-tsx"
 import "prismjs/components/prism-typescript"
 import "prismjs/components/prism-yaml"
-import { Element, Node, type NodeEntry, type Range } from "slate"
+import { Element, Node, type NodeEntry, type Range, Text } from "slate"
+import { isCodeBlockElement, type CodeBlockElement } from "./types"
 
 // Flatten nested tokens into a single-level array with types
 interface NormalizedToken {
@@ -60,11 +61,12 @@ function normalizeTokens(tokens: Array<string | Prism.Token>): NormalizedToken[]
 }
 
 export function decorateCodeBlock([block, blockPath]: NodeEntry): Range[] {
-	if (!Element.isElement(block) || (block as any).type !== "code-block") {
+	if (!Element.isElement(block) || !isCodeBlockElement(block)) {
 		return []
 	}
 
-	const language = (block as any).language || "plaintext"
+	const codeBlock = block as CodeBlockElement
+	const language = codeBlock.language || "plaintext"
 	const grammar = Prism.languages[language]
 
 	if (!grammar) {
@@ -72,7 +74,7 @@ export function decorateCodeBlock([block, blockPath]: NodeEntry): Range[] {
 	}
 
 	// Get all text from code block
-	const text = (block as any).children.map((line: any) => Node.string(line)).join("\n")
+	const text = codeBlock.children.map((line) => (Text.isText(line) ? line.text : Node.string(line))).join("\n")
 
 	// Tokenize with Prism
 	const tokens = Prism.tokenize(text, grammar)

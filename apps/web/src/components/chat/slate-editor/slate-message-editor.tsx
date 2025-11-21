@@ -21,6 +21,7 @@ import { MentionElement } from "./mention-element"
 import { MentionLeaf } from "./mention-leaf"
 import { decorateCodeBlock } from "./slate-code-decorator"
 import { decorateMarkdown } from "./slate-markdown-decorators"
+import { isCodeBlockElement } from "./types"
 import {
 	type CustomDescendant,
 	type CustomElement,
@@ -191,7 +192,7 @@ const Element = (props: RenderElementProps) => {
 				</blockquote>
 			)
 		case "code-block":
-			return <CodeBlockElement {...props} showControls={false} />
+			return <CodeBlockElement {...props} element={customElement as any} showControls={false} />
 		case "subtext":
 			return (
 				<p {...attributes} className="my-0 text-muted-fg text-xs">
@@ -601,7 +602,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 				const [node, nodePath] = entry
 
 				// Check if this node is a code-block element
-				if (SlateElement.isElement(node) && (node as any).type === "code-block") {
+				if (SlateElement.isElement(node) && isCodeBlockElement(node)) {
 					return decorateCodeBlock(entry)
 				}
 

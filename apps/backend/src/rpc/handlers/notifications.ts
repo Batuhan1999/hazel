@@ -32,7 +32,7 @@ export const NotificationRpcLive = NotificationRpcs.toLayer(
 								...payload,
 							}).pipe(
 								Effect.map((res) => res[0]!),
-								policyUse(NotificationPolicy.canCreate(payload.memberId as any)),
+								policyUse(NotificationPolicy.canCreate(payload.memberId)),
 							)
 
 							const txid = yield* generateTransactionId()

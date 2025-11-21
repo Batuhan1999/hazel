@@ -1,7 +1,8 @@
 "use client"
 
 import type { RenderLeafProps } from "slate-react"
-import { LINK_PATTERN, type MarkdownDecorationType, MarkdownLeaf } from "./slate-markdown-decorators"
+import type { Text } from "slate"
+import { LINK_PATTERN, type MarkdownRange, MarkdownLeaf } from "./slate-markdown-decorators"
 
 interface LinkLeafProps extends RenderLeafProps {
 	/** Whether to make links interactive (clickable) */
@@ -22,8 +23,8 @@ export function LinkLeaf({
 	...props
 }: LinkLeafProps) {
 	// Check if this leaf is a link - MUST be before any hooks
-	const markdownType = (leaf as any).type as MarkdownDecorationType | undefined
-	const isLink = markdownType === "link"
+	const markdownLeaf = leaf as Partial<MarkdownRange> & Text
+	const isLink = markdownLeaf.type === "link"
 
 	// If not a link, just use the regular MarkdownLeaf
 	if (!isLink) {
@@ -35,7 +36,7 @@ export function LinkLeaf({
 	}
 
 	// Extract URL and text from the link
-	const text = (leaf as any).text as string
+	const text = markdownLeaf.text
 	if (!text) {
 		return (
 			<MarkdownLeaf {...props} leaf={leaf} mode={mode}>

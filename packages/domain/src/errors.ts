@@ -32,7 +32,7 @@ export class UnauthorizedError extends Schema.TaggedError<UnauthorizedError>("Un
 							}),
 						),
 					),
-			) as any
+			) as Effect.Effect<A, UnauthorizedError, CurrentUser.Context | R>
 	}
 }
 

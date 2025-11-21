@@ -334,7 +334,7 @@ export const JsonFromString = <S extends Schema.Schema.All | Schema.PropertySign
 		json: schema,
 		jsonCreate: schema,
 		jsonUpdate: schema,
-	}) as any
+	}) as JsonFromString<S>
 }
 
 export interface UuidV4Insert<B extends string | symbol>

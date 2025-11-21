@@ -186,10 +186,16 @@ function TweetMedia({
 	)
 }
 
+type TweetWithMetrics = EnrichedTweet & {
+	reply_count?: number
+	retweet_count?: number
+}
+
 function TweetMetrics({ tweet }: { tweet: EnrichedTweet }) {
-	// Access metrics from the tweet object with type assertion
-	const replyCount = (tweet as any).reply_count
-	const retweetCount = (tweet as any).retweet_count
+	// Access metrics from the tweet object with extended type
+	const tweetWithMetrics = tweet as TweetWithMetrics
+	const replyCount = tweetWithMetrics.reply_count
+	const retweetCount = tweetWithMetrics.retweet_count
 	const favoriteCount = tweet.favorite_count
 
 	const hasMetrics = favoriteCount !== undefined || retweetCount !== undefined || replyCount !== undefined

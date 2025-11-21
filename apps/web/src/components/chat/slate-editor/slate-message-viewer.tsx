@@ -12,6 +12,7 @@ import { MentionLeaf } from "./mention-leaf"
 import { decorateCodeBlock } from "./slate-code-decorator"
 import { decorateMarkdown } from "./slate-markdown-decorators"
 import { type CustomElement, deserializeFromMarkdown } from "./slate-markdown-serializer"
+import { isCodeBlockElement } from "./types"
 
 interface SlateMessageViewerProps {
 	content: string
@@ -43,7 +44,7 @@ const Element = (props: RenderElementProps) => {
 				</blockquote>
 			)
 		case "code-block":
-			return <CodeBlockElement {...props} showControls={true} />
+			return <CodeBlockElement {...props} element={customElement as any} showControls={true} />
 		case "subtext":
 			return (
 				<p {...attributes} className="my-0 text-muted-fg text-xs">
@@ -82,7 +83,7 @@ export const SlateMessageViewer = memo(({ content, className }: SlateMessageView
 			const [node, nodePath] = entry
 
 			// Check if this node is a code-block element
-			if (SlateElement.isElement(node) && (node as any).type === "code-block") {
+			if (SlateElement.isElement(node) && isCodeBlockElement(node)) {
 				return decorateCodeBlock(entry)
 			}
 

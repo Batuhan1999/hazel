@@ -1,11 +1,11 @@
-import { NotificationId } from "@hazel/schema"
+import { NotificationId, OrganizationMemberId } from "@hazel/schema"
 import { Schema } from "effect"
 import * as M from "./utils"
 import { JsonDate } from "./utils"
 
 export class Model extends M.Class<Model>("Notification")({
 	id: M.Generated(NotificationId),
-	memberId: Schema.UUID,
+	memberId: OrganizationMemberId,
 	targetedResourceId: Schema.NullOr(Schema.UUID),
 	targetedResourceType: Schema.NullOr(Schema.String),
 	resourceId: Schema.NullOr(Schema.UUID),

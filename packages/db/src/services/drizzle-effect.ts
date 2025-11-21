@@ -173,7 +173,7 @@ export function createInsertSchema<TTable extends Drizzle.Table, TRefine extends
 			typeof refineColumn === "function" &&
 			!Schema.isSchema(refineColumn) &&
 			!Schema.isPropertySignature(refineColumn)
-				? (refineColumn as any)(schemaEntries[name])
+				? (refineColumn as (schema: Schema.Schema.All | Schema.PropertySignature.All) => Schema.Schema.All | Schema.PropertySignature.All)(schemaEntries[name]!)
 				: refineColumn,
 		])
 
@@ -189,7 +189,7 @@ export function createInsertSchema<TTable extends Drizzle.Table, TRefine extends
 		}
 	}
 
-	return Schema.Struct(schemaEntries) as any
+	return Schema.Struct(schemaEntries) as unknown as BuildInsertSchema<TTable, TRefine>
 }
 
 export function createSelectSchema<TTable extends Drizzle.Table>(table: TTable): BuildSelectSchema<TTable, {}>
@@ -217,7 +217,7 @@ export function createSelectSchema<TTable extends Drizzle.Table, TRefine extends
 			typeof refineColumn === "function" &&
 			!Schema.isSchema(refineColumn) &&
 			!Schema.isPropertySignature(refineColumn)
-				? (refineColumn as any)(schemaEntries[name])
+				? (refineColumn as (schema: Schema.Schema.All | Schema.PropertySignature.All) => Schema.Schema.All | Schema.PropertySignature.All)(schemaEntries[name]!)
 				: refineColumn,
 		])
 
@@ -231,7 +231,7 @@ export function createSelectSchema<TTable extends Drizzle.Table, TRefine extends
 		}
 	}
 
-	return Schema.Struct(schemaEntries) as any
+	return Schema.Struct(schemaEntries) as unknown as BuildSelectSchema<TTable, TRefine>
 }
 
 // Helper function to check if a column has a mode property

@@ -191,7 +191,7 @@ export function MarkdownLeaf({ attributes, children, leaf, mode = "composer" }: 
 	let className = ""
 
 	// Check if this is a code token from Prism decoration
-	const leafRecord = leaf as any
+	const leafRecord = leaf as unknown as Record<string, unknown>
 	if (leafRecord.token) {
 		// Build className from all token types (e.g., "token keyword", "token function")
 		const tokenClasses: string[] = ["token"]
@@ -203,10 +203,11 @@ export function MarkdownLeaf({ attributes, children, leaf, mode = "composer" }: 
 		className = tokenClasses.join(" ")
 	} else {
 		// Check if this leaf has markdown decoration
-		const markdownType = (leaf as any).type as MarkdownDecorationType | undefined
-		const isMarker = (leaf as any).isMarker as boolean | undefined
-		const url = (leaf as any).url as string | undefined
-		const linkText = (leaf as any).linkText as string | undefined
+		const markdownLeaf = leaf as unknown as Partial<MarkdownRange>
+		const markdownType = markdownLeaf.type
+		const isMarker = markdownLeaf.isMarker
+		const url = markdownLeaf.url
+		const linkText = markdownLeaf.linkText
 
 		// Handle markdown links [text](url) - render as actual <a> tag
 		if (markdownType === "link" && url && linkText) {
