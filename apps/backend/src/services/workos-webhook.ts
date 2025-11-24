@@ -1,5 +1,5 @@
 import * as crypto from "node:crypto"
-import { Config, Effect, Schema } from "effect"
+import { Config, DateTime, Duration, Effect, Schema } from "effect"
 
 // Error types
 export class WebhookVerificationError extends Schema.TaggedError<WebhookVerificationError>(
@@ -21,6 +21,8 @@ export interface WorkOSWebhookSignature {
 	timestamp: number
 	signature: string
 }
+
+const DEFAULT_TIMESTAMP_TOLERANCE = Duration.minutes(5)
 
 export class WorkOSWebhookVerifier extends Effect.Service<WorkOSWebhookVerifier>()("WorkOSWebhookVerifier", {
 	accessors: true,
@@ -72,22 +74,23 @@ export class WorkOSWebhookVerifier extends Effect.Service<WorkOSWebhookVerifier>
 
 		/**
 		 * Validate timestamp to prevent replay attacks
-		 * Default tolerance is 5 minutes (300 seconds)
+		 * Default tolerance is 5 minutes
 		 */
 		const validateTimestamp = (
 			timestamp: number,
-			toleranceSeconds = 300,
+			tolerance: Duration.Duration = DEFAULT_TIMESTAMP_TOLERANCE,
 		): Effect.Effect<void, WebhookTimestampError> =>
 			Effect.gen(function* () {
-				const currentTime = Math.floor(Date.now() / 1000)
-				const difference = Math.abs(currentTime - timestamp)
+				const webhookTime = DateTime.unsafeMake(timestamp)
+				const now = DateTime.unsafeNow()
+				const difference = DateTime.distanceDuration(webhookTime, now)
 
-				if (difference > toleranceSeconds) {
+				if (Duration.greaterThan(difference, tolerance)) {
 					return yield* Effect.fail(
 						new WebhookTimestampError({
-							message: `Webhook timestamp is too old. Difference: ${difference}s, Tolerance: ${toleranceSeconds}s`,
+							message: `Webhook timestamp is too old. Difference: ${Duration.format(difference)}, Tolerance: ${Duration.format(tolerance)}`,
 							timestamp,
-							currentTime,
+							currentTime: Date.now(),
 						}),
 					)
 				}
@@ -110,7 +113,7 @@ export class WorkOSWebhookVerifier extends Effect.Service<WorkOSWebhookVerifier>
 			signatureHeader: string,
 			payload: string,
 			options?: {
-				timestampTolerance?: number
+				timestampTolerance?: Duration.Duration
 			},
 		): Effect.Effect<void, WebhookVerificationError | WebhookTimestampError> =>
 			Effect.gen(function* () {
