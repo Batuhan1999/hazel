@@ -214,7 +214,7 @@ const Element = (props: RenderElementProps) => {
 			return <MentionElement {...props} element={customElement as any} interactive={false} />
 		case "paragraph":
 			return (
-				<p {...attributes} className="my-0">
+				<p {...attributes} className="my-0 min-h-6">
 					{children}
 				</p>
 			)
