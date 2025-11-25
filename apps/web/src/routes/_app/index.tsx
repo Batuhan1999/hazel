@@ -17,14 +17,17 @@ function RouteComponent() {
 		isReady,
 	} = useLiveQuery(
 		(q) => {
-			// if (!user?.organizationId) return null
 			return q
 				.from({ member: organizationMemberCollection })
 				.innerJoin({ org: organizationCollection }, ({ member, org }) =>
 					eq(member.organizationId, org.id),
 				)
 				.where(({ member }) =>
-					and(eq(member.userId, user?.id), eq(member.organizationId, user?.organizationId)),
+					// If user has organizationId from JWT, filter by it
+					// Otherwise, find any membership (for returning users without org context)
+					user?.organizationId
+						? and(eq(member.userId, user?.id), eq(member.organizationId, user?.organizationId))
+						: eq(member.userId, user?.id),
 				)
 				.findOne()
 		},
@@ -51,13 +54,14 @@ function RouteComponent() {
 			return <Navigate to="/onboarding" search={{ orgId: org.id }} />
 		}
 
+		// User has a membership with a valid org - go directly to that org
+		// This works for both:
+		// - Users with JWT org context (membership filtered by that org)
+		// - Users without JWT org context (membership is their first/any org)
 		return <Navigate to="/$orgSlug" params={{ orgSlug: org.slug }} />
 	}
 
-	if (user.organizationId && !membership) {
-		return <Navigate to="/select-organization" />
-	}
-
-	// User is onboarded but has no organization - shouldn't happen, but redirect to onboarding
-	return <Navigate to="/onboarding" />
+	// User is onboarded but has no memberships found
+	// Send to select-organization to handle the edge cases
+	return <Navigate to="/select-organization" />
 }
