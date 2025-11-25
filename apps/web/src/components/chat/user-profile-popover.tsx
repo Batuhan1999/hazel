@@ -75,14 +75,14 @@ export function UserProfilePopover({ userId }: UserProfilePopoverProps) {
 	const getStatusColor = (status?: string) => {
 		switch (status) {
 			case "online":
-				return "text-success bg-success"
+				return "text-success bg-success/10"
 			case "away":
 			case "busy":
-				return "text-warning bg-warning"
+				return "text-warning bg-warning/10"
 			case "dnd":
-				return "text-danger bg-danger"
+				return "text-danger bg-danger/10"
 			default:
-				return "text-muted-fg bg-muted"
+				return "text-muted-fg bg-muted/10"
 		}
 	}
 
