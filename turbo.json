@@ -19,7 +19,8 @@
 		"R2_SECRET_ACCESS_KEY",
 		"ELECTRIC_URL",
 		"ELECTRIC_SECRET",
-		"ELECTRIC_SOURCE_ID"
+		"ELECTRIC_SOURCE_ID",
+		"ALLOWED_ORIGIN"
 	],
 	"tasks": {
 		"build": {
