@@ -600,14 +600,14 @@ export class WorkOSSync extends Effect.Service<WorkOSSync>()("WorkOSSync", {
 		const handleUserDeleted = (data: { id: string }) =>
 			userRepo.softDeleteByExternalId(data.id).pipe(Effect.asVoid)
 
-		const handleOrgUpsert = (data: { id: string; name: string; externalId: string | null }) =>
+		const handleOrgUpsert = (data: { id: string; name: string; externalId: OrganizationId | null }) =>
 			Effect.gen(function* () {
 				if (!data.externalId) {
 					yield* Effect.logWarning(`Skipping organization ${data.id} - no externalId set`)
 					return
 				}
 
-				const orgId = data.externalId as OrganizationId
+				const orgId = data.externalId
 				const existingOrg = yield* orgRepo.findById(orgId).pipe(withSystemActor)
 
 				const action = Option.isSome(existingOrg) ? "updated" : "created"
@@ -649,7 +649,24 @@ export class WorkOSSync extends Effect.Service<WorkOSSync>()("WorkOSSync", {
 			role: { slug: string }
 		}) =>
 			Effect.gen(function* () {
-				const orgId = data.organizationId as OrganizationId
+				if (!data.organizationId || !data.userId) {
+					yield* Effect.logWarning("Webhook missing required fields", { data })
+					return
+				}
+
+				// Fetch organization from WorkOS to get the externalId (our internal org ID)
+				const workosOrg = yield* workos
+					.call((client) => client.organizations.getOrganization(data.organizationId))
+					.pipe(Effect.catchAll(() => Effect.succeed(null)))
+
+				if (!workosOrg?.externalId) {
+					yield* Effect.logWarning("Organization has no externalId", {
+						workosOrgId: data.organizationId,
+					})
+					return
+				}
+
+				const orgId = workosOrg.externalId as OrganizationId
 				const org = yield* orgRepo.findById(orgId).pipe(withSystemActor)
 				const user = yield* userRepo.findByExternalId(data.userId)
 
@@ -668,17 +685,45 @@ export class WorkOSSync extends Effect.Service<WorkOSSync>()("WorkOSSync", {
 						userId: user.value.id,
 						role: data.role.slug,
 					})
+				} else {
+					if (Option.isNone(org)) {
+						yield* Effect.logWarning("Organization not found for webhook", { orgId })
+					}
+					if (Option.isNone(user)) {
+						yield* Effect.logWarning("User not found for webhook", { externalId: data.userId })
+					}
 				}
 			})
 
 		const handleMembershipRemoved = (data: { organizationId: string; userId: string }) =>
 			Effect.gen(function* () {
-				const orgId = data.organizationId as OrganizationId
+				if (!data.organizationId || !data.userId) {
+					yield* Effect.logWarning("Webhook missing required fields", { data })
+					return
+				}
+
+				// Fetch organization from WorkOS to get the externalId (our internal org ID)
+				const workosOrg = yield* workos
+					.call((client) => client.organizations.getOrganization(data.organizationId))
+					.pipe(Effect.catchAll(() => Effect.succeed(null)))
+
+				if (!workosOrg?.externalId) {
+					yield* Effect.logWarning("Organization has no externalId", {
+						workosOrgId: data.organizationId,
+					})
+					return
+				}
+
+				const orgId = workosOrg.externalId as OrganizationId
 				const org = yield* orgRepo.findById(orgId).pipe(withSystemActor)
 				const user = yield* userRepo.findByExternalId(data.userId)
 
 				if (Option.isSome(org) && Option.isSome(user)) {
 					yield* orgMemberRepo.softDeleteByOrgAndUser(org.value.id, user.value.id)
+					yield* Effect.logInfo("Membership removed", {
+						orgId: org.value.id,
+						userId: user.value.id,
+					})
 				}
 			})
 
