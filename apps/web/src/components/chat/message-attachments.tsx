@@ -59,7 +59,7 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 	const handleDownload = () => {
 		// Create a temporary anchor element to trigger download
 		const link = document.createElement("a")
-		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://cdn.hazel.sh"
 		link.href = `${publicUrl}/${attachment.id}`
 		link.download = attachment.fileName
 		link.target = "_blank"
@@ -73,7 +73,7 @@ function AttachmentItem({ attachment }: AttachmentItemProps) {
 
 	if (isVideo) {
 		// Display video player
-		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://pub-hazel.r2.dev"
+		const publicUrl = import.meta.env.VITE_R2_PUBLIC_URL || "https://cdn.hazel.sh"
 		const videoUrl = `${publicUrl}/${attachment.id}`
 
 		return (
