@@ -1,16 +1,11 @@
-# Maki Chat
+# Hazel Chat
 
-A modern, real-time collaborative chat platform built with Effect-TS, React, and PostgreSQL.
+A modern, real-time collaborative chat platform built with Effect-TS, ElectricSQL, TanstackDB, React, and PostgreSQL.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb.svg)](https://react.dev/)
-[![Effect](https://img.shields.io/badge/Effect--TS-3.0-purple.svg)](https://effect.website/)
-[![Bun](https://img.shields.io/badge/Bun-1.0-f9f1e1.svg)](https://bun.sh/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791.svg)](https://www.postgresql.org/)
 
 ## Overview
 
-Maki Chat is a full-stack chat application featuring:
+Hazel Chat is a full-stack chat application featuring:
 
 - **Effect-TS** for type-safe, functional backend programming
 - **Type-safe RPC** for seamless client-server communication
@@ -27,6 +22,7 @@ Maki Chat is a full-stack chat application featuring:
 - **Notifications** - Configurable notification system with muting
 - **Team Management** - Organizations with member roles and invitations
 - **Rich Text Editor** - Plate.js powered editor with formatting
+- **Bot Integration** - Create and manage bots with a simple API
 
 ## Tech Stack
 
@@ -34,11 +30,10 @@ Maki Chat is a full-stack chat application featuring:
 - **React 19** with TypeScript
 - **Vite** for fast development and builds
 - **TanStack Router** with file-based routing
-- **TanStack Query** for server state management
-- **TailwindCSS v4** + Radix UI for styling
-- **React Aria Components** for accessibility
+- **TanStack DB**
+- **TailwindCSS v4**
+- **React Aria Components**
 - **Electric SQL** for local-first real-time sync
-- **Plate.js** rich text editor
 
 ### Backend
 - **Bun** runtime
@@ -78,8 +73,7 @@ Maki Chat is a full-stack chat application featuring:
 ## Prerequisites
 
 - [Bun](https://bun.sh/) (latest version)
-- [Node.js](https://nodejs.org/) 20+
-- [PostgreSQL](https://www.postgresql.org/) 15+
+- [Node.js](https://nodejs.org/) 22+
 - [WorkOS](https://workos.com/) account (for authentication)
 
 ## Getting Started
