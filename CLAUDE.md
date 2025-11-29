@@ -126,6 +126,23 @@ Uses Drizzle ORM with PostgreSQL. Database schema is defined in `packages/db/src
   - Cluster entity and workflow definitions (importable by both frontend and cluster service)
   - Shared error types and data models
 
+## Brand Icons
+
+Use Brandfetch CDN for integration brand logos/icons. See `apps/web/src/routes/_app/$orgSlug/settings/integrations/_data.ts` for the helper function.
+
+**URL Pattern**: `https://cdn.brandfetch.io/{domain}/w/{size}/h/{size}/theme/{theme}/{type}`
+
+- `domain`: The company's domain (e.g., `linear.app`, `github.com`, `figma.com`)
+- `size`: Image dimensions in pixels (e.g., 64, 512)
+- `theme`: `light` or `dark`
+- `type`: `icon` (small inline logos) or `symbol` (larger brand marks)
+
+**Example**:
+```typescript
+// For small inline icons, use type="icon"
+<img src="https://cdn.brandfetch.io/linear.app/w/64/h/64/theme/dark/icon" alt="Linear" className="size-4" />
+```
+
 ## Effect Cluster Architecture
 
 The cluster service provides durable, distributed workflow execution:

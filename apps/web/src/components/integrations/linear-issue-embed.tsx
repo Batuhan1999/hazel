@@ -44,12 +44,6 @@ const PriorityIcon = ({ priority, className }: { priority: number; className?: s
 	)
 }
 
-// Linear logo component
-const LinearLogo = ({ className }: { className?: string }) => (
-	<svg className={className} viewBox="0 0 100 100" fill="currentColor">
-		<path d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.857L39.3342 97.1782c.6889.6889.0915 1.8189-.857 1.5965C20.0515 94.4522 5.50224 79.8955 1.22541 61.5228ZM15.3697 18.5009L93.4999 96.631c.3176.3176.6316.6287.943.9336-7.1832 7.2164-15.7906 13.0019-25.4143 17.0026L6.38687 51.9247c1.90742-12.065 7.37083-22.9679 15.0028-31.4238ZM84.8246 8.92857c.3176.31757.6287.63166.9336.943L35.0683 60.561c-.5765.5765-1.5419.2934-1.7418-.4803-1.9831-7.6614-5.4382-14.7057-10.0823-20.8282L68.8073.000220537c5.7914 2.10816 11.0714 5.20656 15.0032 9.27554Z" />
-	</svg>
-)
 
 // Loading skeleton
 function LinearIssueSkeleton() {
@@ -83,7 +77,7 @@ function LinearIssueSkeleton() {
 function LinearIssueError({ message }: { message?: string }) {
 	return (
 		<div className="mt-2 flex max-w-md items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3">
-			<LinearLogo className="size-5 text-muted-fg/50" />
+			<img src={LINEAR_LOGO_URL} alt="Linear" className="size-5 opacity-50" />
 			<span className="text-muted-fg text-sm">{message || "Could not load Linear issue"}</span>
 		</div>
 	)
@@ -142,7 +136,7 @@ export function LinearIssueEmbed({ url }: LinearIssueEmbedProps) {
 		>
 			{/* Header with Linear branding */}
 			<div className="flex items-center gap-2 border-border/40 border-b bg-linear-to-r from-[#5E6AD2]/5 to-transparent px-3 py-2">
-				<LinearLogo className="size-4 text-[#5E6AD2]" />
+				<img src={LINEAR_LOGO_URL} alt="Linear" className="size-4" />
 				<span className="font-medium font-mono text-[#5E6AD2] text-xs">{issue.identifier}</span>
 				{issue.state && (
 					<span
