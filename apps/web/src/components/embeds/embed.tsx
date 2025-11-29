@@ -38,9 +38,9 @@ export function Embed({ accentColor, url, className, children }: EmbedProps) {
 		<div
 			className={cn(
 				"mt-2 flex max-w-md flex-col overflow-hidden rounded-r-lg border-l-2!",
-				"border border-border/60 bg-secondary/30",
+				"border border-border/60 bg-secondary",
 				"transition-all duration-200",
-				url && "hover:bg-secondary/50 hover:shadow-md",
+				url && "hover:shadow-md",
 				className,
 			)}
 			style={{

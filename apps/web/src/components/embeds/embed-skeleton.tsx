@@ -26,7 +26,7 @@ export function EmbedSkeleton({
 		<div
 			className={cn(
 				"mt-2 flex max-w-md flex-col overflow-hidden rounded-lg border-l-4",
-				"border border-border/60 bg-secondary/30",
+				"border border-border/60 bg-secondary",
 				className,
 			)}
 			style={{
