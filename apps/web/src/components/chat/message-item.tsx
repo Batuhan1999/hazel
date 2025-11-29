@@ -146,52 +146,58 @@ export function MessageItem({
 							</div>
 						</div>
 					) : (
-						<>
-							<SlateMessageViewer content={message.content} />
-							{/* Tweet Embeds, YouTube Embeds, Linear Issue Embeds, and Link Previews */}
-							{(() => {
-								const urls = extractUrls(message.content)
-								const tweetUrls = urls.filter((url) => isTweetUrl(url))
-								const youtubeUrls = urls.filter((url) => isYoutubeUrl(url))
-								const linearUrls = urls.filter((url) => isLinearIssueUrl(url))
-								const otherUrls = urls.filter(
-									(url) => !isTweetUrl(url) && !isYoutubeUrl(url) && !isLinearIssueUrl(url),
-								)
+						(() => {
+							const urls = extractUrls(message.content)
+							const tweetUrls = urls.filter((url) => isTweetUrl(url))
+							const youtubeUrls = urls.filter((url) => isYoutubeUrl(url))
+							const linearUrls = urls.filter((url) => isLinearIssueUrl(url))
+							const otherUrls = urls.filter(
+								(url) => !isTweetUrl(url) && !isYoutubeUrl(url) && !isLinearIssueUrl(url),
+							)
 
-								return (
-									<>
-										{/* Render all tweet embeds */}
-										{tweetUrls.map((url) => {
-											const tweetId = extractTweetId(url)
-											return tweetId ? (
-												<TweetEmbed
-													key={url}
-													id={tweetId}
-													author={message.author ?? undefined}
-													messageCreatedAt={message.createdAt.getTime()}
-												/>
-											) : null
-										})}
-										{/* Render all YouTube embeds */}
-										{youtubeUrls.map((url) => {
-											const videoId = extractYoutubeVideoId(url)
-											return videoId ? (
-												<YoutubeEmbed key={url} videoId={videoId} url={url} />
-											) : null
-										})}
-										{/* Render all Linear issue embeds */}
-										{linearUrls.map((url) => {
-											const issueKey = extractLinearIssueKey(url)
-											return issueKey ? <LinearIssueEmbed key={url} url={url} /> : null
-										})}
-										{/* Render last other URL as link preview */}
-										{otherUrls.length > 0 && otherUrls[otherUrls.length - 1] && (
-											<LinkPreview url={otherUrls[otherUrls.length - 1]!} />
-										)}
-									</>
-								)
-							})()}
-						</>
+							// Filter out embed URLs from displayed content
+							const embedUrls = [...tweetUrls, ...youtubeUrls, ...linearUrls]
+							let displayContent = message.content
+							for (const url of embedUrls) {
+								displayContent = displayContent.replace(url, "")
+							}
+							displayContent = displayContent.trim()
+
+							return (
+								<>
+									{/* Message text with embed URLs filtered out */}
+									{displayContent && <SlateMessageViewer content={displayContent} />}
+									{/* Render all tweet embeds */}
+									{tweetUrls.map((url) => {
+										const tweetId = extractTweetId(url)
+										return tweetId ? (
+											<TweetEmbed
+												key={url}
+												id={tweetId}
+												author={message.author ?? undefined}
+												messageCreatedAt={message.createdAt.getTime()}
+											/>
+										) : null
+									})}
+									{/* Render all YouTube embeds */}
+									{youtubeUrls.map((url) => {
+										const videoId = extractYoutubeVideoId(url)
+										return videoId ? (
+											<YoutubeEmbed key={url} videoId={videoId} url={url} />
+										) : null
+									})}
+									{/* Render all Linear issue embeds */}
+									{linearUrls.map((url) => {
+										const issueKey = extractLinearIssueKey(url)
+										return issueKey ? <LinearIssueEmbed key={url} url={url} /> : null
+									})}
+									{/* Render last other URL as link preview */}
+									{otherUrls.length > 0 && otherUrls[otherUrls.length - 1] && (
+										<LinkPreview url={otherUrls[otherUrls.length - 1]!} />
+									)}
+								</>
+							)
+						})()
 					)}
 
 					{/* Attachments */}
