@@ -90,6 +90,11 @@ export const HttpIntegrationResourceLive = HttpApiBuilder.group(
 					labels: issue.labels,
 				})
 			}).pipe(
+				Effect.tapError((error) =>
+					Effect.logError("Linear issue fetch failed").pipe(
+						Effect.annotateLogs({ error: String(error), errorType: error._tag }),
+					),
+				),
 				Effect.catchTags({
 					TokenNotFoundError: () =>
 						Effect.fail(new IntegrationNotConnectedForPreviewError({ provider: "linear" })),

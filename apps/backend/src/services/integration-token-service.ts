@@ -1,10 +1,11 @@
-import { type IntegrationConnectionId, withSystemActor } from "@hazel/domain"
+import { type IntegrationConnectionId, type IntegrationTokenId, withSystemActor } from "@hazel/domain"
 import type { IntegrationConnection } from "@hazel/domain/models"
-import { Data, Effect, Option } from "effect"
+import { Data, Effect, Option, PartitionedSemaphore, Redacted } from "effect"
 import { IntegrationConnectionRepo } from "../repositories/integration-connection-repo"
 import { IntegrationTokenRepo } from "../repositories/integration-token-repo"
 import { DatabaseLive } from "./database"
 import { type EncryptedToken, IntegrationEncryption } from "./integration-encryption"
+import { loadProviderConfig } from "./oauth/provider-config"
 
 export class TokenNotFoundError extends Data.TaggedError("TokenNotFoundError")<{
 	readonly connectionId: IntegrationConnectionId
@@ -27,7 +28,7 @@ interface OAuthTokenResponse {
 }
 
 // Helper to refresh OAuth tokens for each provider
-const _refreshOAuthToken = (
+const refreshOAuthToken = (
 	provider: IntegrationConnection.IntegrationProvider,
 	refreshToken: string,
 	clientId: string,
@@ -81,6 +82,9 @@ export class IntegrationTokenService extends Effect.Service<IntegrationTokenServ
 			const tokenRepo = yield* IntegrationTokenRepo
 			const connectionRepo = yield* IntegrationConnectionRepo
 
+			// Partitioned semaphore to prevent concurrent token refreshes for the same connection
+			const refreshSemaphore = PartitionedSemaphore.makeUnsafe<IntegrationConnectionId>({ permits: 1 })
+
 			/**
 			 * Get a valid access token, refreshing if necessary.
 			 * Returns the decrypted access token ready for API use.
@@ -94,13 +98,46 @@ export class IntegrationTokenService extends Effect.Service<IntegrationTokenServ
 					onSome: Effect.succeed,
 				})
 
-				// Check if token is expired or about to expire (5 min buffer)
+				// Check if token is expired or about to expire (10 min buffer)
 				const now = Date.now()
-				const expiryBuffer = 5 * 60 * 1000 // 5 minutes
+				const expiryBuffer = 10 * 60 * 1000 // 10 minutes
 				const needsRefresh = token.expiresAt && token.expiresAt.getTime() - now < expiryBuffer
 
 				if (needsRefresh && token.encryptedRefreshToken) {
-					return yield* refreshAndGetToken(connectionId, token)
+					// Use partitioned semaphore to prevent concurrent refreshes for the same connection
+					// Re-read token inside semaphore to check if another request already refreshed it
+					return yield* refreshSemaphore.withPermits(
+						connectionId,
+						1,
+					)(
+						Effect.gen(function* () {
+							// Re-fetch token to check if it was already refreshed while waiting
+							const freshTokenOption = yield* tokenRepo
+								.findByConnectionId(connectionId)
+								.pipe(withSystemActor)
+							const freshToken = yield* Option.match(freshTokenOption, {
+								onNone: () => Effect.fail(new TokenNotFoundError({ connectionId })),
+								onSome: Effect.succeed,
+							})
+
+							const freshNow = Date.now()
+							const stillNeedsRefresh =
+								freshToken.expiresAt &&
+								freshToken.expiresAt.getTime() - freshNow < expiryBuffer
+
+							if (stillNeedsRefresh && freshToken.encryptedRefreshToken) {
+								// Still needs refresh - do the actual refresh
+								return yield* refreshAndGetToken(connectionId, freshToken)
+							}
+
+							// Token was already refreshed by another request - just decrypt and return
+							return yield* encryption.decrypt({
+								ciphertext: freshToken.encryptedAccessToken,
+								iv: freshToken.iv,
+								keyVersion: freshToken.encryptionKeyVersion,
+							})
+						}),
+					)
 				}
 
 				// Decrypt and return current token
@@ -114,7 +151,7 @@ export class IntegrationTokenService extends Effect.Service<IntegrationTokenServ
 			const refreshAndGetToken = Effect.fn("IntegrationTokenService.refreshAndGetToken")(function* (
 				connectionId: IntegrationConnectionId,
 				token: {
-					id: string
+					id: IntegrationTokenId
 					encryptedAccessToken: string
 					encryptedRefreshToken: string | null
 					iv: string
@@ -139,33 +176,56 @@ export class IntegrationTokenService extends Effect.Service<IntegrationTokenServ
 				}
 
 				// Decrypt refresh token using its dedicated IV
-				const _decryptedRefreshToken = yield* encryption.decrypt({
+				const decryptedRefreshToken = yield* encryption.decrypt({
 					ciphertext: token.encryptedRefreshToken,
 					iv: token.refreshTokenIv,
 					keyVersion: token.encryptionKeyVersion,
 				})
 
-				// TODO: Get client credentials from config based on provider
-				// For now, we'll need to implement this per-provider
-				// const config = yield* IntegrationConfig
+				// Load provider config to get client credentials
+				const providerConfig = yield* loadProviderConfig(connection.provider).pipe(
+					Effect.mapError(
+						(cause) =>
+							new TokenRefreshError({
+								provider: connection.provider,
+								cause: `Failed to load provider config: ${cause}`,
+							}),
+					),
+				)
+
+				yield* Effect.logInfo("Refreshing OAuth token", { provider: connection.provider })
 
 				// Call provider's token refresh endpoint
-				// const newTokens = yield* refreshOAuthToken(
-				//     connection.provider,
-				//     decryptedRefreshToken,
-				//     config[connection.provider].clientId,
-				//     config[connection.provider].clientSecret
-				// )
+				const newTokens = yield* refreshOAuthToken(
+					connection.provider,
+					decryptedRefreshToken,
+					providerConfig.clientId,
+					Redacted.value(providerConfig.clientSecret),
+				)
 
-				// For now, just log and return the existing decrypted token
-				yield* Effect.logWarning("Token refresh not yet fully implemented - returning existing token")
+				// Encrypt and store the new tokens
+				const encryptedAccess = yield* encryption.encrypt(newTokens.accessToken)
+				const encryptedRefresh = newTokens.refreshToken
+					? yield* encryption.encrypt(newTokens.refreshToken)
+					: null
 
-				// Return the access token from the existing token
-				return yield* encryption.decrypt({
-					ciphertext: token.encryptedAccessToken as string,
-					iv: token.iv,
-					keyVersion: token.encryptionKeyVersion,
-				})
+				// Update the token in the database
+				yield* tokenRepo
+					.updateToken(token.id, {
+						encryptedAccessToken: encryptedAccess.ciphertext,
+						encryptedRefreshToken: encryptedRefresh?.ciphertext ?? token.encryptedRefreshToken,
+						iv: encryptedAccess.iv,
+						refreshTokenIv: encryptedRefresh?.iv ?? token.refreshTokenIv,
+						encryptionKeyVersion: encryptedAccess.keyVersion,
+						expiresAt: newTokens.expiresAt ?? null,
+						scope: newTokens.scope ?? null,
+					})
+					.pipe(withSystemActor)
+
+				yield* Effect.logInfo("OAuth token refreshed successfully", { provider: connection.provider })
+
+				// Return the new access token
+				return newTokens.accessToken
 			})
 
 			/**
@@ -192,7 +252,7 @@ export class IntegrationTokenService extends Effect.Service<IntegrationTokenServ
 				if (Option.isSome(existingToken)) {
 					// Update existing token
 					yield* tokenRepo
-						.updateToken(existingToken.value.id as any, {
+						.updateToken(existingToken.value.id, {
 							encryptedAccessToken: encryptedAccess.ciphertext,
 							encryptedRefreshToken: encryptedRefresh?.ciphertext ?? null,
 							iv: encryptedAccess.iv,
