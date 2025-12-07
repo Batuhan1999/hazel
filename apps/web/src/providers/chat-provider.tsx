@@ -2,7 +2,7 @@ import { Result, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import type { Channel } from "@hazel/domain/models"
 import {
 	type AttachmentId,
-	ChannelId,
+	type ChannelId,
 	type MessageId,
 	type MessageReactionId,
 	type OrganizationId,
@@ -22,13 +22,8 @@ import {
 	uploadingFilesAtomFamily,
 } from "~/atoms/chat-atoms"
 import { channelByIdAtomFamily } from "~/atoms/chat-query-atoms"
-import { sendMessageAction, toggleReactionAction } from "~/db/actions"
-import {
-	channelCollection,
-	messageCollection,
-	messageReactionCollection,
-	pinnedMessageCollection,
-} from "~/db/collections"
+import { createThreadAction, sendMessageAction, toggleReactionAction } from "~/db/actions"
+import { messageCollection, messageReactionCollection, pinnedMessageCollection } from "~/db/collections"
 import { useAuth } from "~/lib/auth"
 
 interface ChatContextValue {
@@ -82,6 +77,7 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 
 	const sendMessageMutation = useAtomSet(sendMessageAction, { mode: "promiseExit" })
 	const toggleReactionMutation = useAtomSet(toggleReactionAction, { mode: "promiseExit" })
+	const createThreadMutation = useAtomSet(createThreadAction, { mode: "promiseExit" })
 
 	const replyToMessageId = useAtomValue(replyToMessageAtomFamily(channelId))
 	const setReplyToMessageId = useAtomSet(replyToMessageAtomFamily(channelId))
@@ -242,28 +238,34 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 	const createThread = useCallback(
 		async (messageId: MessageId, existingThreadChannelId: ChannelId | null) => {
 			if (existingThreadChannelId) {
+				// Thread already exists - just open it
 				setActiveThreadChannelId(existingThreadChannelId)
 				setActiveThreadMessageId(messageId)
 			} else {
-				const threadChannelId = ChannelId.make(crypto.randomUUID())
-				const tx = channelCollection.insert({
-					id: threadChannelId,
-					organizationId,
-					name: "Thread",
-					type: "thread" as const,
+				if (!user?.id) return
+
+				// Create new thread via action
+				const exit = await createThreadMutation({
+					messageId,
 					parentChannelId: channelId,
-					createdAt: new Date(),
-					updatedAt: null,
-					deletedAt: null,
+					organizationId,
+					currentUserId: UserId.make(user.id),
 				})
 
-				await tx.isPersisted.promise
-
-				setActiveThreadChannelId(threadChannelId)
-				setActiveThreadMessageId(messageId)
+				Exit.match(exit, {
+					onSuccess: (result) => {
+						setActiveThreadChannelId(result.mutateResult.threadChannelId)
+						setActiveThreadMessageId(messageId)
+					},
+					onFailure: (error) => {
+						toast.error("Failed to create thread", {
+							description: Cause.pretty(error),
+						})
+					},
+				})
 			}
 		},
-		[channelId, organizationId, setActiveThreadChannelId, setActiveThreadMessageId],
+		[channelId, organizationId, user?.id, createThreadMutation, setActiveThreadChannelId, setActiveThreadMessageId],
 	)
 
 	const openThread = useCallback(

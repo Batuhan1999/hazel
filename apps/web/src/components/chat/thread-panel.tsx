@@ -5,9 +5,9 @@ import { ChatProvider } from "~/providers/chat-provider"
 import IconClose from "../icons/icon-close"
 import { Avatar } from "../ui/avatar"
 import { Button } from "../ui/button"
-import { MessageList } from "./message-list"
 import { SlateMessageComposer } from "./slate-editor/slate-message-composer"
 import { SlateMessageViewer } from "./slate-editor/slate-message-viewer"
+import { ThreadMessageList } from "./thread-message-list"
 import { TypingIndicator } from "./typing-indicator"
 
 interface ThreadPanelProps {
@@ -64,9 +64,9 @@ function ThreadContent({ threadChannelId, originalMessageId, onClose }: ThreadPa
 				</div>
 			)}
 
-			{/* Thread Messages - Using MessageList from ChatProvider */}
+			{/* Thread Messages */}
 			<div className="flex-1 overflow-hidden bg-bg">
-				<MessageList />
+				<ThreadMessageList threadChannelId={threadChannelId} />
 			</div>
 
 			{/* Thread Composer */}

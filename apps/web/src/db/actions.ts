@@ -311,3 +311,79 @@ export const toggleReactionAction = optimisticAction({
 			return { data: result, transactionId: result.transactionId }
 		}),
 })
+
+export const createThreadAction = optimisticAction({
+	collections: {
+		channel: channelCollection,
+		members: channelMemberCollection,
+		messages: messageCollection,
+	},
+	runtime: runtime,
+
+	onMutate: (props: {
+		messageId: MessageId
+		parentChannelId: ChannelId
+		organizationId: OrganizationId
+		currentUserId: UserId
+	}) => {
+		const threadChannelId = ChannelId.make(crypto.randomUUID())
+		const now = new Date()
+
+		// Create thread channel
+		channelCollection.insert({
+			id: threadChannelId,
+			name: "Thread",
+			type: "thread",
+			organizationId: props.organizationId,
+			parentChannelId: props.parentChannelId,
+			createdAt: now,
+			updatedAt: null,
+			deletedAt: null,
+		})
+
+		// Add creator as member
+		channelMemberCollection.insert({
+			id: ChannelMemberId.make(crypto.randomUUID()),
+			channelId: threadChannelId,
+			userId: props.currentUserId,
+			isHidden: false,
+			isMuted: false,
+			isFavorite: false,
+			lastSeenMessageId: null,
+			notificationCount: 0,
+			joinedAt: now,
+			createdAt: now,
+			deletedAt: null,
+		})
+
+		// Link original message to thread
+		messageCollection.update(props.messageId, (message) => {
+			message.threadChannelId = threadChannelId
+		})
+
+		return { threadChannelId }
+	},
+
+	mutate: (props, ctx) =>
+		Effect.gen(function* () {
+			const client = yield* HazelRpcClient
+
+			// Create thread channel
+			const channelResult = yield* client("channel.create", {
+				id: ctx.mutateResult.threadChannelId,
+				name: "Thread",
+				type: "thread",
+				organizationId: props.organizationId,
+				parentChannelId: props.parentChannelId,
+			})
+
+			// Note: The message update (setting threadChannelId) is handled by
+			// messageCollection.update() in onMutate, which triggers the collection's
+			// onUpdate callback to sync with the backend automatically.
+
+			return {
+				data: { threadChannelId: channelResult.data.id },
+				transactionId: channelResult.transactionId,
+			}
+		}),
+})
