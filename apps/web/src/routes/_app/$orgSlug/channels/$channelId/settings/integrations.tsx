@@ -2,7 +2,7 @@ import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId, ChannelWebhookId } from "@hazel/schema"
 import { createFileRoute } from "@tanstack/react-router"
 import { Exit } from "effect"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { listChannelWebhooksMutation, type WebhookData } from "~/atoms/channel-webhook-atoms"
 import { CreateWebhookForm } from "~/components/channel-settings/create-webhook-form"
 import { DeleteWebhookDialog } from "~/components/channel-settings/delete-webhook-dialog"
@@ -94,9 +94,13 @@ function IntegrationsPage() {
 		mode: "promiseExit",
 	})
 
+	// Use ref to avoid stale closures and unnecessary effect re-runs
+	const listWebhooksRef = useRef(listWebhooks)
+	listWebhooksRef.current = listWebhooks
+
 	const fetchWebhooks = useCallback(async () => {
 		setIsLoading(true)
-		const exit = await listWebhooks({
+		const exit = await listWebhooksRef.current({
 			payload: { channelId: channelId as ChannelId },
 		})
 
@@ -109,8 +113,9 @@ function IntegrationsPage() {
 			},
 		})
 		setIsLoading(false)
-	}, [channelId, listWebhooks])
+	}, [channelId])
 
+	// Fetch webhooks on mount and when channelId changes
 	useEffect(() => {
 		fetchWebhooks()
 	}, [fetchWebhooks])

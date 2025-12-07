@@ -1,6 +1,6 @@
 import type { Channel } from "@hazel/domain/models"
 import type { ChannelId } from "@hazel/schema"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import type { WebhookData } from "~/atoms/channel-webhook-atoms"
 import { OpenStatusSection } from "~/components/channel-settings/openstatus-section"
 import { getProviderIconUrl } from "~/components/embeds/use-embed-theme"
@@ -31,16 +31,9 @@ export function ConfigureOpenStatusModal({
 	onSuccess,
 	onWebhookCreated,
 }: ConfigureOpenStatusModalProps) {
+	// selectedChannelId is local state - key prop on parent resets when context changes
 	const [selectedChannelId, setSelectedChannelId] = useState<ChannelId | null>(initialChannelId)
-	const [webhook, setWebhook] = useState<WebhookData | null>(existingWebhook)
-
-	// Sync state when modal opens with new props
-	useEffect(() => {
-		if (isOpen) {
-			setSelectedChannelId(initialChannelId)
-			setWebhook(existingWebhook)
-		}
-	}, [isOpen, initialChannelId, existingWebhook])
+	// Use existingWebhook prop directly - no need for local state since key prop handles resets
 
 	const selectedChannel = channels.find((c) => c.id === selectedChannelId)
 
@@ -61,8 +54,7 @@ export function ConfigureOpenStatusModal({
 	const handleClose = () => {
 		onSuccess() // Refresh list when closing
 		onOpenChange(false)
-		setSelectedChannelId(initialChannelId)
-		setWebhook(existingWebhook)
+		// State reset handled by key prop in parent - no need for manual reset
 	}
 
 	const handleWebhookCreated = (data: { webhookId: string; token: string }) => {
@@ -123,7 +115,7 @@ export function ConfigureOpenStatusModal({
 					{selectedChannelId && (
 						<OpenStatusSection
 							channelId={selectedChannelId}
-							webhook={webhook}
+							webhook={existingWebhook}
 							onWebhookChange={handleWebhookChange}
 							onDone={handleDone}
 							variant="modal"

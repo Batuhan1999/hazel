@@ -4,7 +4,7 @@ import type { ChannelId, OrganizationId } from "@hazel/schema"
 import { eq, or, useLiveQuery } from "@tanstack/react-db"
 import { formatDistanceToNow } from "date-fns"
 import { Exit } from "effect"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import { listOrganizationWebhooksMutation, type WebhookData } from "~/atoms/channel-webhook-atoms"
 import { getProviderIconUrl } from "~/components/embeds/use-embed-theme"
@@ -38,6 +38,10 @@ export function OpenStatusIntegrationContent({ organizationId }: OpenStatusInteg
 
 	const listWebhooks = useAtomSet(listOrganizationWebhooksMutation, { mode: "promiseExit" })
 
+	// Use ref to avoid stale closures and unnecessary effect re-runs
+	const listWebhooksRef = useRef(listWebhooks)
+	listWebhooksRef.current = listWebhooks
+
 	// Query all channels in organization (public and private only, not DMs/threads)
 	const { data: channelsData } = useLiveQuery(
 		(q) =>
@@ -55,7 +59,7 @@ export function OpenStatusIntegrationContent({ organizationId }: OpenStatusInteg
 	const fetchWebhooks = useCallback(
 		async (isInitial = false) => {
 			if (isInitial) setIsLoading(true)
-			const exit = await listWebhooks({ payload: {} })
+			const exit = await listWebhooksRef.current({ payload: {} })
 
 			Exit.match(exit, {
 				onSuccess: (result) => {
@@ -67,11 +71,12 @@ export function OpenStatusIntegrationContent({ organizationId }: OpenStatusInteg
 			})
 			if (isInitial) setIsLoading(false)
 		},
-		[listWebhooks],
+		[],
 	)
 
+	// Fetch webhooks on mount
 	useEffect(() => {
-		fetchWebhooks(true) // Show loading on initial fetch
+		fetchWebhooks(true)
 	}, [fetchWebhooks])
 
 	// Filter to OpenStatus webhooks only
@@ -306,6 +311,8 @@ export function OpenStatusIntegrationContent({ organizationId }: OpenStatusInteg
 			</div>
 
 			<ConfigureOpenStatusModal
+				// Key resets modal state when switching between channels/webhooks
+				key={selectedWebhook?.id ?? selectedChannelId ?? "new"}
 				isOpen={isModalOpen}
 				onOpenChange={setIsModalOpen}
 				channels={selectedWebhook ? channels : unconfiguredChannels}

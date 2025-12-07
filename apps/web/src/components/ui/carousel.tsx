@@ -1,6 +1,6 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid"
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react"
-import { createContext, use, useCallback, useEffect, useState } from "react"
+import { createContext, use, useCallback, useEffect, useLayoutEffect, useState } from "react"
 import { twMerge } from "tailwind-merge"
 import { cx } from "~/lib/primitive"
 import { Button, type ButtonProps } from "./button"
@@ -94,12 +94,12 @@ const Carousel = ({
 		[scrollPrev, scrollNext],
 	)
 
-	useEffect(() => {
-		if (!api || !setApi) {
-			return
+	// Use useLayoutEffect to expose API synchronously before paint
+	// This follows embla-carousel-react patterns for external library integration
+	useLayoutEffect(() => {
+		if (api && setApi) {
+			setApi(api)
 		}
-
-		setApi(api)
 	}, [api, setApi])
 
 	useEffect(() => {
@@ -113,6 +113,7 @@ const Carousel = ({
 
 		return () => {
 			api?.off("select", onSelect)
+			api?.off("reInit", onSelect)
 		}
 	}, [api, onSelect])
 

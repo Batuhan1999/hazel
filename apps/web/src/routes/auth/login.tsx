@@ -1,6 +1,6 @@
 import type { OrganizationId } from "@hazel/schema"
 import { createFileRoute, Navigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useRef } from "react"
 import { useAuth } from "../../lib/auth"
 
 export const Route = createFileRoute("/auth/login")({
@@ -23,26 +23,19 @@ export const Route = createFileRoute("/auth/login")({
 function LoginPage() {
 	const { user, login, isLoading } = useAuth()
 	const search = Route.useSearch()
-	const [isRedirecting, setIsRedirecting] = useState(false)
 
-	useEffect(() => {
-		if (!user && !isLoading && !isRedirecting) {
-			setIsRedirecting(true)
-			login({
-				returnTo: search.returnTo ? `${location.origin}${search.returnTo}` : `${location.origin}/`,
-				organizationId: search.organizationId as OrganizationId | undefined,
-				invitationToken: search.invitationToken,
-			})
-		}
-	}, [
-		user,
-		isLoading,
-		login,
-		search.returnTo,
-		search.organizationId,
-		search.invitationToken,
-		isRedirecting,
-	])
+	// Use ref to track if login was initiated - avoids useEffect with complex conditionals
+	const hasInitiatedLogin = useRef(false)
+
+	// Initiate login during render when conditions are met (not in useEffect)
+	if (!user && !isLoading && !hasInitiatedLogin.current) {
+		hasInitiatedLogin.current = true
+		login({
+			returnTo: search.returnTo ? `${location.origin}${search.returnTo}` : `${location.origin}/`,
+			organizationId: search.organizationId as OrganizationId | undefined,
+			invitationToken: search.invitationToken,
+		})
+	}
 
 	if (isLoading) {
 		return (

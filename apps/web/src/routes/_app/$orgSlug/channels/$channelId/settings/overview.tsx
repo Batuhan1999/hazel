@@ -4,7 +4,6 @@ import { eq, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
 import { type } from "arktype"
 import { Exit } from "effect"
-import { useEffect } from "react"
 import { toast } from "sonner"
 import { updateChannelMutation } from "~/atoms/channel-atoms"
 import { Button } from "~/components/ui/button"
@@ -25,27 +24,21 @@ const channelSchema = type({
 
 type ChannelFormData = typeof channelSchema.infer
 
-function OverviewPage() {
-	const { channelId } = Route.useParams()
-
-	const { data: channelResult } = useLiveQuery(
-		(q) =>
-			q
-				.from({ channel: channelCollection })
-				.where(({ channel }) => eq(channel.id, channelId as ChannelId))
-				.findOne()
-				.select(({ channel }) => ({ channel })),
-		[channelId],
-	)
-	const channel = channelResult?.channel
-
+// Extracted form component - uses key prop in parent to reset when channel changes
+function ChannelSettingsForm({
+	channelId,
+	initialName,
+}: {
+	channelId: ChannelId
+	initialName: string
+}) {
 	const updateChannel = useAtomSet(updateChannelMutation, {
 		mode: "promiseExit",
 	})
 
 	const form = useAppForm({
 		defaultValues: {
-			name: channel?.name ?? "",
+			name: initialName,
 		} as ChannelFormData,
 		validators: {
 			onChange: channelSchema,
@@ -53,7 +46,7 @@ function OverviewPage() {
 		onSubmit: async ({ value }) => {
 			const exit = await updateChannel({
 				payload: {
-					id: channelId as ChannelId,
+					id: channelId,
 					name: value.name,
 				},
 			})
@@ -70,12 +63,65 @@ function OverviewPage() {
 		},
 	})
 
-	// Reset form when channel data loads
-	useEffect(() => {
-		if (channel?.name) {
-			form.reset({ name: channel.name })
-		}
-	}, [channel?.name, form])
+	return (
+		<form
+			onSubmit={(e) => {
+				e.preventDefault()
+				form.handleSubmit()
+			}}
+			className="flex flex-col gap-6"
+		>
+			<form.AppField
+				name="name"
+				children={(field) => (
+					<TextField>
+						<Label>Channel name</Label>
+						<Input
+							placeholder="Channel name"
+							value={field.state.value}
+							onChange={(e) => field.handleChange(e.target.value)}
+							onBlur={field.handleBlur}
+							aria-invalid={!!field.state.meta.errors?.length}
+						/>
+						{field.state.meta.errors?.[0] && (
+							<FieldError>{field.state.meta.errors[0].message}</FieldError>
+						)}
+					</TextField>
+				)}
+			/>
+
+			<div>
+				<form.Subscribe
+					selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty]}
+				>
+					{([canSubmit, isSubmitting, isDirty]) => (
+						<Button
+							intent="primary"
+							type="submit"
+							isDisabled={!canSubmit || isSubmitting || !isDirty}
+						>
+							{isSubmitting ? "Saving..." : "Save changes"}
+						</Button>
+					)}
+				</form.Subscribe>
+			</div>
+		</form>
+	)
+}
+
+function OverviewPage() {
+	const { channelId } = Route.useParams()
+
+	const { data: channelResult } = useLiveQuery(
+		(q) =>
+			q
+				.from({ channel: channelCollection })
+				.where(({ channel }) => eq(channel.id, channelId as ChannelId))
+				.findOne()
+				.select(({ channel }) => ({ channel })),
+		[channelId],
+	)
+	const channel = channelResult?.channel
 
 	return (
 		<div className="flex flex-col gap-6 px-4 lg:px-8">
@@ -90,48 +136,14 @@ function OverviewPage() {
 				</SectionHeader.Group>
 			</SectionHeader.Root>
 
-			<form
-				onSubmit={(e) => {
-					e.preventDefault()
-					form.handleSubmit()
-				}}
-				className="flex flex-col gap-6"
-			>
-				<form.AppField
-					name="name"
-					children={(field) => (
-						<TextField>
-							<Label>Channel name</Label>
-							<Input
-								placeholder="Channel name"
-								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={field.handleBlur}
-								aria-invalid={!!field.state.meta.errors?.length}
-							/>
-							{field.state.meta.errors?.[0] && (
-								<FieldError>{field.state.meta.errors[0].message}</FieldError>
-							)}
-						</TextField>
-					)}
+			{/* Key prop resets form when channel changes - no useEffect needed */}
+			{channel && (
+				<ChannelSettingsForm
+					key={channel.id}
+					channelId={channel.id}
+					initialName={channel.name}
 				/>
-
-				<div>
-					<form.Subscribe
-						selector={(state) => [state.canSubmit, state.isSubmitting, state.isDirty]}
-					>
-						{([canSubmit, isSubmitting, isDirty]) => (
-							<Button
-								intent="primary"
-								type="submit"
-								isDisabled={!canSubmit || isSubmitting || !isDirty}
-							>
-								{isSubmitting ? "Saving..." : "Save changes"}
-							</Button>
-						)}
-					</form.Subscribe>
-				</div>
-			</form>
+			)}
 		</div>
 	)
 }
