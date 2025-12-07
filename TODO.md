@@ -3,6 +3,8 @@
 - test and actually build stuff for githib integration
 - setup signoz or any other logging/monitoring solution
 - setup sequin locally with config as code
+- railway webhook integration
+- fix threads
 
 
 # Bugs 
