@@ -12,6 +12,7 @@ import IconDots from "~/components/icons/icon-dots"
 import IconPlus from "~/components/icons/icon-plus"
 import { EmailInviteModal } from "~/components/modals/email-invite-modal"
 import { Button } from "~/components/ui/button"
+import { EmptyState } from "~/components/ui/empty-state"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu"
 import { invitationCollection, userCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
@@ -151,9 +152,11 @@ function InvitationsSettings() {
 					</div>
 
 					{pendingInvitations.length === 0 ? (
-						<div className="flex h-64 items-center justify-center">
-							<p className="text-muted-fg text-sm">No pending invitations</p>
-						</div>
+						<EmptyState
+							title="No pending invitations"
+							description="Invite team members to join your organization."
+							className="h-64"
+						/>
 					) : (
 						<div className="overflow-x-auto">
 							<table className="w-full min-w-full">

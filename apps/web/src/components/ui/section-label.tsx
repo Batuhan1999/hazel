@@ -7,8 +7,8 @@ const styles = {
 		subheading: "text-sm",
 	},
 	md: {
-		heading: "gap-1 text-md font-semibold",
-		subheading: "text-md",
+		heading: "gap-1 text-base font-semibold",
+		subheading: "text-base",
 	},
 }
 

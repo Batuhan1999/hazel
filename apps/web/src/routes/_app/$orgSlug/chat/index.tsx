@@ -7,6 +7,8 @@ import IconMsgs from "~/components/icons/icon-msgs"
 import { IconUsers } from "~/components/icons/icon-users"
 import IconVolumeMute from "~/components/icons/icon-volume-mute"
 import { Avatar } from "~/components/ui/avatar"
+import { EmptyState } from "~/components/ui/empty-state"
+import { Loader } from "~/components/ui/loader"
 import { SectionHeader } from "~/components/ui/section-header"
 import { Tab, TabList, TabPanel, Tabs } from "~/components/ui/tabs"
 import { channelCollection, channelMemberCollection, userCollection } from "~/db/collections"
@@ -88,7 +90,7 @@ function RouteComponent() {
 	if (channelsLoading) {
 		return (
 			<div className="flex h-screen items-center justify-center">
-				<div className="h-8 w-8 animate-spin rounded-full border-primary border-b-2"></div>
+				<Loader className="size-8" />
 			</div>
 		)
 	}
@@ -201,26 +203,6 @@ function RouteComponent() {
 	)
 }
 
-function EmptyState({
-	icon: Icon,
-	title,
-	description,
-}: {
-	icon: React.ComponentType<{ className?: string }>
-	title: string
-	description: string
-}) {
-	return (
-		<div className="flex flex-col items-center justify-center py-16 text-center">
-			<div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-secondary">
-				<Icon className="size-6 text-muted-fg" />
-			</div>
-			<h3 className="font-semibold text-fg">{title}</h3>
-			<p className="mt-1 max-w-sm text-muted-fg text-sm">{description}</p>
-		</div>
-	)
-}
-
 function NotificationBadge({ count }: { count: number }) {
 	if (count <= 0) return null
 	return (
@@ -305,7 +287,12 @@ function DmCard({ channel, currentUserId }: { channel: any; currentUserId?: stri
 					))}
 				</div>
 				<div className="min-w-0">
-					<h3 className={cn("truncate font-semibold text-fg text-sm", channel.isMuted && "text-muted-fg")}>
+					<h3
+						className={cn(
+							"truncate font-semibold text-fg text-sm",
+							channel.isMuted && "text-muted-fg",
+						)}
+					>
 						{otherMembers
 							.slice(0, 3)
 							.map((member: any) => member.user.firstName)
@@ -322,15 +309,7 @@ function DmCard({ channel, currentUserId }: { channel: any; currentUserId?: stri
 	)
 }
 
-function SingleDmCard({
-	channel,
-	member,
-	orgSlug,
-}: {
-	channel: any
-	member: any
-	orgSlug: string
-}) {
+function SingleDmCard({ channel, member, orgSlug }: { channel: any; member: any; orgSlug: string }) {
 	const { isOnline, status } = useUserPresence(member.user.id)
 
 	const statusText = isOnline
@@ -364,7 +343,12 @@ function SingleDmCard({
 					/>
 				</div>
 				<div className="min-w-0">
-					<h3 className={cn("truncate font-semibold text-fg text-sm", channel.isMuted && "text-muted-fg")}>
+					<h3
+						className={cn(
+							"truncate font-semibold text-fg text-sm",
+							channel.isMuted && "text-muted-fg",
+						)}
+					>
 						{member.user.firstName} {member.user.lastName}
 					</h3>
 					<p className="text-muted-fg text-xs">{statusText}</p>

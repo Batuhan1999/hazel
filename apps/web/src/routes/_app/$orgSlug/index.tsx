@@ -13,6 +13,7 @@ import IconPhone from "~/components/icons/icon-phone"
 import { Avatar } from "~/components/ui/avatar"
 import { Button } from "~/components/ui/button"
 import { DropdownLabel } from "~/components/ui/dropdown"
+import { Loader } from "~/components/ui/loader"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu"
 import { SearchField, SearchInput } from "~/components/ui/search-field"
 import { organizationMemberCollection, userCollection, userPresenceStatusCollection } from "~/db/collections"
@@ -146,7 +147,7 @@ function RouteComponent() {
 			<div className="w-full space-y-2">
 				{!membersData ? (
 					<div className="flex items-center justify-center py-8">
-						<div className="h-8 w-8 animate-spin rounded-full border-primary border-b-2"></div>
+						<Loader className="size-8" />
 					</div>
 				) : filteredMembers.length === 0 ? (
 					<div className="py-8 text-center text-muted-fg">
@@ -219,8 +220,8 @@ function RouteComponent() {
 											<MenuTrigger
 												aria-label="Member actions"
 												className={cn(
-													"inline-flex size-8 items-center justify-center rounded-lg border border-transparent hover:border-border hover:bg-muted",
-													"pressed:bg-muted group-hover:border-border",
+													"inline-flex size-8 items-center justify-center rounded-lg border border-transparent hover:border-border hover:bg-secondary",
+													"pressed:bg-secondary group-hover:border-border",
 												)}
 											>
 												<IconDots className="size-5 text-muted-fg" />

@@ -110,7 +110,7 @@ export function ChangeRoleModal() {
 					</DialogBody>
 
 					<DialogFooter>
-						<Button intent="secondary" onPress={handleClose} isDisabled={isSubmitting}>
+						<Button intent="outline" onPress={handleClose} isDisabled={isSubmitting}>
 							Cancel
 						</Button>
 						<Button

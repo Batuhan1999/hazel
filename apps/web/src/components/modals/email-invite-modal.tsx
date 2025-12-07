@@ -189,7 +189,7 @@ export const EmailInviteModal = ({
 						</DialogBody>
 
 						<DialogFooter>
-							<Button intent="secondary" onPress={() => onOpenChange(false)} type="button">
+							<Button intent="outline" onPress={() => onOpenChange(false)} type="button">
 								Cancel
 							</Button>
 							<form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>

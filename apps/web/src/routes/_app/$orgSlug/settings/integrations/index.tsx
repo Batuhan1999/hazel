@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import IconPlus from "~/components/icons/icon-plus"
 import { Button } from "~/components/ui/button"
+import { EmptyState } from "~/components/ui/empty-state"
 import { SectionHeader } from "~/components/ui/section-header"
 import { Tab, TabList, Tabs } from "~/components/ui/tabs"
 import { useIntegrationConnections } from "~/db/hooks"
@@ -79,9 +80,10 @@ function IntegrationsSettings() {
 			</div>
 
 			{filteredIntegrations.length === 0 && (
-				<div className="flex flex-col items-center justify-center py-16 text-center">
-					<p className="text-muted-fg text-sm">No integrations found in this category.</p>
-				</div>
+				<EmptyState
+					title="No integrations found"
+					description="No integrations found in this category."
+				/>
 			)}
 		</div>
 	)
@@ -183,20 +185,16 @@ function ConnectionStatus({ connected, comingSoon }: { connected: boolean; comin
 	if (comingSoon) {
 		return (
 			<div className="flex items-center gap-1.5">
-				<div className="size-1.5 rounded-full bg-amber-500" />
-				<span className="text-amber-600 text-xs dark:text-amber-400">Coming soon</span>
+				<div className="size-1.5 rounded-full bg-warning" />
+				<span className="text-warning text-xs">Coming soon</span>
 			</div>
 		)
 	}
 
 	return (
 		<div className="flex items-center gap-1.5">
-			<div
-				className={`size-1.5 rounded-full ${connected ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-600"}`}
-			/>
-			<span
-				className={`text-xs ${connected ? "text-emerald-600 dark:text-emerald-400" : "text-muted-fg"}`}
-			>
+			<div className={`size-1.5 rounded-full ${connected ? "bg-success" : "bg-secondary"}`} />
+			<span className={`text-xs ${connected ? "text-success" : "text-muted-fg"}`}>
 				{connected ? "Connected" : "Not connected"}
 			</span>
 		</div>
