@@ -20,14 +20,23 @@ import {
 	UserRpcs,
 } from "@hazel/domain/rpc"
 import { Layer } from "effect"
+// Static import - Vite will tree-shake in production build
+import { DevtoolsProtocolLayer } from "~/lib/devtools/rpc/protocol-interceptor"
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL
 const wsUrl = `${backendUrl.replace(/^http/, "ws")}/rpc`
 
-export const RpcProtocolLive = RpcClientBuilder.layerProtocolSocket({
+// Base protocol layer
+const BaseProtocolLive = RpcClientBuilder.layerProtocolSocket({
 	retryTransientErrors: true,
 }).pipe(Layer.provide(BrowserSocket.layerWebSocket(wsUrl)), Layer.provide(RpcSerialization.layerNdjson))
 
+// Conditional layer composition - tree-shakeable via import.meta.env.DEV
+export const RpcProtocolLive = import.meta.env.DEV
+	? Layer.provideMerge(DevtoolsProtocolLayer, BaseProtocolLive)
+	: BaseProtocolLive
+
+// Build the protocol layer with middleware
 const AtomRpcProtocolLive = RpcProtocolLive.pipe(
 	Layer.provide(AuthMiddlewareClientLive),
 	Layer.provide(Reactivity.layer),
