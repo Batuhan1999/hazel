@@ -1,6 +1,6 @@
 import { RpcGroup } from "@effect/rpc"
-import { Rpc } from "@hazel/rpc-devtools"
 import { Schema } from "effect"
+import { Rpc } from "effect-rpc-tanstack-devtools"
 import { DmChannelAlreadyExistsError, InternalServerError, UnauthorizedError } from "../errors"
 import { ChannelId, UserId } from "../ids"
 import { Channel } from "../models"

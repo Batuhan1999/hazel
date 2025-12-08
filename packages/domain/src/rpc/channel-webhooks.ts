@@ -1,7 +1,7 @@
 import { RpcGroup } from "@effect/rpc"
-import { Rpc } from "@hazel/rpc-devtools"
 import { ChannelId, ChannelWebhookId } from "@hazel/schema"
 import { Schema } from "effect"
+import { Rpc } from "effect-rpc-tanstack-devtools"
 import { InternalServerError, UnauthorizedError } from "../errors"
 import { ChannelWebhook } from "../models"
 import { TransactionId } from "../transaction-id"

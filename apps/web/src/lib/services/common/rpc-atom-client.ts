@@ -19,8 +19,12 @@ import {
 	UserPresenceStatusRpcs,
 	UserRpcs,
 } from "@hazel/domain/rpc"
-import { createRpcTypeResolver, DevtoolsProtocolLayer, setRpcTypeResolver } from "@hazel/rpc-devtools"
 import { Layer } from "effect"
+import {
+	createRpcTypeResolver,
+	DevtoolsProtocolLayer,
+	setRpcTypeResolver,
+} from "effect-rpc-tanstack-devtools"
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL
 const wsUrl = `${backendUrl.replace(/^http/, "ws")}/rpc`

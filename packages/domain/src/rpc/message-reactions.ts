@@ -1,6 +1,6 @@
 import { RpcGroup } from "@effect/rpc"
-import { Rpc } from "@hazel/rpc-devtools"
 import { Schema } from "effect"
+import { Rpc } from "effect-rpc-tanstack-devtools"
 import { InternalServerError, UnauthorizedError } from "../errors"
 import { MessageReactionId } from "../ids"
 import { MessageReaction } from "../models"
