@@ -1,5 +1,5 @@
 import { HttpApiBuilder } from "@effect/platform"
-import { CurrentUser, InternalServerError, UnauthorizedError, withSystemActor } from "@hazel/domain"
+import { InternalServerError, withSystemActor } from "@hazel/domain"
 import {
 	IntegrationNotConnectedForPreviewError,
 	IntegrationResourceError,
@@ -21,20 +21,10 @@ export const HttpIntegrationResourceLive = HttpApiBuilder.group(
 	HazelApi,
 	"integration-resources",
 	(handlers) =>
-		handlers.handle("fetchLinearIssue", ({ urlParams }) =>
+		handlers.handle("fetchLinearIssue", ({ path, urlParams }) =>
 			Effect.gen(function* () {
-				const currentUser = yield* CurrentUser.Context
+				const { orgId } = path
 				const { url } = urlParams
-
-				// Must have organization context
-				if (!currentUser.organizationId) {
-					return yield* Effect.fail(
-						new UnauthorizedError({
-							message: "Must be in an organization context to preview integrations",
-							detail: "No organizationId found in session",
-						}),
-					)
-				}
 
 				// Parse the Linear issue URL
 				const parsed = parseLinearIssueUrl(url)
@@ -50,7 +40,7 @@ export const HttpIntegrationResourceLive = HttpApiBuilder.group(
 				// Check if organization has Linear connected
 				const connectionRepo = yield* IntegrationConnectionRepo
 				const connectionOption = yield* connectionRepo
-					.findByOrgAndProvider(currentUser.organizationId, "linear")
+					.findByOrgAndProvider(orgId, "linear")
 					.pipe(withSystemActor)
 
 				if (Option.isNone(connectionOption)) {

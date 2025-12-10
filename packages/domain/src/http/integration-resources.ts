@@ -2,6 +2,7 @@ import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "@effect/platform"
 import { Schema } from "effect"
 import * as CurrentUser from "../current-user"
 import { InternalServerError, UnauthorizedError } from "../errors"
+import { OrganizationId } from "../ids"
 import { IntegrationConnection } from "../models"
 
 // Provider type from the model
@@ -75,13 +76,18 @@ export class IntegrationResourceError extends Schema.TaggedError<IntegrationReso
 // API Group for integration resources
 export class IntegrationResourceGroup extends HttpApiGroup.make("integration-resources")
 	.add(
-		HttpApiEndpoint.get("fetchLinearIssue", `/linear/issue`)
+		HttpApiEndpoint.get("fetchLinearIssue", `/:orgId/linear/issue`)
 			.addSuccess(LinearIssueResourceResponse)
 			.addError(IntegrationNotConnectedForPreviewError)
 			.addError(IntegrationResourceError)
 			.addError(ResourceNotFoundError)
 			.addError(UnauthorizedError)
 			.addError(InternalServerError)
+			.setPath(
+				Schema.Struct({
+					orgId: OrganizationId,
+				}),
+			)
 			.setUrlParams(
 				Schema.Struct({
 					url: Schema.String,

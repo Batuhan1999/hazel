@@ -62,9 +62,10 @@ function IntegrationConfigPage() {
 	const externalAccountName = connection?.externalAccountName ?? null
 
 	const handleConnect = async () => {
+		if (!user?.organizationId) return
 		setIsConnecting(true)
 		const exit = await getOAuthUrl({
-			path: { provider: integrationId as IntegrationProvider },
+			path: { orgId: user.organizationId, provider: integrationId as IntegrationProvider },
 		})
 
 		Exit.match(exit, {
@@ -80,9 +81,10 @@ function IntegrationConfigPage() {
 	}
 
 	const handleDisconnect = async () => {
+		if (!user?.organizationId) return
 		setIsDisconnecting(true)
 		const exit = await disconnectMutation({
-			path: { provider: integrationId as IntegrationProvider },
+			path: { orgId: user.organizationId, provider: integrationId as IntegrationProvider },
 		})
 
 		Exit.match(exit, {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useAtomSet } from "@effect-atom/atom-react"
-import type { ChannelId } from "@hazel/schema"
+import type { ChannelId, OrganizationId } from "@hazel/schema"
 import { Exit, pipe } from "effect"
 import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from "react"
 import type { Descendant } from "slate"
@@ -68,6 +68,7 @@ export interface SlateMessageEditorRef {
 interface SlateMessageEditorProps {
 	placeholder?: string
 	className?: string
+	orgId?: OrganizationId
 	channelId?: ChannelId
 	onSubmit?: (content: string) => void | Promise<void>
 	onUpdate?: (content: string) => void
@@ -275,7 +276,7 @@ const shouldHidePlaceholder = (value: CustomDescendant[]): boolean => {
 
 export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessageEditorProps>(
 	(
-		{ placeholder = "Type a message...", className, channelId, onSubmit, onUpdate, isUploading = false },
+		{ placeholder = "Type a message...", className, orgId, channelId, onSubmit, onUpdate, isUploading = false },
 		ref,
 	) => {
 		const containerRef = useRef<HTMLDivElement>(null)
@@ -312,7 +313,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 		const [value, setValue] = useState<CustomDescendant[]>(createEmptyValue())
 
 		// Get bot commands for this channel
-		const botCommands = useBotCommands(channelId ?? "")
+		const botCommands = useBotCommands(orgId!, channelId ?? "")
 
 		// Mutation for executing integration commands
 		const executeCommand = useAtomSet(HazelApiClient.mutation("integration-commands", "executeCommand"), {
@@ -380,6 +381,10 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 				toast.error("Cannot execute command without a channel")
 				return
 			}
+			if (!orgId) {
+				toast.error("Cannot execute command without an organization")
+				return
+			}
 
 			// Validate required fields
 			const missingRequired = commandInputState.command.arguments
@@ -402,7 +407,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 			const toastId = toast.loading(`Creating ${commandInputState.command.name}...`)
 
 			const exit = await executeCommand({
-				path: { provider, commandId: commandInputState.command.id },
+				path: { orgId, provider, commandId: commandInputState.command.id },
 				payload: { channelId, arguments: args },
 			})
 
@@ -452,7 +457,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 					toast.error(message)
 				},
 			})
-		}, [commandInputState, channelId, executeCommand, editor])
+		}, [commandInputState, orgId, channelId, executeCommand, editor])
 
 		const handleCommandCancel = useCallback(() => {
 			setCommandInputState(initialCommandInputState)

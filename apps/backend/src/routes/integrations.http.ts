@@ -38,16 +38,7 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 		.handle("getOAuthUrl", ({ path }) =>
 			Effect.gen(function* () {
 				const currentUser = yield* CurrentUser.Context
-				const { provider } = path
-
-				if (!currentUser.organizationId) {
-					return yield* Effect.fail(
-						new UnauthorizedError({
-							message: "Must be in an organization context to connect integrations",
-							detail: "No organizationId found in session",
-						}),
-					)
-				}
+				const { orgId, provider } = path
 
 				// Get the OAuth provider from registry
 				const registry = yield* OAuthProviderRegistry
@@ -65,7 +56,7 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 
 				// Get org slug for redirect URL
 				const orgRepo = yield* OrganizationRepo
-				const orgOption = yield* orgRepo.findById(currentUser.organizationId).pipe(
+				const orgOption = yield* orgRepo.findById(orgId).pipe(
 					withSystemActor,
 					Effect.mapError(
 						(error) =>
@@ -80,7 +71,7 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 						Effect.fail(
 							new UnauthorizedError({
 								message: "Organization not found",
-								detail: `Could not find organization ${currentUser.organizationId}`,
+								detail: `Could not find organization ${orgId}`,
 							}),
 						),
 					onSome: Effect.succeed,
@@ -89,7 +80,7 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 				// Encode state with return URL and context
 				const state = encodeURIComponent(
 					JSON.stringify({
-						organizationId: currentUser.organizationId,
+						organizationId: orgId,
 						userId: currentUser.id,
 						returnTo: `${frontendUrl}/${org.slug}/settings/integrations`,
 					}),
@@ -216,23 +207,11 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 		 */
 		.handle("getConnectionStatus", ({ path }) =>
 			Effect.gen(function* () {
-				const currentUser = yield* CurrentUser.Context
-				const { provider } = path
+				const { orgId, provider } = path
 				const connectionRepo = yield* IntegrationConnectionRepo
 
-				if (!currentUser.organizationId) {
-					return new ConnectionStatusResponse({
-						connected: false,
-						provider,
-						externalAccountName: null,
-						status: null,
-						connectedAt: null,
-						lastUsedAt: null,
-					})
-				}
-
 				const connectionOption = yield* connectionRepo
-					.findByOrgAndProvider(currentUser.organizationId, provider)
+					.findByOrgAndProvider(orgId, provider)
 					.pipe(withSystemActor)
 
 				if (Option.isNone(connectionOption)) {
@@ -272,17 +251,12 @@ export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations"
 		 */
 		.handle("disconnect", ({ path }) =>
 			Effect.gen(function* () {
-				const currentUser = yield* CurrentUser.Context
-				const { provider } = path
+				const { orgId, provider } = path
 				const connectionRepo = yield* IntegrationConnectionRepo
 				const tokenService = yield* IntegrationTokenService
 
-				if (!currentUser.organizationId) {
-					return yield* Effect.fail(new IntegrationNotConnectedError({ provider }))
-				}
-
 				const connectionOption = yield* connectionRepo
-					.findByOrgAndProvider(currentUser.organizationId, provider)
+					.findByOrgAndProvider(orgId, provider)
 					.pipe(withSystemActor)
 
 				if (Option.isNone(connectionOption)) {
