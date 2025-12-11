@@ -9,9 +9,8 @@ import {
 	type PinnedMessageId,
 	UserId,
 } from "@hazel/schema"
-import { Cause, Exit } from "effect"
+import { Exit } from "effect"
 import { createContext, type ReactNode, useCallback, useContext, useMemo } from "react"
-import { toast } from "sonner"
 import {
 	activeThreadChannelIdAtom,
 	activeThreadMessageIdAtom,
@@ -32,6 +31,7 @@ import {
 	unpinMessageAction,
 } from "~/db/actions"
 import { useAuth } from "~/lib/auth"
+import { matchExitWithToast, toastExitOnError } from "~/lib/toast-exit"
 
 interface ChatContextValue {
 	channelId: ChannelId
@@ -165,18 +165,12 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				attachmentIds: attachmentsToSend as AttachmentId[] | undefined,
 			})
 
-			Exit.match(tx, {
-				onSuccess: () => {
-					setReplyToMessageId(null)
-					clearAttachments()
-					onMessageSent?.()
-				},
-				onFailure: (error) => {
-					toast.error("Failed to send message", {
-						description: Cause.pretty(error),
-					})
-				},
-			})
+			toastExitOnError(tx, { error: "Failed to send message" })
+			if (Exit.isSuccess(tx)) {
+				setReplyToMessageId(null)
+				clearAttachments()
+				onMessageSent?.()
+			}
 		},
 		[
 			channelId,
@@ -193,16 +187,7 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 	const editMessage = useCallback(
 		async (messageId: MessageId, content: string) => {
 			const exit = await editMessageMutation({ messageId, content })
-			Exit.match(exit, {
-				onSuccess: () => {
-					// Message edited successfully
-				},
-				onFailure: (error) => {
-					toast.error("Failed to edit message", {
-						description: Cause.pretty(error),
-					})
-				},
-			})
+			toastExitOnError(exit, { error: "Failed to edit message" })
 		},
 		[editMessageMutation],
 	)
@@ -210,16 +195,7 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 	const deleteMessage = useCallback(
 		async (messageId: MessageId) => {
 			const exit = await deleteMessageMutation({ messageId })
-			Exit.match(exit, {
-				onSuccess: () => {
-					// Message deleted successfully
-				},
-				onFailure: (error) => {
-					toast.error("Failed to delete message", {
-						description: Cause.pretty(error),
-					})
-				},
-			})
+			toastExitOnError(exit, { error: "Failed to delete message" })
 		},
 		[deleteMessageMutation],
 	)
@@ -235,16 +211,7 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				userId: UserId.make(user.id),
 			})
 
-			Exit.match(tx, {
-				onSuccess: () => {
-					// Reaction toggled successfully
-				},
-				onFailure: (error) => {
-					toast.error("Failed to toggle reaction", {
-						description: Cause.pretty(error),
-					})
-				},
-			})
+			toastExitOnError(tx, { error: "Failed to toggle reaction" })
 		},
 		[user?.id, toggleReactionMutation],
 	)
@@ -265,15 +232,9 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				userId: UserId.make(user.id),
 			})
 
-			Exit.match(exit, {
-				onSuccess: () => {
-					toast.success("Message pinned")
-				},
-				onFailure: (error) => {
-					toast.error("Failed to pin message", {
-						description: Cause.pretty(error),
-					})
-				},
+			matchExitWithToast(exit, {
+				onSuccess: () => {},
+				successMessage: "Message pinned",
 			})
 		},
 		[channelId, user?.id, pinMessageMutation],
@@ -283,15 +244,9 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 		async (pinnedMessageId: PinnedMessageId) => {
 			const exit = await unpinMessageMutation({ pinnedMessageId })
 
-			Exit.match(exit, {
-				onSuccess: () => {
-					toast.success("Message unpinned")
-				},
-				onFailure: (error) => {
-					toast.error("Failed to unpin message", {
-						description: Cause.pretty(error),
-					})
-				},
+			matchExitWithToast(exit, {
+				onSuccess: () => {},
+				successMessage: "Message unpinned",
 			})
 		},
 		[unpinMessageMutation],
@@ -314,17 +269,11 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 					currentUserId: UserId.make(user.id),
 				})
 
-				Exit.match(exit, {
-					onSuccess: (result) => {
-						setActiveThreadChannelId(result.mutateResult.threadChannelId)
-						setActiveThreadMessageId(messageId)
-					},
-					onFailure: (error) => {
-						toast.error("Failed to create thread", {
-							description: Cause.pretty(error),
-						})
-					},
-				})
+				toastExitOnError(exit, { error: "Failed to create thread" })
+				if (Exit.isSuccess(exit)) {
+					setActiveThreadChannelId(exit.value.mutateResult.threadChannelId)
+					setActiveThreadMessageId(messageId)
+				}
 			}
 		},
 		[

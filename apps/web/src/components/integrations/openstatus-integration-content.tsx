@@ -3,9 +3,9 @@ import type { Channel } from "@hazel/domain/models"
 import type { ChannelId, OrganizationId } from "@hazel/schema"
 import { eq, or, useLiveQuery } from "@tanstack/react-db"
 import { formatDistanceToNow } from "date-fns"
-import { Exit } from "effect"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import { listOrganizationWebhooksMutation, type WebhookData } from "~/atoms/channel-webhook-atoms"
 import { getProviderIconUrl } from "~/components/embeds/use-embed-theme"
 import IconCheck from "~/components/icons/icon-check"
@@ -60,13 +60,8 @@ export function OpenStatusIntegrationContent({ organizationId }: OpenStatusInteg
 		if (isInitial) setIsLoading(true)
 		const exit = await listWebhooksRef.current({ payload: {} })
 
-		Exit.match(exit, {
-			onSuccess: (result) => {
-				setWebhooks(result.data)
-			},
-			onFailure: (cause) => {
-				console.error("Failed to fetch webhooks:", cause)
-			},
+		matchExitWithToast(exit, {
+			onSuccess: (result) => setWebhooks(result.data),
 		})
 		if (isInitial) setIsLoading(false)
 	}, [])

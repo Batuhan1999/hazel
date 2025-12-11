@@ -3,9 +3,8 @@ import type { ChannelIcon as ChannelIconType, ChannelId } from "@hazel/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
 import { type } from "arktype"
-import { Exit } from "effect"
 import { useState } from "react"
-import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import { updateChannelMutation } from "~/atoms/channel-atoms"
 import { ChannelIcon } from "~/components/channel-icon"
 import { EmojiPickerDialog } from "~/components/emoji-picker/emoji-picker-dialog"
@@ -61,15 +60,9 @@ function ChannelSettingsForm({
 				},
 			})
 
-			Exit.match(exit, {
-				onSuccess: () => {
-					toast.success("Channel updated successfully")
-					setIconDirty(false)
-				},
-				onFailure: (cause) => {
-					console.error("Failed to update channel:", cause)
-					toast.error("Failed to update channel")
-				},
+			matchExitWithToast(exit, {
+				onSuccess: () => setIconDirty(false),
+				successMessage: "Channel updated successfully",
 			})
 		},
 	})

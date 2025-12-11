@@ -2,8 +2,7 @@ import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId } from "@hazel/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
 import { type } from "arktype"
-import { Cause, Exit } from "effect"
-import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import { Button } from "~/components/ui/button"
 import { Description, FieldError, Label } from "~/components/ui/field"
 import { Input } from "~/components/ui/input"
@@ -54,16 +53,12 @@ export function RenameChannelModal({ channelId, isOpen, onOpenChange }: RenameCh
 
 			const exit = await updateChannel({ channelId: channel.id, name: trimmedName })
 
-			Exit.match(exit, {
+			matchExitWithToast(exit, {
 				onSuccess: () => {
-					toast.success("Channel renamed successfully")
 					onOpenChange(false)
 					form.reset()
 				},
-				onFailure: (cause) => {
-					console.error("Failed to rename channel:", cause)
-					toast.error("Failed to rename channel", { description: Cause.pretty(cause) })
-				},
+				successMessage: "Channel renamed successfully",
 			})
 		},
 	})

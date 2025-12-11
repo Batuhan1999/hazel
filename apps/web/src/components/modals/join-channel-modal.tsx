@@ -2,9 +2,9 @@ import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId } from "@hazel/schema"
 import { UserId } from "@hazel/schema"
 import { eq, inArray, not, or, useLiveQuery } from "@tanstack/react-db"
-import { Cause, Exit } from "effect"
 import { useState } from "react"
 import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import IconHashtag from "~/components/icons/icon-hashtag"
 import { Button } from "~/components/ui/button"
 import { Description } from "~/components/ui/field"
@@ -72,15 +72,12 @@ export function JoinChannelModal({ isOpen, onOpenChange }: JoinChannelModalProps
 			userId: UserId.make(user.id),
 		})
 
-		Exit.match(exit, {
+		matchExitWithToast(exit, {
 			onSuccess: () => {
-				toast.success("Successfully joined channel")
 				onOpenChange(false)
 				setSearchQuery("")
 			},
-			onFailure: (cause) => {
-				toast.error("Failed to join channel", { description: Cause.pretty(cause) })
-			},
+			successMessage: "Successfully joined channel",
 		})
 	}
 

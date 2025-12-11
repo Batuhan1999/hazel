@@ -3,6 +3,7 @@ import type { IntegrationConnection } from "@hazel/domain/models"
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router"
 import { Exit } from "effect"
 import { useState } from "react"
+import { toastExitOnError } from "~/lib/toast-exit"
 import { OpenStatusIntegrationContent } from "~/components/integrations/openstatus-integration-content"
 import { RailwayIntegrationContent } from "~/components/integrations/railway-integration-content"
 import { Button } from "~/components/ui/button"
@@ -70,16 +71,11 @@ function IntegrationConfigPage() {
 			path: { orgId: organizationId, provider: integrationId as IntegrationProvider },
 		})
 
-		Exit.match(exit, {
-			onSuccess: (data) => {
-				// Redirect to OAuth authorization URL
-				window.location.href = data.authorizationUrl
-			},
-			onFailure: (cause) => {
-				console.error("Failed to get OAuth URL:", cause)
-				setIsConnecting(false)
-			},
-		})
+		toastExitOnError(exit, { onFailure: () => setIsConnecting(false) })
+		if (Exit.isSuccess(exit)) {
+			// Redirect to OAuth authorization URL
+			window.location.href = exit.value.authorizationUrl
+		}
 	}
 
 	const handleDisconnect = async () => {
@@ -89,16 +85,17 @@ function IntegrationConfigPage() {
 			path: { orgId: organizationId, provider: integrationId as IntegrationProvider },
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				// Status will be refetched automatically
-				setIsDisconnecting(false)
-			},
-			onFailure: (cause) => {
-				console.error("Failed to disconnect:", cause)
-				setIsDisconnecting(false)
+		toastExitOnError(exit, {
+			customErrors: {
+				IntegrationNotConnectedError: () => ({
+					title: "Integration not connected",
+					description: "This integration is already disconnected.",
+					isRetryable: false,
+				}),
 			},
 		})
+		// Status will be refetched automatically
+		setIsDisconnecting(false)
 	}
 
 	const handleBack = () => {

@@ -1,9 +1,7 @@
 import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId, UserId } from "@hazel/schema"
 import { useRouter } from "@tanstack/react-router"
-import { Cause, Exit } from "effect"
 import { useCallback } from "react"
-import { toast } from "sonner"
 import IconClose from "~/components/icons/icon-close"
 import IconDots from "~/components/icons/icon-dots"
 import IconPhone from "~/components/icons/icon-phone"
@@ -20,6 +18,7 @@ import { useChannelWithCurrentUser } from "~/db/hooks"
 import { useOrganization } from "~/hooks/use-organization"
 import { useUserPresence } from "~/hooks/use-presence"
 import { useAuth } from "~/lib/auth"
+import { matchExitWithToast, toastExitOnError } from "~/lib/toast-exit"
 import { cx } from "~/utils/cx"
 
 interface DmAvatarProps {
@@ -79,13 +78,9 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			memberId: channel.currentUser.id,
 			isMuted: !channel.currentUser.isMuted,
 		})
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(channel.currentUser.isMuted ? "Channel unmuted" : "Channel muted")
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to update channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: channel.currentUser.isMuted ? "Channel unmuted" : "Channel muted",
 		})
 	}, [channel, updateMember])
 
@@ -95,15 +90,9 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			memberId: channel.currentUser.id,
 			isFavorite: !channel.currentUser.isFavorite,
 		})
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(
-					channel.currentUser.isFavorite ? "Removed from favorites" : "Added to favorites",
-				)
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to update channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: channel.currentUser.isFavorite ? "Removed from favorites" : "Added to favorites",
 		})
 	}, [channel, updateMember])
 
@@ -113,14 +102,8 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			memberId: channel.currentUser.id,
 			isHidden: true,
 		})
-		Exit.match(exit, {
-			onSuccess: () => {
-				// Channel hidden successfully
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to hide channel", { description: Cause.pretty(cause) })
-			},
-		})
+		// Silent success, only show error
+		toastExitOnError(exit, {})
 	}, [channel, updateMember])
 
 	if (!channel) {

@@ -1,9 +1,7 @@
 import { useAtomSet } from "@effect-atom/atom-react"
 import type { Channel, ChannelMember } from "@hazel/db/schema"
 import { useNavigate } from "@tanstack/react-router"
-import { Cause, Exit } from "effect"
 import { useState } from "react"
-import { toast } from "sonner"
 import { deleteChannelMemberMutation } from "~/atoms/channel-member-atoms"
 import { ChannelIcon } from "~/components/channel-icon"
 import IconDots from "~/components/icons/icon-dots"
@@ -19,6 +17,7 @@ import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator } from "~/compone
 import { SidebarItem, SidebarLabel, SidebarLink } from "~/components/ui/sidebar"
 import { deleteChannelAction, updateChannelMemberAction } from "~/db/actions"
 import { useOrganization } from "~/hooks/use-organization"
+import { matchExitWithToast } from "~/lib/toast-exit"
 
 interface ChannelItemProps {
 	channel: Omit<Channel, "updatedAt"> & { updatedAt: Date | null }
@@ -42,13 +41,9 @@ export function ChannelItem({ channel, member }: ChannelItemProps) {
 			isMuted: !member.isMuted,
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(member.isMuted ? "Channel unmuted" : "Channel muted")
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to update channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: member.isMuted ? "Channel unmuted" : "Channel muted",
 		})
 	}
 
@@ -58,26 +53,18 @@ export function ChannelItem({ channel, member }: ChannelItemProps) {
 			isFavorite: !member.isFavorite,
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(member.isFavorite ? "Removed from favorites" : "Added to favorites")
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to update channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: member.isFavorite ? "Removed from favorites" : "Added to favorites",
 		})
 	}
 
 	const handleDeleteChannel = async () => {
 		const exit = await deleteChannel({ channelId: channel.id })
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success("Channel deleted successfully")
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to delete channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: "Channel deleted successfully",
 		})
 	}
 
@@ -86,13 +73,9 @@ export function ChannelItem({ channel, member }: ChannelItemProps) {
 			payload: { id: member.id },
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success("Left channel successfully")
-			},
-			onFailure: (cause) => {
-				toast.error("Failed to leave channel", { description: Cause.pretty(cause) })
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => {},
+			successMessage: "Left channel successfully",
 		})
 	}
 

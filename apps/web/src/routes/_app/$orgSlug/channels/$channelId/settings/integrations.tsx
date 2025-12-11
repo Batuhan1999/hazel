@@ -2,9 +2,9 @@ import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId, ChannelWebhookId } from "@hazel/schema"
 import { createFileRoute } from "@tanstack/react-router"
 import { formatDistanceToNow } from "date-fns"
-import { Exit } from "effect"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import {
 	deleteChannelWebhookMutation,
 	listChannelWebhooksMutation,
@@ -58,13 +58,8 @@ function IntegrationsPage() {
 			payload: { channelId: channelId as ChannelId },
 		})
 
-		Exit.match(exit, {
-			onSuccess: (result) => {
-				setWebhooks(result.data as unknown as WebhookData[])
-			},
-			onFailure: (cause) => {
-				console.error("Failed to load webhooks:", cause)
-			},
+		matchExitWithToast(exit, {
+			onSuccess: (result) => setWebhooks(result.data as unknown as WebhookData[]),
 		})
 		setIsLoading(false)
 	}, [channelId])
@@ -193,14 +188,9 @@ function CompactWebhookItem({ webhook, onDelete }: { webhook: WebhookData; onDel
 			},
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(webhook.isEnabled ? "Webhook disabled" : "Webhook enabled")
-				onDelete()
-			},
-			onFailure: () => {
-				toast.error("Failed to update webhook")
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => onDelete(),
+			successMessage: webhook.isEnabled ? "Webhook disabled" : "Webhook enabled",
 		})
 		setIsToggling(false)
 	}
@@ -217,14 +207,9 @@ function CompactWebhookItem({ webhook, onDelete }: { webhook: WebhookData; onDel
 			payload: { id: webhook.id as ChannelWebhookId },
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success("Webhook deleted")
-				onDelete()
-			},
-			onFailure: () => {
-				toast.error("Failed to delete webhook")
-			},
+		matchExitWithToast(exit, {
+			onSuccess: () => onDelete(),
+			successMessage: "Webhook deleted",
 		})
 		setIsDeleting(false)
 	}

@@ -99,6 +99,9 @@ If you want to use the typography plugin, uncomment the line below.
     --animate-disclosure-collapsed: disclosure-collapsed 0.2s ease-out;
     --animate-disclosure-expanded: disclosure-expanded 0.2s ease-out;
 
+    --animate-field-error-enter: field-error-enter 0.2s ease-out;
+    --animate-shake: shake 0.5s ease-in-out;
+
     @keyframes marquee {
         from {
             transform: translateX(0);
@@ -136,6 +139,32 @@ If you want to use the typography plugin, uncomment the line below.
 
         to {
             height: var(--disclosure-height)
+        }
+    }
+
+    @keyframes field-error-enter {
+        from {
+            opacity: 0;
+            transform: translateY(-4px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes shake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-4px);
+        }
+
+        20%, 40%, 60%, 80% {
+            transform: translateX(4px);
         }
     }
 }

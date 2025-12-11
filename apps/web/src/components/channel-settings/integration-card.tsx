@@ -1,9 +1,9 @@
 import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelId, ChannelWebhookId } from "@hazel/schema"
 import { formatDistanceToNow } from "date-fns"
-import { Exit } from "effect"
 import { useState } from "react"
 import { toast } from "sonner"
+import { matchExitWithToast } from "~/lib/toast-exit"
 import {
 	createChannelWebhookMutation,
 	deleteChannelWebhookMutation,
@@ -84,15 +84,18 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			},
 		})
 
-		Exit.match(exit, {
+		matchExitWithToast(exit, {
 			onSuccess: (result) => {
-				toast.success(`${config.name} connected`)
 				setCreatedToken(result.token)
 				onWebhookChange()
 			},
-			onFailure: (cause) => {
-				console.error("Failed to create webhook:", cause)
-				toast.error(`Failed to connect ${config.name}`)
+			successMessage: `${config.name} connected`,
+			customErrors: {
+				ChannelNotFoundError: () => ({
+					title: "Channel not found",
+					description: "This channel may have been deleted.",
+					isRetryable: false,
+				}),
 			},
 		})
 		setIsCreating(false)
@@ -107,13 +110,15 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			},
 		})
 
-		Exit.match(exit, {
-			onSuccess: () => {
-				toast.success(webhook.isEnabled ? `${config.name} disabled` : `${config.name} enabled`)
-				onWebhookChange()
-			},
-			onFailure: () => {
-				toast.error("Failed to update webhook")
+		matchExitWithToast(exit, {
+			onSuccess: () => onWebhookChange(),
+			successMessage: webhook.isEnabled ? `${config.name} disabled` : `${config.name} enabled`,
+			customErrors: {
+				ChannelWebhookNotFoundError: () => ({
+					title: "Webhook not found",
+					description: "This webhook may have been deleted.",
+					isRetryable: false,
+				}),
 			},
 		})
 	}
@@ -131,14 +136,18 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			payload: { id: webhook.id as ChannelWebhookId },
 		})
 
-		Exit.match(exit, {
+		matchExitWithToast(exit, {
 			onSuccess: () => {
-				toast.success(`${config.name} disconnected`)
 				setConfirmDelete(false)
 				onWebhookChange()
 			},
-			onFailure: () => {
-				toast.error("Failed to delete webhook")
+			successMessage: `${config.name} disconnected`,
+			customErrors: {
+				ChannelWebhookNotFoundError: () => ({
+					title: "Webhook not found",
+					description: "This webhook may have been deleted.",
+					isRetryable: false,
+				}),
 			},
 		})
 		setIsDeleting(false)
