@@ -53,13 +53,13 @@ const makeRedisBacking = Effect.gen(function* () {
 							})
 
 							const pkey = prefixed(key)
-							yield* redis.set(pkey, serialized).pipe(
-								Effect.mapError((error) => Persistence.PersistenceBackingError.make("set", error)),
-							)
-
 							if (Option.isSome(ttl)) {
-								// Use PEXPIRE for millisecond precision
-								yield* redis.send("PEXPIRE", [pkey, String(Duration.toMillis(ttl.value))]).pipe(
+								// Atomic SET with PX (milliseconds) - sets value and TTL in single command
+								yield* redis
+									.send("SET", [pkey, serialized, "PX", String(Duration.toMillis(ttl.value))])
+									.pipe(Effect.mapError((error) => Persistence.PersistenceBackingError.make("set", error)))
+							} else {
+								yield* redis.set(pkey, serialized).pipe(
 									Effect.mapError((error) => Persistence.PersistenceBackingError.make("set", error)),
 								)
 							}
@@ -70,11 +70,13 @@ const makeRedisBacking = Effect.gen(function* () {
 							for (const [key, value, ttl] of entries) {
 								const pkey = prefixed(key)
 								const serialized = JSON.stringify(value)
-								yield* redis.set(pkey, serialized).pipe(
-									Effect.mapError((error) => Persistence.PersistenceBackingError.make("setMany", error)),
-								)
 								if (Option.isSome(ttl)) {
-									yield* redis.send("PEXPIRE", [pkey, String(Duration.toMillis(ttl.value))]).pipe(
+									// Atomic SET with PX (milliseconds) - sets value and TTL in single command
+									yield* redis
+										.send("SET", [pkey, serialized, "PX", String(Duration.toMillis(ttl.value))])
+										.pipe(Effect.mapError((error) => Persistence.PersistenceBackingError.make("setMany", error)))
+								} else {
+									yield* redis.set(pkey, serialized).pipe(
 										Effect.mapError((error) => Persistence.PersistenceBackingError.make("setMany", error)),
 									)
 								}
