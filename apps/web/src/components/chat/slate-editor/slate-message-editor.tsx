@@ -42,6 +42,7 @@ import {
 import { CommandInputPanel } from "./autocomplete/command-input-panel"
 import { getOptionByIndex, useSlateAutocomplete } from "./autocomplete/use-slate-combobox"
 import { CodeBlockElement } from "./code-block-element"
+import { detectLanguage } from "./detect-language"
 import { MentionElement } from "./mention-element"
 import { MentionLeaf } from "./mention-leaf"
 import { withCodeBlockPaste } from "./slate-code-block-paste-plugin"
@@ -55,7 +56,30 @@ import {
 	serializeToMarkdown,
 } from "./slate-markdown-serializer"
 import type { MentionElement as MentionElementType } from "./slate-mention-plugin"
+import type { CodeBlockElement as CodeBlockElementType } from "./types"
 import { isCodeBlockElement } from "./types"
+
+// Helper to auto-detect and set language on a code block if not already set
+function maybeDetectLanguage(
+	editor: CustomEditor,
+	element: CodeBlockElementType,
+	path: number[],
+): void {
+	// Skip if language is already set
+	if (element.language) return
+
+	// Get the text content from the code block
+	const blockText = Editor.string(editor, path)
+	if (!blockText.trim()) return
+
+	// Try to detect the language
+	const detectedLanguage = detectLanguage(blockText)
+	if (detectedLanguage) {
+		Transforms.setNodes(editor, { language: detectedLanguage } as Partial<CustomElement>, {
+			at: path,
+		})
+	}
+}
 
 // Extend the editor type with autocomplete plugin
 type CustomEditor = AutocompleteEditor
@@ -603,6 +627,17 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 
 			if (!textContent || textContent.length === 0 || isValueEmpty(value)) return
 
+			// Auto-detect language for any code blocks without explicit language before submit
+			for (const [node, path] of Editor.nodes(editor, {
+				at: [],
+				match: (n) => SlateElement.isElement(n) && isCodeBlockElement(n),
+			})) {
+				const element = node as CodeBlockElementType
+				if (!element.language) {
+					maybeDetectLanguage(editor, element, path as number[])
+				}
+			}
+
 			await onSubmit(textContent)
 
 			resetAndFocus()
@@ -720,6 +755,11 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 						if (isAtEnd && typeof path[0] === "number") {
 							event.preventDefault()
 
+							// Auto-detect language when exiting code block
+							if (element.type === "code-block") {
+								maybeDetectLanguage(editor, element as CodeBlockElementType, path)
+							}
+
 							const nextPath = path[0] + 1
 
 							// Insert new paragraph after the block
@@ -758,6 +798,11 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 
 						if (isAtStart && typeof path[0] === "number") {
 							event.preventDefault()
+
+							// Auto-detect language when exiting code block
+							if (element.type === "code-block") {
+								maybeDetectLanguage(editor, element as CodeBlockElementType, path)
+							}
 
 							// Insert new paragraph before the block
 							Transforms.insertNodes(
