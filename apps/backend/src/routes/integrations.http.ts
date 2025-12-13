@@ -14,6 +14,7 @@ import {
 } from "@hazel/domain/http"
 import { Config, Effect, Option, Schema } from "effect"
 import { HazelApi } from "../api"
+import { RelativeUrl } from "../lib/schema"
 import { IntegrationConnectionRepo } from "../repositories/integration-connection-repo"
 import { OrganizationRepo } from "../repositories/organization-repo"
 import { IntegrationTokenService } from "../services/integration-token-service"
@@ -26,7 +27,7 @@ import { OAuthProviderRegistry } from "../services/oauth"
 const OAuthState = Schema.Struct({
 	organizationId: Schema.String,
 	userId: Schema.String,
-	returnTo: Schema.String,
+	returnTo: RelativeUrl,
 })
 
 export const HttpIntegrationLive = HttpApiBuilder.group(HazelApi, "integrations", (handlers) =>
