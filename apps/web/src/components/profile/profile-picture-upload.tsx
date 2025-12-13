@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { type DropItem, DropZone, FileTrigger } from "react-aria-components"
+import { Button, type DropItem, DropZone, FileTrigger } from "react-aria-components"
 import { toast } from "sonner"
 import IconEdit from "~/components/icons/icon-edit"
 import { Avatar } from "~/components/ui/avatar/avatar"
@@ -98,8 +98,7 @@ export function ProfilePictureUpload({
 			>
 				{({ isDropTarget }) => (
 					<FileTrigger acceptedFileTypes={ALLOWED_TYPES} onSelect={handleFileSelect}>
-						<button
-							type="button"
+						<Button
 							className={cx(
 								"group relative size-24 cursor-pointer rounded-xl transition-all duration-200",
 								isUploading && "pointer-events-none",
@@ -188,7 +187,7 @@ export function ProfilePictureUpload({
 									/>
 								</div>
 							)}
-						</button>
+						</Button>
 					</FileTrigger>
 				)}
 			</DropZone>
