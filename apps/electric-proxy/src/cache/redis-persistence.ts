@@ -5,6 +5,7 @@ import * as Effect from "effect/Effect"
 import { identity } from "effect/Function"
 import * as Layer from "effect/Layer"
 import * as Option from "effect/Option"
+import * as Redacted from "effect/Redacted"
 import { ProxyConfigLive, ProxyConfigService } from "../config"
 
 /**
@@ -108,7 +109,7 @@ const RedisBackingLive = Layer.unwrapEffect(
 		const config = yield* ProxyConfigService
 		yield* Effect.log("Connecting to Redis via @hazel/effect-bun", { url: config.redisUrl })
 		return Layer.effect(Persistence.BackingPersistence, makeRedisBacking).pipe(
-			Layer.provide(Redis.layer(config.redisUrl)),
+			Layer.provide(Redis.layer(Redacted.value(config.redisUrl))),
 		)
 	}),
 ).pipe(Layer.provide(ProxyConfigLive))
