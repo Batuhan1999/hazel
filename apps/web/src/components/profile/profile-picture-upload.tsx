@@ -1,4 +1,5 @@
-import { type ChangeEvent, useRef, useState } from "react"
+import { useState } from "react"
+import { type DropItem, DropZone, FileTrigger } from "react-aria-components"
 import { toast } from "sonner"
 import IconEdit from "~/components/icons/icon-edit"
 import { Avatar } from "~/components/ui/avatar/avatar"
@@ -23,25 +24,12 @@ export function ProfilePictureUpload({
 	userInitials,
 	className,
 }: ProfilePictureUploadProps) {
-	const fileInputRef = useRef<HTMLInputElement>(null)
 	const { uploadProfilePicture, isUploading, uploadProgress } = useProfilePictureUpload()
 	const [selectedFile, setSelectedFile] = useState<File | null>(null)
 	const [isCropModalOpen, setIsCropModalOpen] = useState(false)
 
-	const handleClick = () => {
-		if (!isUploading) {
-			fileInputRef.current?.click()
-		}
-	}
-
-	const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-		const file = event.target.files?.[0]
-		if (!file) return
-
-		// Reset input so the same file can be selected again
-		event.target.value = ""
-
-		// Validate file type
+	// Shared file validation and processing
+	const processFile = (file: File) => {
 		if (!ALLOWED_TYPES.includes(file.type)) {
 			toast.error("Invalid file type", {
 				description: "Please select a JPEG, PNG, or WebP image",
@@ -49,7 +37,6 @@ export function ProfilePictureUpload({
 			return
 		}
 
-		// Validate file size
 		if (file.size > MAX_FILE_SIZE) {
 			toast.error("File too large", {
 				description: "Image must be less than 5MB",
@@ -57,9 +44,25 @@ export function ProfilePictureUpload({
 			return
 		}
 
-		// Open crop modal with the selected file
 		setSelectedFile(file)
 		setIsCropModalOpen(true)
+	}
+
+	// Handle files from FileTrigger (click to upload)
+	const handleFileSelect = (files: FileList | null) => {
+		const file = files?.[0]
+		if (file) processFile(file)
+	}
+
+	// Handle files from DropZone (drag and drop)
+	const handleDrop = async (e: { items: DropItem[] }) => {
+		const fileItem = e.items.find(
+			(item): item is DropItem & { kind: "file"; getFile: () => Promise<File> } => item.kind === "file",
+		)
+		if (!fileItem) return
+
+		const file = await fileItem.getFile()
+		processFile(file)
 	}
 
 	const handleCropComplete = async (croppedBlob: Blob) => {
@@ -79,91 +82,104 @@ export function ProfilePictureUpload({
 		}
 	}
 
-	const handleKeyDown = (event: React.KeyboardEvent) => {
-		if (event.key === "Enter" || event.key === " ") {
-			event.preventDefault()
-			handleClick()
-		}
-	}
-
 	return (
 		<div className={cx("relative inline-block", className)}>
-			{/* Hidden file input */}
-			<input
-				ref={fileInputRef}
-				type="file"
-				accept="image/jpeg,image/png,image/webp"
-				onChange={handleFileChange}
-				className="sr-only"
-				aria-label="Upload profile picture"
-			/>
-
-			{/* Clickable avatar container - size-24 matches Avatar 4xl */}
-			<div
-				role="button"
-				tabIndex={0}
-				onClick={handleClick}
-				onKeyDown={handleKeyDown}
-				className={cx(
-					"group relative size-24 cursor-pointer rounded-xl transition-all duration-200",
-					"focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2",
-					isUploading && "pointer-events-none",
-				)}
-				style={{
-					// @ts-expect-error CSS property
-					cornerShape: "squircle",
-				}}
-				aria-label="Change profile picture"
-				aria-busy={isUploading}
+			<DropZone
+				getDropOperation={(types) =>
+					types.has("image/jpeg") || types.has("image/png") || types.has("image/webp")
+						? "copy"
+						: "cancel"
+				}
+				onDrop={handleDrop}
+				isDisabled={isUploading}
+				className="rounded-xl focus-visible:outline-2 focus-visible:outline-ring focus-visible:outline-offset-2"
 			>
-				{/* Avatar */}
-				<Avatar
-					src={currentAvatarUrl}
-					alt="Your profile picture"
-					initials={userInitials}
-					size="4xl"
-					className="transition-all duration-200"
-				/>
+				{({ isDropTarget }) => (
+					<FileTrigger acceptedFileTypes={ALLOWED_TYPES} onSelect={handleFileSelect}>
+						<button
+							type="button"
+							className={cx(
+								"group relative size-24 cursor-pointer rounded-xl transition-all duration-200",
+								isUploading && "pointer-events-none",
+								isDropTarget && "scale-105",
+							)}
+							style={{
+								// @ts-expect-error CSS property
+								cornerShape: "squircle",
+							}}
+							aria-label="Change profile picture"
+							aria-busy={isUploading}
+						>
+							{/* Avatar */}
+							<Avatar
+								src={currentAvatarUrl}
+								alt="Your profile picture"
+								initials={userInitials}
+								size="4xl"
+								className="transition-all duration-200"
+							/>
 
-				{/* Hover overlay with edit icon / uploading state */}
-				<div
-					className={cx(
-						"absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 transition-opacity duration-200",
-						isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
-					)}
-					style={{
-						// @ts-expect-error CSS property
-						cornerShape: "squircle",
-					}}
-				>
-					{isUploading ? (
-						<div className="flex flex-col items-center gap-2">
-							<Loader className="size-6 text-white drop-shadow-md" />
-							<span className="font-medium text-white text-xs drop-shadow-md">
-								Uploading...
-							</span>
-						</div>
-					) : (
-						<div className="flex flex-col items-center gap-1">
-							<IconEdit className="size-6 text-white drop-shadow-md" />
-							<span className="font-medium text-white text-xs drop-shadow-md">Edit</span>
-						</div>
-					)}
-				</div>
+							{/* Drop target overlay */}
+							{isDropTarget && (
+								<div
+									className="absolute inset-0 flex items-center justify-center rounded-xl border-2 border-primary border-dashed bg-primary/20"
+									style={{
+										// @ts-expect-error CSS property
+										cornerShape: "squircle",
+									}}
+								>
+									<span className="font-medium text-primary text-xs drop-shadow-md">
+										Drop here
+									</span>
+								</div>
+							)}
 
-				{/* Linear progress bar at bottom */}
-				{isUploading && (
-					<div className="absolute right-0 bottom-0 left-0 h-1 overflow-hidden rounded-b-xl bg-white/20">
-						<div
-							className="h-full bg-white transition-[width] duration-150"
-							style={{ width: `${uploadProgress}%` }}
-						/>
-					</div>
+							{/* Hover overlay with edit icon / uploading state */}
+							{!isDropTarget && (
+								<div
+									className={cx(
+										"absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 transition-opacity duration-200",
+										isUploading ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+									)}
+									style={{
+										// @ts-expect-error CSS property
+										cornerShape: "squircle",
+									}}
+								>
+									{isUploading ? (
+										<div className="flex flex-col items-center gap-2">
+											<Loader className="size-6 text-white drop-shadow-md" />
+											<span className="font-medium text-white text-xs drop-shadow-md">
+												Uploading...
+											</span>
+										</div>
+									) : (
+										<div className="flex flex-col items-center gap-1">
+											<IconEdit className="size-6 text-white drop-shadow-md" />
+											<span className="font-medium text-white text-xs drop-shadow-md">
+												Edit
+											</span>
+										</div>
+									)}
+								</div>
+							)}
+
+							{/* Linear progress bar at bottom */}
+							{isUploading && (
+								<div className="absolute right-0 bottom-0 left-0 h-1 overflow-hidden rounded-b-xl bg-white/20">
+									<div
+										className="h-full bg-white transition-[width] duration-150"
+										style={{ width: `${uploadProgress}%` }}
+									/>
+								</div>
+							)}
+						</button>
+					</FileTrigger>
 				)}
-			</div>
+			</DropZone>
 
 			{/* Helper text */}
-			<p className="mt-2 text-center text-muted-fg text-xs">Click to upload</p>
+			<p className="mt-2 text-center text-muted-fg text-xs">Click or drop image</p>
 
 			{/* Avatar cropping modal */}
 			<AvatarCropModal
