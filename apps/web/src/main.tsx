@@ -54,7 +54,7 @@ declare module "@tanstack/react-router" {
 
 declare module "react-aria-components" {
 	interface RouterConfig {
-		href: ToOptions["to"]
+		href: ToOptions
 		routerOptions: Omit<NavigateOptions, keyof ToOptions>
 	}
 }
