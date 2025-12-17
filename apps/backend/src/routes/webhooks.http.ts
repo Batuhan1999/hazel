@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { HttpApiBuilder, HttpApiClient, HttpServerRequest } from "@effect/platform"
+import { Database, eq, schema } from "@hazel/db"
 import { Cluster, WorkflowInitializationError, withSystemActor } from "@hazel/domain"
 import { GitHubWebhookResponse, InvalidGitHubWebhookSignature } from "@hazel/domain/http"
 import type { Event } from "@workos-inc/node"
@@ -102,6 +103,9 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 				// Get cluster URL from config
 				const clusterUrl = yield* Config.string("CLUSTER_URL").pipe(Effect.orDie)
 
+				// Get database for channel type lookup
+				const db = yield* Database.Database
+
 				// Get the Cluster API client once for all events
 				const client = yield* HttpApiClient.make(Cluster.WorkflowApi, {
 					baseUrl: clusterUrl,
@@ -129,6 +133,19 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 								return
 							}
 
+							// Fetch channel type for smart notifications
+							const channelResult = yield* db
+								.execute((client) =>
+									client
+										.select({ type: schema.channelsTable.type })
+										.from(schema.channelsTable)
+										.where(eq(schema.channelsTable.id, event.record.channelId))
+										.limit(1),
+								)
+								.pipe(Effect.orDie)
+
+							const channelType = channelResult[0]?.type ?? "public"
+
 							// Execute the MessageNotificationWorkflow via HTTP
 							// The WorkflowProxy creates an endpoint named after the workflow
 							yield* client.workflows
@@ -137,6 +154,9 @@ export const HttpWebhookLive = HttpApiBuilder.group(HazelApi, "webhooks", (handl
 										messageId: event.record.id,
 										channelId: event.record.channelId,
 										authorId: event.record.authorId,
+										channelType,
+										content: event.record.content ?? "",
+										replyToMessageId: event.record.replyToMessageId ?? null,
 									},
 								})
 								.pipe(
