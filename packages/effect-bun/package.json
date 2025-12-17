@@ -14,11 +14,11 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"effect": "catalog:effect",
-		"@effect/opentelemetry": "catalog:effect",
 		"@effect/experimental": "catalog:effect",
+		"@effect/opentelemetry": "catalog:effect",
 		"@effect/platform": "catalog:effect",
-		"@effect/platform-bun": "catalog:effect"
+		"@effect/platform-bun": "catalog:effect",
+		"effect": "catalog:effect"
 	},
 	"devDependencies": {
 		"@effect/language-service": "catalog:effect",
