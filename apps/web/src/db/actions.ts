@@ -1,4 +1,3 @@
-import { optimisticAction } from "@hazel/effect-electric-db-collection"
 import {
 	type AttachmentId,
 	type ChannelIcon,
@@ -13,6 +12,7 @@ import {
 import { Effect } from "effect"
 import { HazelRpcClient } from "~/lib/services/common/rpc-atom-client"
 import { runtime } from "~/lib/services/common/runtime"
+import { optimisticAction } from "../../../../libs/effect-electric-db-collection/src"
 import {
 	channelCollection,
 	channelMemberCollection,

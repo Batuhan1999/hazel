@@ -13,9 +13,9 @@ import {
 	UnauthorizedError,
 	WorkOSUserFetchError,
 } from "@hazel/domain"
-import { OptimisticActionError, SyncError } from "@hazel/effect-electric-db-collection"
 import { Cause, Chunk, Match, Option, Schema } from "effect"
 import type { ParseError } from "effect/ParseResult"
+import { OptimisticActionError, SyncError } from "../../../../libs/effect-electric-db-collection/src"
 
 /**
  * User-friendly error message configuration

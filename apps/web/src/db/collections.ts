@@ -14,10 +14,10 @@ import {
 	User,
 	UserPresenceStatus,
 } from "@hazel/domain/models"
-import { createEffectCollection } from "@hazel/effect-electric-db-collection"
 import { Effect } from "effect"
 import { HazelRpcClient } from "~/lib/services/common/rpc-atom-client"
 import { runtime } from "~/lib/services/common/runtime"
+import { createEffectCollection } from "../../../../libs/effect-electric-db-collection/src"
 
 const electricUrl: string = import.meta.env.VITE_ELECTRIC_URL
 

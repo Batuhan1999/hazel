@@ -5,7 +5,9 @@
 	"workspaces": {
 		"packages": [
 			"apps/*",
-			"packages/*"
+			"packages/*",
+			"experimental/*",
+			"libs/*"
 		],
 		"catalogs": {
 			"effect": {
