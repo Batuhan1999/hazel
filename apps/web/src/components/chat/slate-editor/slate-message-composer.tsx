@@ -170,7 +170,8 @@ export const SlateMessageComposer = ({ placeholder = "Type a message..." }: Slat
 	}
 
 	const handleSubmit = async (content: string) => {
-		if (!content.trim()) return
+		// Allow empty content if there are attachments
+		if (!content.trim() && attachmentIds.length === 0) return
 
 		sendMessage({
 			content: content.trim(),
@@ -322,6 +323,7 @@ export const SlateMessageComposer = ({ placeholder = "Type a message..." }: Slat
 								onSubmit={handleSubmit}
 								onUpdate={handleUpdate}
 								isUploading={isUploading}
+								hasAttachments={attachmentIds.length > 0}
 							/>
 							<MessageComposerActions onEmojiSelect={handleEmojiSelect} />
 						</div>

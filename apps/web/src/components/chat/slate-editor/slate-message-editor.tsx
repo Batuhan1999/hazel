@@ -93,6 +93,7 @@ interface SlateMessageEditorProps {
 	onSubmit?: (content: string) => void | Promise<void>
 	onUpdate?: (content: string) => void
 	isUploading?: boolean
+	hasAttachments?: boolean
 }
 
 // Autoformat plugin to convert markdown shortcuts to block types
@@ -304,6 +305,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 			onSubmit,
 			onUpdate,
 			isUploading = false,
+			hasAttachments = false,
 		},
 		ref,
 	) => {
@@ -621,7 +623,8 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 
 			const textContent = serializeToMarkdown(value).trim()
 
-			if (!textContent || textContent.length === 0 || isValueEmpty(value)) return
+			// Allow empty content if there are attachments
+			if ((!textContent || textContent.length === 0 || isValueEmpty(value)) && !hasAttachments) return
 
 			// Auto-detect language for any code blocks without explicit language before submit
 			for (const [node, path] of Editor.nodes(editor, {
