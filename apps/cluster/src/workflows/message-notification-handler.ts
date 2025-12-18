@@ -68,7 +68,16 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 									),
 								),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.GetChannelMembersError({
+										channelId: payload.channelId,
+										message: "Failed to query channel members",
+										cause,
+									}),
+							),
+						)
 
 					yield* Effect.log(`Found ${channelMembers.length} members to notify (all members mode)`)
 
@@ -95,7 +104,16 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 								.where(eq(schema.messagesTable.id, payload.replyToMessageId!))
 								.limit(1),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.GetChannelMembersError({
+										channelId: payload.channelId,
+										message: "Failed to query reply-to message author",
+										cause,
+									}),
+							),
+						)
 
 					if (replyToMessage.length > 0 && replyToMessage[0]!.authorId !== payload.authorId) {
 						yield* Effect.log(
@@ -148,7 +166,16 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 								),
 							),
 					)
-					.pipe(Effect.orDie)
+					.pipe(
+						Effect.mapError(
+							(cause) =>
+								new Cluster.GetChannelMembersError({
+									channelId: payload.channelId,
+									message: "Failed to query channel members for mentions",
+									cause,
+								}),
+						),
+					)
 
 				yield* Effect.log(`Found ${channelMembers.length} members to notify (smart mode)`)
 
@@ -204,7 +231,17 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 								)
 								.limit(1),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.CreateNotificationError({
+										messageId: payload.messageId,
+										userId: member.userId,
+										message: "Failed to query organization member",
+										cause,
+									}),
+							),
+						)
 
 					if (orgMemberResult.length === 0) {
 						yield* Effect.log(`Skipping user ${member.userId} - not found in organization`)
@@ -228,7 +265,17 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 								})
 								.returning({ id: schema.notificationsTable.id }),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.CreateNotificationError({
+										messageId: payload.messageId,
+										memberId: orgMemberId,
+										message: "Failed to insert notification",
+										cause,
+									}),
+							),
+						)
 
 					const notificationId = notificationResult[0]!.id
 					notificationIds.push(notificationId)
@@ -243,7 +290,17 @@ export const MessageNotificationWorkflowLayer = Cluster.MessageNotificationWorkf
 								})
 								.where(eq(schema.channelMembersTable.id, member.id)),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.CreateNotificationError({
+										messageId: payload.messageId,
+										memberId: orgMemberId,
+										message: "Failed to increment notification count",
+										cause,
+									}),
+							),
+						)
 
 					yield* Effect.log(`Created notification ${notificationId} for member ${member.userId}`)
 				}

@@ -46,7 +46,16 @@ export const GitHubWebhookWorkflowLayer = Cluster.GitHubWebhookWorkflow.toLayer(
 								),
 							),
 					)
-					.pipe(Effect.orDie)
+					.pipe(
+						Effect.mapError(
+							(cause) =>
+								new Cluster.GetGitHubSubscriptionsError({
+									repositoryId: payload.repositoryId,
+									message: "Failed to query GitHub subscriptions",
+									cause,
+								}),
+						),
+					)
 
 				yield* Effect.log(
 					`Found ${subscriptions.length} subscriptions for repository ${payload.repositoryId}`,
@@ -106,7 +115,7 @@ export const GitHubWebhookWorkflowLayer = Cluster.GitHubWebhookWorkflow.toLayer(
 		const messagesResult = yield* Activity.make({
 			name: "CreateGitHubMessages",
 			success: Cluster.CreateGitHubMessagesResult,
-			error: Schema.Union(Cluster.CreateGitHubMessageError),
+			error: Schema.Union(Cluster.CreateGitHubMessageError, Cluster.BotUserQueryError),
 			execute: Effect.gen(function* () {
 				const db = yield* Database.Database
 				const botUserService = yield* BotUserService
@@ -141,7 +150,16 @@ export const GitHubWebhookWorkflowLayer = Cluster.GitHubWebhookWorkflow.toLayer(
 								})
 								.returning({ id: schema.messagesTable.id }),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.CreateGitHubMessageError({
+										channelId: subscription.channelId,
+										message: "Failed to create GitHub message",
+										cause,
+									}),
+							),
+						)
 
 					if (messageResult.length > 0) {
 						messageIds.push(messageResult[0]!.id)

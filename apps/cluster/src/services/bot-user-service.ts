@@ -1,5 +1,5 @@
 import { Database, eq, schema } from "@hazel/db"
-import { Integrations, type UserId } from "@hazel/domain"
+import { Cluster, Integrations, type UserId } from "@hazel/domain"
 import { Effect, Layer, Option } from "effect"
 
 /**
@@ -40,7 +40,16 @@ export class BotUserService extends Effect.Service<BotUserService>()("BotUserSer
 							.where(eq(schema.usersTable.externalId, externalId))
 							.limit(1),
 					)
-					.pipe(Effect.orDie)
+					.pipe(
+						Effect.mapError(
+							(cause) =>
+								new Cluster.BotUserQueryError({
+									provider,
+									message: `Failed to query bot user for ${provider}`,
+									cause,
+								}),
+						),
+					)
 
 				if (results.length === 0) {
 					yield* Effect.logWarning(`Bot user not found for provider: ${provider}`, {

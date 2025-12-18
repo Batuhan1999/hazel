@@ -41,7 +41,15 @@ export const CleanupUploadsWorkflowLayer = Cluster.CleanupUploadsWorkflow.toLaye
 								),
 							),
 					)
-					.pipe(Effect.orDie)
+					.pipe(
+						Effect.mapError(
+							(cause) =>
+								new Cluster.FindStaleUploadsError({
+									message: "Failed to find stale uploads",
+									cause,
+								}),
+						),
+					)
 
 				const uploads = staleUploads.map((upload) => ({
 					id: upload.id,
@@ -88,7 +96,15 @@ export const CleanupUploadsWorkflowLayer = Cluster.CleanupUploadsWorkflow.toLaye
 									),
 								),
 						)
-						.pipe(Effect.orDie)
+						.pipe(
+							Effect.mapError(
+								(cause) =>
+									new Cluster.MarkUploadsFailedError({
+										message: `Failed to mark upload ${upload.id} as failed`,
+										cause,
+									}),
+							),
+						)
 
 					failedIds.push(upload.id)
 					yield* Effect.log(
