@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useLocation, useNavigate, useParams } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useMatchRoute, useNavigate, useParams } from "@tanstack/react-router"
 import IconMagnifier from "~/components/icons/icon-magnifier-3"
 import { Input, InputGroup } from "~/components/ui/input"
 import { Tab, TabList, Tabs } from "~/components/ui/tabs"
@@ -8,26 +8,29 @@ export const Route = createFileRoute("/_app/$orgSlug/settings")({
 })
 
 const tabs = [
-	{ id: "team", label: "Team" },
-	{ id: "invitations", label: "Invitations" },
-	{ id: "billing", label: "Billing" },
-	{ id: "integrations", label: "Integrations" },
+	{ id: "team", label: "Team", to: "/$orgSlug/settings" as const },
+	{ id: "invitations", label: "Invitations", to: "/$orgSlug/settings/invitations" as const },
+	{ id: "integrations", label: "Integrations", to: "/$orgSlug/settings/integrations" as const },
 	// Only show debug tab in development
-	...(!import.meta.env.PROD ? [{ id: "debug", label: "Debug" }] : []),
+	...(!import.meta.env.PROD
+		? [{ id: "debug", label: "Debug", to: "/$orgSlug/settings/debug" as const }]
+		: []),
 ]
 
 function RouteComponent() {
-	const location = useLocation()
+	const matchRoute = useMatchRoute()
 	const navigate = useNavigate()
 	const { orgSlug } = useParams({ from: "/_app/$orgSlug" })
 
-	// Extract the current tab from the pathname
-	// No need for state - just derive from the URL directly
-	const pathSegments = location.pathname.split("/")
+	// Determine selected tab using fuzzy route matching
 	const selectedTab =
-		pathSegments[pathSegments.length - 1] === "settings"
-			? "team" // Default to team when at /_app/settings
-			: pathSegments[pathSegments.length - 1]
+		tabs.find((tab) =>
+			matchRoute({
+				to: tab.to,
+				params: { orgSlug },
+				fuzzy: true,
+			}),
+		)?.id ?? "team"
 
 	return (
 		<main className="h-full w-full min-w-0 bg-bg">
@@ -55,13 +58,10 @@ function RouteComponent() {
 							value={selectedTab}
 							onChange={(event) => {
 								const tabId = event.target.value
-								navigate({
-									to:
-										tabId === "team"
-											? "/$orgSlug/settings"
-											: `/$orgSlug/settings/${tabId}`,
-									params: { orgSlug },
-								})
+								const tab = tabs.find((t) => t.id === tabId)
+								if (tab) {
+									navigate({ to: tab.to, params: { orgSlug } })
+								}
 							}}
 							className="w-full appearance-none rounded-lg border border-input bg-bg px-[calc(--spacing(3.5)-1px)] py-[calc(--spacing(2.5)-1px)] text-base/6 text-fg outline-hidden focus:border-ring/70 focus:ring-3 focus:ring-ring/20 sm:px-[calc(--spacing(3)-1px)] sm:py-[calc(--spacing(1.5)-1px)] sm:text-sm/6"
 						>
@@ -80,13 +80,10 @@ function RouteComponent() {
 							selectedKey={selectedTab}
 							onSelectionChange={(value) => {
 								const tabId = value as string
-								navigate({
-									to:
-										tabId === "team"
-											? "/$orgSlug/settings"
-											: `/$orgSlug/settings/${tabId}`,
-									params: { orgSlug },
-								})
+								const tab = tabs.find((t) => t.id === tabId)
+								if (tab) {
+									navigate({ to: tab.to, params: { orgSlug } })
+								}
 							}}
 						>
 							<TabList className="w-full">

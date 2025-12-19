@@ -1,5 +1,5 @@
 import type { ChannelId } from "@hazel/schema"
-import { useLocation, useNavigate } from "@tanstack/react-router"
+import { useMatchRoute, useNavigate } from "@tanstack/react-router"
 import type { Key } from "react-aria-components"
 import { IconFolders } from "~/components/icons/icon-folder"
 import IconMsgs from "~/components/icons/icon-msgs"
@@ -13,11 +13,15 @@ interface ChatTabBarProps {
 }
 
 export function ChatTabBar({ orgSlug, channelId }: ChatTabBarProps) {
-	const location = useLocation()
+	const matchRoute = useMatchRoute()
 	const navigate = useNavigate()
 
-	// Determine active tab from pathname
-	const isFilesRoute = location.pathname.endsWith("/files")
+	// Determine active tab using fuzzy route matching
+	const isFilesRoute = !!matchRoute({
+		to: "/$orgSlug/chat/$id/files",
+		params: { orgSlug, id: channelId },
+		fuzzy: true,
+	})
 	const activeTab: ChatTab = isFilesRoute ? "files" : "messages"
 
 	const handleSelectionChange = (key: Key | null) => {
