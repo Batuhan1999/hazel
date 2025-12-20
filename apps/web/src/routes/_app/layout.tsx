@@ -1,10 +1,10 @@
 import { createFileRoute, Outlet, useSearch } from "@tanstack/react-router"
-import { type } from "arktype"
 import { Match, Option } from "effect"
 import { Loader } from "~/components/loader"
 import { Button } from "~/components/ui/button"
 import { Text } from "~/components/ui/text"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
+import { usePostHogIdentify } from "~/hooks/use-posthog-identify"
 import { useAuth } from "~/lib/auth"
 
 export const Route = createFileRoute("/_app")({
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_app")({
 
 function RouteComponent() {
 	const { user, error, isLoading } = useAuth()
+	usePostHogIdentify()
 	const search = useSearch({ from: "/_app" }) as {
 		loginRetry?: string
 	}
