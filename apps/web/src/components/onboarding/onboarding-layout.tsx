@@ -66,7 +66,7 @@ export function OnboardingLayout({
 	}
 
 	return (
-		<main className="relative grid h-dvh grid-cols-1 flex-col items-center justify-center lg:max-w-none lg:grid-cols-2">
+		<main className="relative grid h-dvh grid-cols-1 flex-col items-center justify-center lg:max-w-none lg:grid-cols-2 overflow-hidden">
 			{/* Left panel - branding and visual */}
 			<div className="relative hidden h-full flex-col p-10 text-white lg:flex">
 				<img

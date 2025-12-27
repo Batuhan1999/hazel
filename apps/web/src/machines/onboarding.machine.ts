@@ -17,6 +17,7 @@ export interface OnboardingContext {
 	error?: string
 	firstName?: string
 	lastName?: string
+	timezone?: string
 	theme?: "dark" | "light" | "system"
 	brandColor?: string
 }
@@ -29,6 +30,10 @@ export type OnboardingEvent =
 	| {
 			type: "PROFILE_INFO_CONTINUE"
 			data: { firstName: string; lastName: string }
+	  }
+	| {
+			type: "TIMEZONE_CONTINUE"
+			data: { timezone: string }
 	  }
 	| {
 			type: "THEME_CONTINUE"
@@ -152,6 +157,14 @@ export const onboardingMachine = setup({
 				return undefined
 			},
 		}),
+		setTimezone: assign({
+			timezone: ({ event }) => {
+				if (event.type === "TIMEZONE_CONTINUE") {
+					return event.data.timezone
+				}
+				return undefined
+			},
+		}),
 		setThemePreferences: assign({
 			theme: ({ event }) => {
 				if (event.type === "THEME_CONTINUE") {
@@ -237,17 +250,29 @@ export const onboardingMachine = setup({
 			on: {
 				BACK: "welcome",
 				PROFILE_INFO_CONTINUE: {
-					target: "themeSelection",
+					target: "timezoneSelection",
 					actions: "setProfileInfo",
 				},
 			},
 		},
-		themeSelection: {
+		timezoneSelection: {
 			meta: {
 				stepNumber: { creator: 3, invited: 3 },
 			},
 			on: {
 				BACK: "profileInfo",
+				TIMEZONE_CONTINUE: {
+					target: "themeSelection",
+					actions: "setTimezone",
+				},
+			},
+		},
+		themeSelection: {
+			meta: {
+				stepNumber: { creator: 4, invited: 4 },
+			},
+			on: {
+				BACK: "timezoneSelection",
 				THEME_CONTINUE: [
 					{
 						target: "organizationSetup",
@@ -265,7 +290,7 @@ export const onboardingMachine = setup({
 		organizationSetup: {
 			initial: "form",
 			meta: {
-				stepNumber: { creator: 4, invited: null },
+				stepNumber: { creator: 5, invited: null },
 			},
 			states: {
 				form: {
@@ -318,12 +343,12 @@ export const onboardingMachine = setup({
 		profileSetup: {
 			initial: "useCases",
 			meta: {
-				stepNumber: { creator: 5, invited: 4 },
+				stepNumber: { creator: 6, invited: 5 },
 			},
 			states: {
 				useCases: {
 					meta: {
-						stepNumber: { creator: 5, invited: null },
+						stepNumber: { creator: 6, invited: null },
 					},
 					on: {
 						BACK: [
@@ -344,7 +369,7 @@ export const onboardingMachine = setup({
 				},
 				role: {
 					meta: {
-						stepNumber: { creator: 6, invited: 4 },
+						stepNumber: { creator: 7, invited: 5 },
 					},
 					on: {
 						BACK: [
@@ -376,12 +401,12 @@ export const onboardingMachine = setup({
 		teamInvitation: {
 			initial: "inviteForm",
 			meta: {
-				stepNumber: { creator: 7, invited: null },
+				stepNumber: { creator: 8, invited: null },
 			},
 			states: {
 				inviteForm: {
 					meta: {
-						stepNumber: { creator: 7, invited: null },
+						stepNumber: { creator: 8, invited: null },
 					},
 					on: {
 						BACK: "#onboarding.profileSetup.role",
@@ -394,12 +419,12 @@ export const onboardingMachine = setup({
 		finalization: {
 			initial: "processing",
 			meta: {
-				stepNumber: { creator: 7, invited: 4 },
+				stepNumber: { creator: 8, invited: 5 },
 			},
 			states: {
 				processing: {
 					meta: {
-						stepNumber: { creator: 7, invited: 4 },
+						stepNumber: { creator: 8, invited: 5 },
 					},
 					tags: ["loading"],
 					entry: "clearError",

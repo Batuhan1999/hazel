@@ -20,6 +20,7 @@ import { OrgSetupStep } from "~/components/onboarding/org-setup-step"
 import { ProfileInfoStep } from "~/components/onboarding/profile-info-step"
 import { RoleStep } from "~/components/onboarding/role-step"
 import { ThemeSelectionStep } from "~/components/onboarding/theme-selection-step"
+import { TimezoneSelectionStep } from "~/components/onboarding/timezone-selection-step"
 import { UseCaseStep } from "~/components/onboarding/use-case-step"
 import { WelcomeStep } from "~/components/onboarding/welcome-step"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
@@ -248,7 +249,7 @@ function RouteComponent() {
 	// Determine if this is a creator or invited user
 	const isCreator = !orgId || !organization?.slug
 
-	const getTotalSteps = () => (isCreator ? 7 : 4)
+	const getTotalSteps = () => (isCreator ? 8 : 5)
 	const getCurrentStepNumber = () => {
 		const flowType = isCreator ? "creator" : "invited"
 		const allMeta = state.getMeta()
@@ -343,6 +344,24 @@ function RouteComponent() {
 							}}
 							defaultFirstName={user?.firstName || ""}
 							defaultLastName={user?.lastName || ""}
+						/>
+					</motion.div>
+				)}
+
+				{state.matches("timezoneSelection") && (
+					<motion.div
+						key="timezoneSelection"
+						custom={direction}
+						variants={variants}
+						initial="enter"
+						animate="center"
+						exit="exit"
+						transition={{ duration: 0.3, ease: "easeInOut" }}
+					>
+						<TimezoneSelectionStep
+							onBack={() => sendWithDirection({ type: "BACK" })}
+							onContinue={(data) => sendWithDirection({ type: "TIMEZONE_CONTINUE", data })}
+							defaultTimezone={state.context.timezone}
 						/>
 					</motion.div>
 				)}
