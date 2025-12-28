@@ -18,6 +18,7 @@ import { HazelApi } from "../api"
 import { IntegrationConnectionRepo } from "../repositories/integration-connection-repo"
 import { OrganizationRepo } from "../repositories/organization-repo"
 import { IntegrationTokenService } from "../services/integration-token-service"
+import { IntegrationBotService } from "../services/integrations/integration-bot-service"
 import { OAuthProviderRegistry } from "../services/oauth"
 
 /**
@@ -476,6 +477,30 @@ const handleOAuthCallback = Effect.fn("integrations.oauthCallback")(function* (
 		isGitHubApp: isGitHubAppCallback,
 		connectionId: connection.id,
 	})
+
+	// Create bot user for GitHub so it's ready when webhooks arrive
+	// This is best-effort - OAuth has already succeeded, so we just log and continue on error
+	if (provider === "github") {
+		yield* IntegrationBotService.getOrCreateBotUser(
+			"github",
+			parsedState.organizationId as OrganizationId,
+		).pipe(
+			Effect.provide(IntegrationBotService.Default),
+			Effect.tap(() =>
+				Effect.logInfo("GitHub bot user created/verified", {
+					event: "github_bot_user_created",
+					organizationId: parsedState.organizationId,
+				}),
+			),
+			Effect.catchAll((error) =>
+				Effect.logWarning("Failed to create GitHub bot user (non-critical)", {
+					event: "github_bot_user_creation_failed",
+					organizationId: parsedState.organizationId,
+					error: String(error),
+				}),
+			),
+		)
+	}
 
 	// Redirect back to the settings page with success status
 	const successUrl = buildRedirectUrl(parsedState.returnTo, provider, "success")
