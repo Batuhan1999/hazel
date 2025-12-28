@@ -64,15 +64,15 @@ function RouteComponent() {
 	// Global keyboard shortcuts
 	useKeyboardShortcut("n", () => newChannelModal.open(), {
 		meta: true,
-		shift: true,
+		alt: true,
 	})
 	useKeyboardShortcut("d", () => createDmModal.open(), {
 		meta: true,
-		shift: true,
+		alt: true,
 	})
 	useKeyboardShortcut("i", () => emailInviteModal.open(), {
 		meta: true,
-		shift: true,
+		alt: true,
 	})
 
 	// Sync organization context to user session

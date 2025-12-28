@@ -1,13 +1,15 @@
 "use client"
 
 import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
-import type { UserId } from "@hazel/schema"
-import { and, eq, or, useLiveQuery } from "@tanstack/react-db"
+import type { ChannelId, UserId } from "@hazel/schema"
+import { and, eq, inArray, not, or, useLiveQuery } from "@tanstack/react-db"
 import { useNavigate } from "@tanstack/react-router"
-import { useCallback, useEffect, useMemo } from "react"
+import { type } from "arktype"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { ColorSwatch } from "react-aria-components"
+import { toast } from "sonner"
 import { createDmChannelMutation } from "~/atoms/channel-atoms"
-import { type CommandPalettePage, commandPaletteAtom } from "~/atoms/command-palette-atoms"
+import { type CommandPalettePage, commandPaletteAtom, isFormPage } from "~/atoms/command-palette-atoms"
 import { useModal } from "~/atoms/modal-atoms"
 import { recentChannelsAtom } from "~/atoms/recent-channels-atom"
 import {
@@ -21,20 +23,34 @@ import {
 	CommandMenuShortcut,
 } from "~/components/ui/command-menu"
 import {
+	CommandMenuFormBody,
+	CommandMenuFormContainer,
+	CommandMenuFormField,
+	CommandMenuFormFooter,
+	CommandMenuFormHeader,
+	CommandMenuInput,
+	CommandMenuToggle,
+} from "~/components/ui/command-menu-form"
+import { createChannelAction, joinChannelAction } from "~/db/actions"
+import {
 	channelCollection,
 	channelMemberCollection,
 	organizationMemberCollection,
 	userCollection,
 	userPresenceStatusCollection,
 } from "~/db/collections"
+import { useAppForm } from "~/hooks/use-app-form"
 import { useOrganization } from "~/hooks/use-organization"
 import { usePresence } from "~/hooks/use-presence"
 import { useAuth } from "~/lib/auth"
 import { findExistingDmChannel } from "~/lib/channels"
-import { toastExit } from "~/lib/toast-exit"
+import { matchExitWithToast, toastExit } from "~/lib/toast-exit"
 import { cn } from "~/lib/utils"
 import { ChannelIcon } from "./channel-icon"
+import IconHashtag from "./icons/icon-hashtag"
+import IconLock from "./icons/icon-lock"
 import { type Theme, useTheme } from "./theme-provider"
+import { Button } from "./ui/button"
 import IconBell from "./icons/icon-bell"
 import IconCircleDottedUser from "./icons/icon-circle-dotted-user"
 import IconDashboard from "./icons/icon-dashboard"
@@ -46,7 +62,7 @@ import { IconServers } from "./icons/icon-servers"
 import IconUsersPlus from "./icons/icon-users-plus"
 import { Avatar } from "./ui/avatar"
 
-type Page = "home" | "channels" | "members" | "status" | "appearance"
+type Page = "home" | "channels" | "members" | "status" | "appearance" | "create-channel" | "join-channel"
 
 export function CommandPalette(
 	props: Pick<CommandMenuProps, "isOpen" | "onOpenChange"> & { initialPage?: CommandPalettePage },
@@ -139,6 +155,8 @@ export function CommandPalette(
 		}
 	}, [currentPage])
 
+	const isCurrentPageForm = isFormPage(currentPage)
+
 	return (
 		<CommandMenu
 			key={currentPage}
@@ -147,17 +165,33 @@ export function CommandPalette(
 			onInputChange={updateSearchInput}
 			isOpen={props.isOpen}
 			onOpenChange={handleOpenChange}
+			isFormPage={isCurrentPageForm}
 		>
-			<CommandMenuSearch placeholder={searchPlaceholder} />
-			<CommandMenuList>
-				{currentPage === "home" && (
-					<HomeView navigateToPage={navigateToPage} onClose={closePalette} />
-				)}
-				{currentPage === "channels" && <ChannelsView onClose={closePalette} />}
-				{currentPage === "members" && <MembersView onClose={closePalette} />}
-				{currentPage === "status" && <StatusView onClose={closePalette} />}
-				{currentPage === "appearance" && <AppearanceView onClose={closePalette} />}
-			</CommandMenuList>
+			{isCurrentPageForm ? (
+				// Form pages render their own header/content outside CommandMenuList
+				<>
+					{currentPage === "create-channel" && (
+						<CreateChannelView onClose={closePalette} onBack={goBack} />
+					)}
+					{currentPage === "join-channel" && (
+						<JoinChannelView onClose={closePalette} onBack={goBack} />
+					)}
+				</>
+			) : (
+				// List pages use the search input and menu list
+				<>
+					<CommandMenuSearch placeholder={searchPlaceholder} />
+					<CommandMenuList>
+						{currentPage === "home" && (
+							<HomeView navigateToPage={navigateToPage} onClose={closePalette} />
+						)}
+						{currentPage === "channels" && <ChannelsView onClose={closePalette} />}
+						{currentPage === "members" && <MembersView onClose={closePalette} />}
+						{currentPage === "status" && <StatusView onClose={closePalette} />}
+						{currentPage === "appearance" && <AppearanceView onClose={closePalette} />}
+					</CommandMenuList>
+				</>
+			)}
 		</CommandMenu>
 	)
 }
@@ -174,10 +208,8 @@ function HomeView({
 	const navigate = useNavigate()
 	const recentChannels = useAtomValue(recentChannelsAtom)
 
-	// Modal hooks for quick actions
-	const newChannelModal = useModal("new-channel")
+	// Modal hooks for quick actions (only for those not inline)
 	const createDmModal = useModal("create-dm")
-	const joinChannelModal = useModal("join-channel")
 	const emailInviteModal = useModal("email-invite")
 
 	// Get channel data for recent channels
@@ -206,16 +238,10 @@ function HomeView({
 		<>
 			{/* Quick Actions */}
 			<CommandMenuSection label="Quick Actions">
-				<CommandMenuItem
-					onAction={() => {
-						newChannelModal.open()
-						onClose()
-					}}
-					textValue="create channel"
-				>
+				<CommandMenuItem onAction={() => navigateToPage("create-channel")} textValue="create channel">
 					<IconPlus />
 					<CommandMenuLabel>Create channel</CommandMenuLabel>
-					<CommandMenuShortcut>⌘⇧N</CommandMenuShortcut>
+					<CommandMenuShortcut>⌘⌥N</CommandMenuShortcut>
 				</CommandMenuItem>
 				<CommandMenuItem
 					onAction={() => {
@@ -226,15 +252,9 @@ function HomeView({
 				>
 					<IconMsgs />
 					<CommandMenuLabel>Start conversation</CommandMenuLabel>
-					<CommandMenuShortcut>⌘⇧D</CommandMenuShortcut>
+					<CommandMenuShortcut>⌘⌥D</CommandMenuShortcut>
 				</CommandMenuItem>
-				<CommandMenuItem
-					onAction={() => {
-						joinChannelModal.open()
-						onClose()
-					}}
-					textValue="join channel"
-				>
+				<CommandMenuItem onAction={() => navigateToPage("join-channel")} textValue="join channel">
 					<IconPlus />
 					<CommandMenuLabel>Join channel</CommandMenuLabel>
 				</CommandMenuItem>
@@ -247,7 +267,7 @@ function HomeView({
 				>
 					<IconUsersPlus />
 					<CommandMenuLabel>Invite members</CommandMenuLabel>
-					<CommandMenuShortcut>⌘⇧I</CommandMenuShortcut>
+					<CommandMenuShortcut>⌘⌥I</CommandMenuShortcut>
 				</CommandMenuItem>
 			</CommandMenuSection>
 
@@ -686,5 +706,253 @@ function AppearanceView({ onClose }: { onClose: () => void }) {
 				</div>
 			</CommandMenuSection>
 		</>
+	)
+}
+
+const channelSchema = type({
+	name: "string > 2",
+	type: "'public'|'private'",
+})
+
+function CreateChannelView({ onClose, onBack }: { onClose: () => void; onBack: () => void }) {
+	const { user } = useAuth()
+	const { organizationId, slug } = useOrganization()
+	const navigate = useNavigate()
+	const [channelType, setChannelType] = useState<"public" | "private">("public")
+	const [name, setName] = useState("")
+	const [error, setError] = useState<string | null>(null)
+	const [isSubmitting, setIsSubmitting] = useState(false)
+
+	const createChannel = useAtomSet(createChannelAction, {
+		mode: "promiseExit",
+	})
+
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault()
+
+		// Validate
+		const result = channelSchema({ name, type: channelType })
+		if (result instanceof type.errors) {
+			setError("Channel name must be at least 3 characters")
+			return
+		}
+
+		if (!user?.id || !organizationId || !slug) return
+
+		setIsSubmitting(true)
+		setError(null)
+
+		const exit = await toastExit(
+			createChannel({
+				name,
+				icon: null,
+				type: channelType,
+				organizationId,
+				parentChannelId: null,
+				currentUserId: user.id,
+			}),
+			{
+				loading: "Creating channel...",
+				success: (result) => {
+					console.log("Channel create result:", result)
+					console.log("result.data:", result.data)
+					console.log("result.mutateResult:", result.mutateResult)
+					navigate({
+						to: "/$orgSlug/chat/$id",
+						params: {
+							orgSlug: slug,
+							id: result.data.channelId,
+						},
+					})
+					onClose()
+					return "Channel created successfully"
+				},
+			},
+		)
+
+		setIsSubmitting(false)
+	}
+
+	return (
+		<CommandMenuFormContainer>
+			<CommandMenuFormHeader
+				title="Create Channel"
+				subtitle="Create a new channel for your team"
+				onBack={onBack}
+			/>
+			<form onSubmit={handleSubmit}>
+				<CommandMenuFormBody className="space-y-4">
+					<CommandMenuFormField label="Channel name" error={error || undefined}>
+						<CommandMenuInput
+							placeholder="e.g. general, design, marketing"
+							value={name}
+							onChange={(e) => {
+								setName(e.target.value)
+								setError(null)
+							}}
+							autoFocus
+						/>
+					</CommandMenuFormField>
+
+					<CommandMenuFormField label="Channel type">
+						<CommandMenuToggle
+							value={channelType}
+							onChange={(v) => setChannelType(v as "public" | "private")}
+							options={[
+								{
+									value: "public",
+									label: "Public",
+									icon: <IconHashtag className="size-4" />,
+								},
+								{
+									value: "private",
+									label: "Private",
+									icon: <IconLock className="size-4" />,
+								},
+							]}
+						/>
+					</CommandMenuFormField>
+				</CommandMenuFormBody>
+
+				<CommandMenuFormFooter>
+					<span>
+						<kbd>Tab</kbd> to switch fields
+					</span>
+					<Button
+						size="xs"
+						intent="primary"
+						type="submit"
+						isDisabled={!name.trim() || isSubmitting}
+					>
+						{isSubmitting ? "Creating..." : "Create"}
+						{!isSubmitting && <kbd>↵</kbd>}
+					</Button>
+				</CommandMenuFormFooter>
+			</form>
+		</CommandMenuFormContainer>
+	)
+}
+
+function JoinChannelView({ onClose, onBack }: { onClose: () => void; onBack: () => void }) {
+	const { organizationId } = useOrganization()
+	const { user } = useAuth()
+	const [searchQuery, setSearchQuery] = useState("")
+
+	const joinChannel = useAtomSet(joinChannelAction, { mode: "promiseExit" })
+
+	// Get all channels the user is already a member of
+	const { data: userChannels } = useLiveQuery(
+		(q) =>
+			q
+				.from({ m: channelMemberCollection })
+				.where(({ m }) => eq(m.userId, user?.id || ""))
+				.select(({ m }) => ({ channelId: m.channelId })),
+		[user?.id],
+	)
+
+	// Get all channels the user hasn't joined yet
+	const { data: unjoinedChannels } = useLiveQuery(
+		(q) => {
+			const userChannelIds = userChannels?.map((m) => m.channelId) || []
+
+			if (userChannelIds.length === 0) {
+				return q
+					.from({ channel: channelCollection })
+					.where(({ channel }) => or(eq(channel.type, "public"), eq(channel.type, "private")))
+					.where(({ channel }) => eq(channel.organizationId, organizationId || ""))
+					.select(({ channel }) => ({ ...channel }))
+			}
+
+			return q
+				.from({ channel: channelCollection })
+				.where(({ channel }) => not(inArray(channel.id, userChannelIds)))
+				.where(({ channel }) => or(eq(channel.type, "public"), eq(channel.type, "private")))
+				.where(({ channel }) => eq(channel.organizationId, organizationId || ""))
+				.select(({ channel }) => ({ ...channel }))
+		},
+		[user?.id, userChannels, organizationId],
+	)
+
+	const filteredChannels = useMemo(() => {
+		if (!unjoinedChannels) return []
+		if (!searchQuery.trim()) return unjoinedChannels
+		return unjoinedChannels.filter((channel) =>
+			channel.name.toLowerCase().includes(searchQuery.toLowerCase()),
+		)
+	}, [unjoinedChannels, searchQuery])
+
+	const handleJoinChannel = async (channelId: ChannelId) => {
+		if (!user?.id) {
+			toast.error("User not authenticated")
+			return
+		}
+
+		const exit = await joinChannel({
+			channelId,
+			userId: user.id as UserId,
+		})
+
+		matchExitWithToast(exit, {
+			onSuccess: () => {
+				onClose()
+			},
+			successMessage: "Successfully joined channel",
+			customErrors: {
+				ChannelNotFoundError: () => ({
+					title: "Channel not found",
+					description: "This channel may have been deleted.",
+					isRetryable: false,
+				}),
+			},
+		})
+	}
+
+	return (
+		<CommandMenuFormContainer>
+			<CommandMenuFormHeader
+				title="Join Channel"
+				subtitle="Browse and join available channels"
+				onBack={onBack}
+			/>
+			<CommandMenuFormBody className="p-0">
+				<div className="border-b px-3 py-2 sm:px-2.5">
+					<CommandMenuInput
+						placeholder="Search channels..."
+						value={searchQuery}
+						onChange={(e) => setSearchQuery(e.target.value)}
+						autoFocus
+					/>
+				</div>
+				<div className="max-h-64 overflow-y-auto p-2">
+					{!unjoinedChannels?.length ? (
+						<div className="flex flex-col items-center justify-center py-8 text-center">
+							<IconHashtag className="mb-3 size-8 text-muted-fg" />
+							<p className="text-muted-fg text-sm">You've joined all available channels</p>
+						</div>
+					) : filteredChannels.length === 0 ? (
+						<div className="py-4 text-center text-muted-fg text-sm">
+							No channels match your search
+						</div>
+					) : (
+						<div className="space-y-1">
+							{filteredChannels.map((channel) => (
+								<button
+									key={channel.id}
+									type="button"
+									onClick={() => handleJoinChannel(channel.id)}
+									className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+								>
+									<ChannelIcon icon={channel.icon} className="size-4 text-muted-fg" />
+									<span className="flex-1 truncate">{channel.name}</span>
+									<span className="rounded bg-primary/10 px-2 py-0.5 text-primary text-xs">
+										Join
+									</span>
+								</button>
+							))}
+						</div>
+					)}
+				</div>
+			</CommandMenuFormBody>
+		</CommandMenuFormContainer>
 	)
 }
