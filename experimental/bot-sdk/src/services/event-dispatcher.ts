@@ -133,7 +133,7 @@ export class EventDispatcher extends Effect.Service<EventDispatcher>()("EventDis
 		// Helper to start consuming events for a specific event type
 		const consumeEvents = (eventType: EventType): Effect.Effect<void, never, Scope.Scope> =>
 			Effect.gen(function* () {
-				yield* Effect.logInfo(`Starting event consumer`, { eventType }).pipe(
+				yield* Effect.logDebug(`Starting event consumer`, { eventType }).pipe(
 					Effect.annotateLogs("service", "EventDispatcher"),
 				)
 
@@ -170,7 +170,7 @@ export class EventDispatcher extends Effect.Service<EventDispatcher>()("EventDis
 				// Interrupt fiber on scope close
 				yield* Effect.addFinalizer(() =>
 					Effect.gen(function* () {
-						yield* Effect.logInfo(`Stopping event consumer`, { eventType }).pipe(
+						yield* Effect.logDebug(`Stopping event consumer`, { eventType }).pipe(
 							Effect.annotateLogs("service", "EventDispatcher"),
 						)
 						yield* Fiber.interrupt(fiber)
@@ -202,7 +202,7 @@ export class EventDispatcher extends Effect.Service<EventDispatcher>()("EventDis
 			 * Start the event dispatcher - begins consuming events for all registered handlers
 			 */
 			start: Effect.gen(function* () {
-				yield* Effect.logInfo("Starting event dispatcher", {
+				yield* Effect.logDebug("Starting event dispatcher", {
 					concurrency: concurrency === "unbounded" ? "unbounded" : concurrency,
 				}).pipe(Effect.annotateLogs("service", "EventDispatcher"))
 
@@ -220,7 +220,7 @@ export class EventDispatcher extends Effect.Service<EventDispatcher>()("EventDis
 					concurrency: "unbounded",
 				})
 
-				yield* Effect.logInfo(`Event dispatcher started`, {
+				yield* Effect.logDebug(`Event dispatcher started`, {
 					eventTypesCount: eventTypes.length,
 					eventTypes: eventTypes.join(", "),
 				}).pipe(Effect.annotateLogs("service", "EventDispatcher"))

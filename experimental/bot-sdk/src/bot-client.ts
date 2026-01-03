@@ -64,7 +64,7 @@ export const createBotClientLayer = <Subs extends readonly ShapeSubscriptionConf
 				on: (eventType, handler) => dispatcher.on(eventType, handler),
 
 				start: Effect.gen(function* () {
-					yield* Effect.log("Starting bot client...")
+					yield* Effect.logDebug("Starting bot client...")
 
 					// Start shape stream subscriptions
 					yield* subscriber.start.pipe(
@@ -90,7 +90,7 @@ export const createBotClientLayer = <Subs extends readonly ShapeSubscriptionConf
 						),
 					)
 
-					yield* Effect.log("Bot client started successfully")
+					yield* Effect.logDebug("Bot client started successfully")
 				}),
 
 				getAuthContext: auth.getContext.pipe(Effect.orDie),

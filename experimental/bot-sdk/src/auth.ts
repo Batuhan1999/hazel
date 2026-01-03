@@ -63,7 +63,7 @@ export const createAuthContextFromToken = (
 	backendUrl: string,
 ): Effect.Effect<BotAuthContext, AuthenticationError> =>
 	Effect.gen(function* () {
-		yield* Effect.log(`Waiting for backend at ${backendUrl}...`)
+		yield* Effect.logDebug(`Waiting for backend at ${backendUrl}...`)
 
 		// Create typed HttpApiClient with Bearer token auth
 		const client = yield* HttpApiClient.make(HazelApi, {

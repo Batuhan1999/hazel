@@ -25,6 +25,7 @@ import {
 	Effect,
 	Layer,
 	Logger,
+	LogLevel,
 	ManagedRuntime,
 	Option,
 	RateLimiter,
@@ -217,7 +218,7 @@ export class HazelBotClient extends Effect.Service<HazelBotClient>()("HazelBotCl
 						return
 					}
 
-					yield* Effect.log(`Syncing ${cmds.length} commands with backend...`)
+					yield* Effect.logDebug(`Syncing ${cmds.length} commands with backend...`)
 
 					// Call the sync endpoint using type-safe HttpApiClient
 					const response = yield* httpApiClient["bot-commands"].syncCommands({
@@ -231,7 +232,7 @@ export class HazelBotClient extends Effect.Service<HazelBotClient>()("HazelBotCl
 						},
 					})
 
-					yield* Effect.log(`Synced ${response.syncedCount} commands successfully`)
+					yield* Effect.logDebug(`Synced ${response.syncedCount} commands successfully`)
 				}),
 		})
 
@@ -551,7 +552,7 @@ export class HazelBotClient extends Effect.Service<HazelBotClient>()("HazelBotCl
 			 * Syncs commands with backend and begins listening to events (Electric + Redis commands)
 			 */
 			start: Effect.gen(function* () {
-				yield* Effect.log("Starting bot client...")
+				yield* Effect.logDebug("Starting bot client...")
 
 				// Sync commands with backend (if configured)
 				yield* syncCommands
@@ -626,11 +627,11 @@ export class HazelBotClient extends Effect.Service<HazelBotClient>()("HazelBotCl
 								),
 							)
 
-							yield* Effect.log("Command dispatcher started")
+							yield* Effect.logDebug("Command dispatcher started")
 						}),
 				})
 
-				yield* Effect.log("Bot client started successfully")
+				yield* Effect.logDebug("Bot client started successfully")
 			}),
 
 			/**
@@ -831,10 +832,10 @@ export const createHazelBot = <Commands extends CommandGroup<any> = EmptyCommand
 			return {
 				on: (eventType, handler) => dispatcher.on(eventType, handler),
 				start: Effect.gen(function* () {
-					yield* Effect.log("Starting bot client...")
+					yield* Effect.logDebug("Starting bot client...")
 					yield* subscriber.start
 					yield* dispatcher.start
-					yield* Effect.log("Bot client started successfully")
+					yield* Effect.logDebug("Bot client started successfully")
 				}),
 				getAuthContext: auth.getContext.pipe(Effect.orDie),
 			}
@@ -842,11 +843,15 @@ export const createHazelBot = <Commands extends CommandGroup<any> = EmptyCommand
 	)
 
 	// Use pretty logger in non-production, structured logger in production
-	const LoggerLayer = Layer.unwrapEffect(
-		Effect.gen(function* () {
-			const nodeEnv = yield* Config.string("NODE_ENV").pipe(Config.withDefault("development"))
-			return nodeEnv === "production" ? Logger.structured : Logger.pretty
-		}),
+	// Default log level is INFO to reduce noise
+	const LoggerLayer = Layer.mergeAll(
+		Layer.unwrapEffect(
+			Effect.gen(function* () {
+				const nodeEnv = yield* Config.string("NODE_ENV").pipe(Config.withDefault("development"))
+				return nodeEnv === "production" ? Logger.structured : Logger.pretty
+			}),
+		),
+		Logger.minimumLogLevel(LogLevel.Info),
 	)
 
 	// Create tracing layer with configurable service name

@@ -44,7 +44,7 @@ export const composeMiddleware = <A = any, E = any, R = never>(
  */
 export const loggingMiddleware: Middleware = (_event, eventType, next) =>
 	Effect.gen(function* () {
-		yield* Effect.logInfo(`Handler starting`, {
+		yield* Effect.logDebug(`Handler starting`, {
 			eventType,
 		}).pipe(Effect.annotateLogs("middleware", "logging"))
 
@@ -54,7 +54,7 @@ export const loggingMiddleware: Middleware = (_event, eventType, next) =>
 
 		const duration = performance.now() - startTime
 
-		yield* Effect.logInfo(`Handler completed`, {
+		yield* Effect.logDebug(`Handler completed`, {
 			eventType,
 			duration: `${duration.toFixed(2)}ms`,
 		}).pipe(Effect.annotateLogs("middleware", "logging"))

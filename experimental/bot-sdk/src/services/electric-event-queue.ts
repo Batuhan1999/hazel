@@ -54,7 +54,7 @@ export class ElectricEventQueue extends Effect.Service<ElectricEventQueue>()("El
 			Effect.gen(function* () {
 				const queues = yield* Ref.get(queuesRef)
 
-				yield* Effect.logInfo(`Shutting down all queues`, {
+				yield* Effect.logDebug(`Shutting down all queues`, {
 					queueCount: queues.size,
 				}).pipe(Effect.annotateLogs("service", "ElectricEventQueue"))
 
@@ -66,7 +66,7 @@ export class ElectricEventQueue extends Effect.Service<ElectricEventQueue>()("El
 				// Clear the ref
 				yield* Ref.set(queuesRef, new Map())
 
-				yield* Effect.logInfo("All queues shutdown successfully").pipe(
+				yield* Effect.logDebug("All queues shutdown successfully").pipe(
 					Effect.annotateLogs("service", "ElectricEventQueue"),
 				)
 			}),
@@ -85,7 +85,7 @@ export class ElectricEventQueue extends Effect.Service<ElectricEventQueue>()("El
 					return existing
 				}
 
-				yield* Effect.logInfo(`Creating queue`, {
+				yield* Effect.logDebug(`Creating queue`, {
 					eventType,
 					capacity: config.capacity,
 					backpressureStrategy: config.backpressureStrategy,

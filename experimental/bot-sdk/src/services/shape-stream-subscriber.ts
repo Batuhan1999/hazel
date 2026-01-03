@@ -81,7 +81,7 @@ export class ShapeStreamSubscriber extends Effect.Service<ShapeStreamSubscriber>
 		const acquireShapeStream = (subscription: ShapeSubscriptionConfig) =>
 			Effect.acquireRelease(
 				Effect.gen(function* () {
-					yield* Effect.logInfo(`Creating shape stream`, {
+					yield* Effect.logDebug(`Creating shape stream`, {
 						table: subscription.table,
 						where: subscription.where,
 						columns: subscription.columns?.join(", "),
@@ -113,7 +113,7 @@ export class ShapeStreamSubscriber extends Effect.Service<ShapeStreamSubscriber>
 				),
 				(stream) =>
 					Effect.gen(function* () {
-						yield* Effect.logInfo(`Releasing shape stream`, {
+						yield* Effect.logDebug(`Releasing shape stream`, {
 							table: subscription.table,
 						}).pipe(Effect.annotateLogs("service", "ShapeStreamSubscriber"))
 						yield* Effect.sync(() => stream.unsubscribeAll())
@@ -197,7 +197,7 @@ export class ShapeStreamSubscriber extends Effect.Service<ShapeStreamSubscriber>
 			Effect.gen(function* () {
 				const shapeStream = yield* acquireShapeStream(subscription)
 
-				yield* Effect.logInfo(`Shape stream subscription active`, {
+				yield* Effect.logDebug(`Shape stream subscription active`, {
 					table: subscription.table,
 				}).pipe(Effect.annotateLogs("service", "ShapeStreamSubscriber"))
 
@@ -223,7 +223,7 @@ export class ShapeStreamSubscriber extends Effect.Service<ShapeStreamSubscriber>
 			 * Start all shape stream subscriptions
 			 */
 			start: Effect.gen(function* () {
-				yield* Effect.logInfo(`Starting shape stream subscriptions`, {
+				yield* Effect.logDebug(`Starting shape stream subscriptions`, {
 					tablesCount: config.subscriptions.length,
 					tables: config.subscriptions.map((s) => s.table).join(", "),
 				}).pipe(Effect.annotateLogs("service", "ShapeStreamSubscriber"))
@@ -235,7 +235,7 @@ export class ShapeStreamSubscriber extends Effect.Service<ShapeStreamSubscriber>
 					{ concurrency: "unbounded" },
 				)
 
-				yield* Effect.logInfo("All shape stream subscriptions started successfully").pipe(
+				yield* Effect.logDebug("All shape stream subscriptions started successfully").pipe(
 					Effect.annotateLogs("service", "ShapeStreamSubscriber"),
 				)
 			}),

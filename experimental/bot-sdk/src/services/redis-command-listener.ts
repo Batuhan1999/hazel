@@ -79,7 +79,7 @@ export class RedisCommandListener extends Effect.Service<RedisCommandListener>()
 		// Create command queue with proper scoped acquisition
 		const commandQueue = yield* Effect.acquireRelease(Queue.unbounded<CommandEvent>(), (queue) =>
 			Effect.gen(function* () {
-				yield* Effect.logInfo("Shutting down command queue").pipe(
+				yield* Effect.logDebug("Shutting down command queue").pipe(
 					Effect.annotateLogs("service", "RedisCommandListener"),
 				)
 				yield* Queue.shutdown(queue)
@@ -89,7 +89,7 @@ export class RedisCommandListener extends Effect.Service<RedisCommandListener>()
 		// Acquire Redis client with proper cleanup
 		const { client } = yield* Effect.acquireRelease(
 			Effect.gen(function* () {
-				yield* Effect.logInfo(`Starting Redis command listener`, { channel }).pipe(
+				yield* Effect.logDebug(`Starting Redis command listener`, { channel }).pipe(
 					Effect.annotateLogs("service", "RedisCommandListener"),
 				)
 
@@ -110,7 +110,7 @@ export class RedisCommandListener extends Effect.Service<RedisCommandListener>()
 			}),
 			({ client }) =>
 				Effect.gen(function* () {
-					yield* Effect.logInfo(`Stopping Redis command listener`, { channel }).pipe(
+					yield* Effect.logDebug(`Stopping Redis command listener`, { channel }).pipe(
 						Effect.annotateLogs("service", "RedisCommandListener"),
 					)
 					yield* Ref.set(isRunningRef, false)
@@ -170,7 +170,7 @@ export class RedisCommandListener extends Effect.Service<RedisCommandListener>()
 		)
 
 		yield* Ref.set(isRunningRef, true)
-		yield* Effect.logInfo(`Listening for commands`, { channel }).pipe(
+		yield* Effect.logDebug(`Listening for commands`, { channel }).pipe(
 			Effect.annotateLogs("service", "RedisCommandListener"),
 		)
 
