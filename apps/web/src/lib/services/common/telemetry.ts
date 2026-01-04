@@ -23,7 +23,8 @@ export const TracerLive = Layer.unwrapEffect(
 		const commitSha = import.meta.env.VITE_COMMIT_SHA ?? "unknown"
 
 		if (environment === "local" || isDev) {
-			return DevTools.layerWebSocket().pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor))
+			// return DevTools.layerWebSocket().pipe(Layer.provide(BrowserSocket.layerWebSocketConstructor))
+			return Layer.empty
 		}
 
 		const ingestionKey = import.meta.env.VITE_SIGNOZ_INGESTION_KEY
