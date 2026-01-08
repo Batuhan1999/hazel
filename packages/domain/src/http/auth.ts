@@ -55,6 +55,11 @@ export class AuthGroup extends HttpApiGroup.make("auth")
 		HttpApiEndpoint.get("logout")`/logout`
 			.addSuccess(Schema.Void)
 			.addError(InternalServerError)
+			.setUrlParams(
+				Schema.Struct({
+					redirectTo: Schema.optional(Schema.String),
+				}),
+			)
 			.annotateContext(
 				OpenApi.annotations({
 					title: "Logout",

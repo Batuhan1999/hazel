@@ -287,26 +287,27 @@ export const HttpAuthLive = HttpApiBuilder.group(HazelApi, "auth", (handlers) =>
 				})
 			}),
 		)
-		.handle("logout", () =>
+		.handle("logout", ({ urlParams }) =>
 			Effect.gen(function* () {
 				const workos = yield* WorkOS
 				const cookieDomain = yield* Config.string("WORKOS_COOKIE_DOMAIN").pipe(Effect.orDie)
+				const frontendUrl = yield* Config.string("FRONTEND_URL").pipe(Effect.orDie)
 
+				// Try to get WorkOS logout URL, fall back to frontend if session is invalid
 				const logoutUrl = yield* workos.getLogoutUrl().pipe(
-					Effect.catchTags({
-						WorkOSApiError: (err) =>
-							Effect.fail(
-								new InternalServerError({
-									message: "Failed to get logout URL",
-									detail: String(err.cause),
-								}),
-							),
+					Effect.catchAll(() => {
+						// Session is invalid/expired - redirect to frontend instead
+						const fallbackUrl = urlParams.redirectTo
+							? `${frontendUrl}${urlParams.redirectTo}`
+							: frontendUrl
+						return Effect.succeed(fallbackUrl)
 					}),
 				)
 
+				// Always clear the cookie
 				yield* HttpApiBuilder.securitySetCookie(CurrentUser.Cookie, Redacted.make(""), {
-					secure: true, // Always use secure cookies with HTTPS proxy
-					sameSite: "none", // Allow cross-port cookies for localhost dev
+					secure: true,
+					sameSite: "none",
 					domain: cookieDomain,
 					path: "/",
 					maxAge: 0,
