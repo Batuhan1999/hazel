@@ -1,19 +1,6 @@
-import { useAtomSet } from "@effect-atom/atom-react"
-import type { OrganizationId } from "@hazel/schema"
 import { eq, useLiveQuery } from "@tanstack/react-db"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useMachine } from "@xstate/react"
-import { Exit } from "effect"
+import { createFileRoute } from "@tanstack/react-router"
 import { AnimatePresence, motion } from "motion/react"
-import { useMemo, useState } from "react"
-import { fromPromise } from "xstate"
-import { createInvitationMutation } from "~/atoms/invitation-atoms"
-import {
-	createOrganizationMutation,
-	setOrganizationSlugMutation,
-	updateOrganizationMemberMetadataMutation,
-} from "~/atoms/organization-atoms"
-import { finalizeOnboardingMutation } from "~/atoms/user-atoms"
 import { InviteTeamStep } from "~/components/onboarding/invite-team-step"
 import { OnboardingLayout } from "~/components/onboarding/onboarding-layout"
 import { OrgSetupStep } from "~/components/onboarding/org-setup-step"
@@ -25,8 +12,8 @@ import { UseCaseStep } from "~/components/onboarding/use-case-step"
 import { WelcomeStep } from "~/components/onboarding/welcome-step"
 import { Loader } from "~/components/ui/loader"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
+import { useOnboarding } from "~/hooks/use-onboarding"
 import { useAuth } from "~/lib/auth"
-import { onboardingMachine } from "~/machines/onboarding.machine"
 
 export const Route = createFileRoute("/_app/onboarding/")({
 	component: RouteComponent,
@@ -34,26 +21,6 @@ export const Route = createFileRoute("/_app/onboarding/")({
 
 function RouteComponent() {
 	const { user } = useAuth()
-	const navigate = useNavigate()
-
-	const createOrganization = useAtomSet(createOrganizationMutation, {
-		mode: "promiseExit",
-	})
-	const setOrganizationSlugAction = useAtomSet(setOrganizationSlugMutation, {
-		mode: "promiseExit",
-	})
-	const finalizeOnboarding = useAtomSet(finalizeOnboardingMutation, {
-		mode: "promiseExit",
-	})
-	const createInvitation = useAtomSet(createInvitationMutation, {
-		mode: "promiseExit",
-	})
-	const updateOrganizationMemberMetadata = useAtomSet(updateOrganizationMemberMetadataMutation, {
-		mode: "promiseExit",
-	})
-
-	// Track transition direction for animations
-	const [direction, setDirection] = useState<"forward" | "backward">("forward")
 
 	// Fetch user's organizations to determine if they're creating or joining
 	const { data: userOrganizations } = useLiveQuery(
@@ -75,204 +42,17 @@ function RouteComponent() {
 	const organization = userOrganizations?.org
 	const organizationMemberId = userOrganizations?.member.id
 
-	// Provide actor implementations and actions with access to RPC functions and navigation
-	const machineWithActors = useMemo(
-		() =>
-			onboardingMachine.provide({
-				actions: {
-					navigateToOrg: ({ context }) => {
-						const slug = context.orgSlug || context.organization?.slug
-						if (slug) {
-							navigate({
-								to: "/$orgSlug",
-								params: { orgSlug: slug },
-							})
-						} else {
-							// Fallback: navigate to root which will redirect appropriately
-							navigate({ to: "/" })
-						}
-					},
-				},
-				actors: {
-					handleOrgSetup: fromPromise(
-						async ({
-							input,
-						}: {
-							input: {
-								orgId?: OrganizationId
-								createdOrgId?: OrganizationId
-								name: string
-								slug: string
-							}
-						}) => {
-							let effectiveOrgId = input.orgId || input.createdOrgId
-
-							// If no orgId, create the organization first
-							if (!effectiveOrgId) {
-								const result = await createOrganization({
-									payload: {
-										name: input.name,
-										slug: input.slug,
-										logoUrl: null,
-										settings: null,
-									},
-								})
-
-								if (Exit.isSuccess(result)) {
-									effectiveOrgId = result.value.data.id
-								} else {
-									throw new Error("Failed to create organization")
-								}
-							} else {
-								// If orgId exists, just update the slug
-								const result = await setOrganizationSlugAction({
-									payload: {
-										id: effectiveOrgId,
-										slug: input.slug,
-									},
-								})
-
-								if (!Exit.isSuccess(result)) {
-									throw new Error("Failed to set organization slug")
-								}
-							}
-
-							return { orgId: effectiveOrgId }
-						},
-					),
-					handleCompletion: fromPromise(
-						async ({
-							input,
-						}: {
-							input: {
-								orgId?: OrganizationId
-								role: string
-								useCases: string[]
-								emails: string[]
-								orgSlug?: string
-								organizationSlug?: string
-							}
-						}) => {
-							if (!input.orgId) {
-								throw new Error("Organization ID is required")
-							}
-
-							// Save user preferences to organization member metadata
-							if (organizationMemberId && user?.id) {
-								const metadataResult = await updateOrganizationMemberMetadata({
-									payload: {
-										id: organizationMemberId,
-										metadata: {
-											role: input.role,
-											useCases: input.useCases,
-										},
-									},
-								})
-
-								if (!Exit.isSuccess(metadataResult)) {
-									console.error("Failed to save onboarding metadata:", metadataResult.cause)
-								}
-							}
-
-							// Mark user as onboarded
-							const finalizeResult = await finalizeOnboarding({
-								payload: void 0,
-								reactivityKeys: ["currentUser"],
-							})
-
-							if (!Exit.isSuccess(finalizeResult)) {
-								console.error("Failed to finalize onboarding:", finalizeResult.cause)
-							}
-
-							if (input.emails.length > 0) {
-								try {
-									const result = await createInvitation({
-										payload: {
-											organizationId: input.orgId,
-											invites: input.emails.map((email) => ({
-												email,
-												role: "member",
-											})),
-										},
-									})
-
-									if (Exit.isSuccess(result)) {
-										const { successCount, errorCount } = result.value
-										console.log(
-											`Sent ${successCount} invitation${successCount !== 1 ? "s" : ""}${errorCount > 0 ? `, ${errorCount} failed` : ""}`,
-										)
-									} else {
-										console.error("Failed to send invitations:", result.cause)
-									}
-								} catch (error) {
-									console.error("Failed to send invitations:", error)
-								}
-							}
-
-							// Determine the slug to use for navigation
-							const slugToUse = input.orgSlug || input.organizationSlug
-
-							if (!slugToUse) {
-								throw new Error("Organization slug is missing. Please try again.")
-							}
-
-							return { slug: slugToUse }
-						},
-					),
-				},
-			}),
-		[
-			navigate,
-			createOrganization,
-			setOrganizationSlugAction,
-			updateOrganizationMemberMetadata,
-			finalizeOnboarding,
-			createInvitation,
-			user?.id,
-			organizationMemberId,
-		],
-	)
-
-	// Initialize state machine
-	const [state, send] = useMachine(machineWithActors, {
-		input: {
-			orgId,
-			organization: organization
-				? {
-						id: organization.id,
-						name: organization.name,
-						slug: organization.slug || undefined,
-					}
-				: undefined,
-		},
+	const onboarding = useOnboarding({
+		orgId,
+		organization: organization
+			? {
+					id: organization.id,
+					name: organization.name,
+					slug: organization.slug || undefined,
+				}
+			: undefined,
+		organizationMemberId,
 	})
-
-	// Determine if this is a creator or invited user
-	const isCreator = !orgId || !organization?.slug
-
-	const getTotalSteps = () => (isCreator ? 8 : 5)
-	const getCurrentStepNumber = () => {
-		const flowType = isCreator ? "creator" : "invited"
-		const allMeta = state.getMeta()
-
-		// Find stepNumber from the deepest state in the configuration
-		// getMeta() returns an object where keys are state IDs and values are meta objects
-		let stepNumber = 1
-		for (const meta of Object.values(allMeta)) {
-			if (meta && typeof meta === "object" && "stepNumber" in meta) {
-				const stepNumberMeta = meta.stepNumber as {
-					creator: number
-					invited: number | null
-				}
-				const num = stepNumberMeta[flowType]
-				if (num !== null && num !== undefined) {
-					stepNumber = num
-				}
-			}
-		}
-
-		return stepNumber
-	}
 
 	// Animation variants based on direction with blur effect
 	const variants = {
@@ -293,27 +73,17 @@ function RouteComponent() {
 		}),
 	}
 
-	// Helper to send events and track direction
-	const sendWithDirection = (event: any) => {
-		if (event.type === "BACK") {
-			setDirection("backward")
-		} else {
-			setDirection("forward")
-		}
-		send(event)
-	}
-
 	return (
 		<OnboardingLayout
-			currentStep={getCurrentStepNumber()}
-			totalSteps={getTotalSteps()}
-			direction={direction}
+			currentStep={onboarding.currentStepNumber}
+			totalSteps={onboarding.totalSteps}
+			direction={onboarding.direction}
 		>
-			<AnimatePresence mode="wait" initial={false} custom={direction}>
-				{state.matches("welcome") && (
+			<AnimatePresence mode="wait" initial={false} custom={onboarding.direction}>
+				{onboarding.currentStep === "welcome" && (
 					<motion.div
 						key="welcome"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -321,17 +91,17 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<WelcomeStep
-							onContinue={() => sendWithDirection({ type: "WELCOME_CONTINUE" })}
-							isCreatingOrg={isCreator}
-							organizationName={organization?.name}
+							onContinue={onboarding.handleWelcomeContinue}
+							isCreatingOrg={onboarding.isCreator}
+							organizationName={onboarding.initialOrganization?.name}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches("profileInfo") && (
+				{onboarding.currentStep === "profileInfo" && (
 					<motion.div
 						key="profileInfo"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -339,20 +109,18 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<ProfileInfoStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(data) => {
-								sendWithDirection({ type: "PROFILE_INFO_CONTINUE", data })
-							}}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleProfileInfoContinue}
 							defaultFirstName={user?.firstName || ""}
 							defaultLastName={user?.lastName || ""}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches("timezoneSelection") && (
+				{onboarding.currentStep === "timezoneSelection" && (
 					<motion.div
 						key="timezoneSelection"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -360,17 +128,17 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<TimezoneSelectionStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(data) => sendWithDirection({ type: "TIMEZONE_CONTINUE", data })}
-							defaultTimezone={state.context.timezone}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleTimezoneContinue}
+							defaultTimezone={onboarding.data.timezone}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches("themeSelection") && (
+				{onboarding.currentStep === "themeSelection" && (
 					<motion.div
 						key="themeSelection"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -378,16 +146,16 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<ThemeSelectionStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(data) => sendWithDirection({ type: "THEME_CONTINUE", data })}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleThemeContinue}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches({ organizationSetup: "form" }) && (
+				{onboarding.currentStep === "organizationSetup" && (
 					<motion.div
 						key="organizationSetup"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -395,20 +163,18 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<OrgSetupStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(data) => {
-								sendWithDirection({ type: "ORG_SETUP_CONTINUE", data })
-							}}
-							defaultName={organization?.name}
-							defaultSlug={organization?.slug || ""}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleOrgSetupContinue}
+							defaultName={onboarding.initialOrganization?.name}
+							defaultSlug={onboarding.initialOrganization?.slug || ""}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches({ profileSetup: "useCases" }) && (
+				{onboarding.currentStep === "useCases" && (
 					<motion.div
 						key="useCases"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -416,22 +182,17 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<UseCaseStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(useCases) =>
-								sendWithDirection({
-									type: "USE_CASE_CONTINUE",
-									data: { useCases },
-								})
-							}
-							defaultSelection={state.context.useCases}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleUseCasesContinue}
+							defaultSelection={onboarding.data.useCases}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches({ profileSetup: "role" }) && (
+				{onboarding.currentStep === "role" && (
 					<motion.div
 						key="role"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -439,19 +200,17 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<RoleStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(role) =>
-								sendWithDirection({ type: "ROLE_CONTINUE", data: { role } })
-							}
-							defaultSelection={state.context.role}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleRoleContinue}
+							defaultSelection={onboarding.data.role}
 						/>
 					</motion.div>
 				)}
 
-				{state.matches({ teamInvitation: "inviteForm" }) && (
+				{onboarding.currentStep === "teamInvitation" && (
 					<motion.div
 						key="teamInvitation"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -459,24 +218,18 @@ function RouteComponent() {
 						transition={{ duration: 0.3, ease: "easeInOut" }}
 					>
 						<InviteTeamStep
-							onBack={() => sendWithDirection({ type: "BACK" })}
-							onContinue={(emails) => {
-								sendWithDirection({
-									type: "INVITE_TEAM_CONTINUE",
-									data: { emails },
-								})
-							}}
-							onSkip={() => sendWithDirection({ type: "INVITE_TEAM_SKIP" })}
-							organizationId={orgId}
+							onBack={onboarding.goBack}
+							onContinue={onboarding.handleTeamInviteContinue}
+							onSkip={onboarding.handleTeamInviteSkip}
+							organizationId={onboarding.data.createdOrgId || orgId}
 						/>
 					</motion.div>
 				)}
 
-				{(state.matches({ finalization: "processing" }) ||
-					state.matches({ organizationSetup: "processing" })) && (
+				{onboarding.currentStep === "finalization" && (
 					<motion.div
 						key="processing"
-						custom={direction}
+						custom={onboarding.direction}
 						variants={variants}
 						initial="enter"
 						animate="center"
@@ -487,8 +240,8 @@ function RouteComponent() {
 							<Loader className="size-12" />
 							<p className="font-medium text-lg">Setting up your workspace...</p>
 							<p className="text-muted-fg text-sm">This will just take a moment</p>
-							{state.context.error && (
-								<p className="text-danger text-sm">{state.context.error}</p>
+							{onboarding.error && (
+								<p className="text-danger text-sm">{onboarding.error}</p>
 							)}
 						</div>
 					</motion.div>
