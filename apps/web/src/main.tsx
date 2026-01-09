@@ -29,8 +29,8 @@ if (reactScanEnabled === "true") {
 }
 
 const posthogOptions = {
-	ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-	api_host: "https://ph.hazel.sh",
+	api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
+	// api_host: "https://ph.hazel.sh",
 
 	defaults: "2025-11-30",
 } as const
