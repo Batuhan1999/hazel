@@ -1,6 +1,7 @@
 import { useAtom, useAtomSet } from "@effect-atom/atom-react"
 import type { OrganizationId, OrganizationMemberId } from "@hazel/schema"
 import { Exit } from "effect"
+import { usePostHog } from "posthog-js/react"
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { createInvitationMutation } from "~/atoms/invitation-atoms"
 import {
@@ -9,6 +10,8 @@ import {
 	createInitialState,
 	getNextStep,
 	getPreviousStep,
+	getStepNumber,
+	getTotalSteps,
 	isValidStepForUser,
 	onboardingAtomFamily,
 	type OnboardingData,
@@ -35,6 +38,7 @@ interface UseOnboardingOptions {
 
 export function useOnboarding(options: UseOnboardingOptions) {
 	const { user } = useAuth()
+	const posthog = usePostHog()
 
 	// Use a stable key for the atom (could also use user ID)
 	const onboardingAtom = onboardingAtomFamily("onboarding")
@@ -69,7 +73,13 @@ export function useOnboarding(options: UseOnboardingOptions) {
 		}
 
 		setState(initialState)
-	}, [options.orgId, options.organization, options.initialStep, setState])
+
+		// Track onboarding started
+		posthog.capture("onboarding_started", {
+			user_type: initialState.userType,
+			total_steps: getTotalSteps(initialState.userType),
+		})
+	}, [options.orgId, options.organization, options.initialStep, setState, posthog])
 
 	// Notify parent when step changes (for URL sync)
 	const prevStepRef = useRef<OnboardingStep | null>(null)
@@ -79,6 +89,36 @@ export function useOnboarding(options: UseOnboardingOptions) {
 		}
 		prevStepRef.current = state.currentStep
 	}, [state.currentStep, options.onStepChange])
+
+	// Track step views (excluding internal states)
+	const hasTrackedStepRef = useRef<Set<OnboardingStep>>(new Set())
+	useEffect(() => {
+		const step = state.currentStep
+		// Skip internal states and already tracked steps
+		if (step === "finalization" || step === "completed") return
+		if (hasTrackedStepRef.current.has(step)) return
+
+		hasTrackedStepRef.current.add(step)
+		posthog.capture("onboarding_step_viewed", {
+			step,
+			step_number: getStepNumber(step, state.userType),
+			user_type: state.userType,
+			total_steps: getTotalSteps(state.userType),
+		})
+	}, [state.currentStep, state.userType, posthog])
+
+	// Helper to track step completion
+	const trackStepCompleted = useCallback(
+		(step: OnboardingStep, userType: "creator" | "invited") => {
+			posthog.capture("onboarding_step_completed", {
+				step,
+				step_number: getStepNumber(step, userType),
+				user_type: userType,
+				total_steps: getTotalSteps(userType),
+			})
+		},
+		[posthog],
+	)
 
 	// Navigation helpers
 	const goBack = useCallback(() => {
@@ -111,26 +151,32 @@ export function useOnboarding(options: UseOnboardingOptions) {
 		() =>
 			<T extends Partial<OnboardingData>>(transform?: (data: T) => Partial<OnboardingData>) =>
 			(data: T) => {
-				setState((prev) => ({
-					...prev,
-					data: { ...prev.data, ...(transform ? transform(data) : data) },
-					currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
-					direction: "forward" as const,
-					error: undefined,
-				}))
+				setState((prev) => {
+					trackStepCompleted(prev.currentStep, prev.userType)
+					return {
+						...prev,
+						data: { ...prev.data, ...(transform ? transform(data) : data) },
+						currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
+						direction: "forward" as const,
+						error: undefined,
+					}
+				})
 			},
-		[setState],
+		[setState, trackStepCompleted],
 	)
 
 	// Simple step handlers using factory
 	const handleWelcomeContinue = useCallback(() => {
-		setState((prev) => ({
-			...prev,
-			currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
-			direction: "forward" as const,
-			error: undefined,
-		}))
-	}, [setState])
+		setState((prev) => {
+			trackStepCompleted(prev.currentStep, prev.userType)
+			return {
+				...prev,
+				currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
+				direction: "forward" as const,
+				error: undefined,
+			}
+		})
+	}, [setState, trackStepCompleted])
 
 	const handleProfileInfoContinue = useMemo(
 		() => createStepHandler<{ firstName: string; lastName: string }>(),
@@ -171,18 +217,21 @@ export function useOnboarding(options: UseOnboardingOptions) {
 					throw new Error("No organization ID available")
 				}
 
-				setState((prev) => ({
-					...prev,
-					data: {
-						...prev.data,
-						orgName: data.name,
-						orgSlug: data.slug,
-						createdOrgId: effectiveOrgId,
-					},
-					currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
-					direction: "forward" as const,
-					isProcessing: false,
-				}))
+				setState((prev) => {
+					trackStepCompleted(prev.currentStep, prev.userType)
+					return {
+						...prev,
+						data: {
+							...prev.data,
+							orgName: data.name,
+							orgSlug: data.slug,
+							createdOrgId: effectiveOrgId,
+						},
+						currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
+						direction: "forward" as const,
+						isProcessing: false,
+					}
+				})
 			} catch (error) {
 				setState((prev) => ({
 					...prev,
@@ -191,56 +240,68 @@ export function useOnboarding(options: UseOnboardingOptions) {
 				}))
 			}
 		},
-		[state.initialOrgId, setOrganizationSlug, setState],
+		[state.initialOrgId, setOrganizationSlug, setState, trackStepCompleted],
 	)
 
 	// These handlers take raw values, not objects
 	const handleUseCasesContinue = useCallback(
 		(useCases: string[]) => {
-			setState((prev) => ({
-				...prev,
-				data: { ...prev.data, useCases },
-				currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
-				direction: "forward" as const,
-				error: undefined,
-			}))
+			setState((prev) => {
+				trackStepCompleted(prev.currentStep, prev.userType)
+				return {
+					...prev,
+					data: { ...prev.data, useCases },
+					currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
+					direction: "forward" as const,
+					error: undefined,
+				}
+			})
 		},
-		[setState],
+		[setState, trackStepCompleted],
 	)
 
 	const handleRoleContinue = useCallback(
 		(role: string) => {
-			setState((prev) => ({
-				...prev,
-				data: { ...prev.data, role },
-				currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
-				direction: "forward" as const,
-				error: undefined,
-			}))
+			setState((prev) => {
+				trackStepCompleted(prev.currentStep, prev.userType)
+				return {
+					...prev,
+					data: { ...prev.data, role },
+					currentStep: getNextStep(prev.currentStep, prev.userType) ?? prev.currentStep,
+					direction: "forward" as const,
+					error: undefined,
+				}
+			})
 		},
-		[setState],
+		[setState, trackStepCompleted],
 	)
 
 	const handleTeamInviteContinue = useCallback(
 		(emails: string[]) => {
-			setState((prev) => ({
-				...prev,
-				data: { ...prev.data, emails },
-				currentStep: "finalization" as const,
-				direction: "forward" as const,
-			}))
+			setState((prev) => {
+				trackStepCompleted(prev.currentStep, prev.userType)
+				return {
+					...prev,
+					data: { ...prev.data, emails },
+					currentStep: "finalization" as const,
+					direction: "forward" as const,
+				}
+			})
 		},
-		[setState],
+		[setState, trackStepCompleted],
 	)
 
 	const handleTeamInviteSkip = useCallback(() => {
-		setState((prev) => ({
-			...prev,
-			data: { ...prev.data, emails: [] },
-			currentStep: "finalization" as const,
-			direction: "forward" as const,
-		}))
-	}, [setState])
+		setState((prev) => {
+			trackStepCompleted(prev.currentStep, prev.userType)
+			return {
+				...prev,
+				data: { ...prev.data, emails: [] },
+				currentStep: "finalization" as const,
+				direction: "forward" as const,
+			}
+		})
+	}, [setState, trackStepCompleted])
 
 	// Ref to hold finalization context - avoids stale closures and reduces dependencies
 	const finalizationContext = useRef({
@@ -249,6 +310,7 @@ export function useOnboarding(options: UseOnboardingOptions) {
 		userId: user?.id,
 		metadata: { role: state.data.role, useCases: state.data.useCases },
 		emails: state.data.emails,
+		userType: state.userType,
 	})
 
 	// Keep ref in sync with state
@@ -259,8 +321,9 @@ export function useOnboarding(options: UseOnboardingOptions) {
 			userId: user?.id,
 			metadata: { role: state.data.role, useCases: state.data.useCases },
 			emails: state.data.emails,
+			userType: state.userType,
 		}
-	}, [state.initialOrgId, state.data, options.organizationMemberId, user?.id])
+	}, [state.initialOrgId, state.data, options.organizationMemberId, user?.id, state.userType])
 
 	// Finalization handler - stable callback with minimal dependencies
 	const handleFinalization = useCallback(async () => {
@@ -303,6 +366,12 @@ export function useOnboarding(options: UseOnboardingOptions) {
 				})
 			}
 
+			// Track onboarding completion
+			posthog.capture("onboarding_completed", {
+				user_type: ctx.userType,
+				total_steps: getTotalSteps(ctx.userType),
+			})
+
 			// Update state - navigation is handled by component's useEffect
 			setState((prev) => ({
 				...prev,
@@ -316,7 +385,7 @@ export function useOnboarding(options: UseOnboardingOptions) {
 				error: error instanceof Error ? error.message : "Failed to complete onboarding",
 			}))
 		}
-	}, [finalizeOnboarding, updateMemberMetadata, createInvitation, setState])
+	}, [finalizeOnboarding, updateMemberMetadata, createInvitation, setState, posthog])
 
 	// Auto-trigger finalization when reaching that step
 	const finalizationTriggered = useRef(false)

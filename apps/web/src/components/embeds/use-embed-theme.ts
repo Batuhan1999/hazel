@@ -1,5 +1,5 @@
 import { useAtomValue } from "@effect-atom/atom-react"
-import { getBrandfetchIcon } from "~/routes/_app/$orgSlug/settings/integrations/__data"
+import { getBrandfetchIcon } from "~/lib/integrations/__data"
 import { resolvedThemeAtom } from "../theme-provider"
 
 export type EmbedProvider = "linear" | "github" | "figma" | "notion" | "openstatus" | "railway"
