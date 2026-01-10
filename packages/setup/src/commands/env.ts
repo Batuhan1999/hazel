@@ -4,78 +4,32 @@ import pc from "picocolors"
 import { SecretGenerator } from "../services/secrets.ts"
 import { CredentialValidator } from "../services/validators.ts"
 import { EnvWriter } from "../services/env-writer.ts"
-import { Doctor } from "../services/doctor.ts"
 import { ENV_TEMPLATES, type Config, type S3Config } from "../templates.ts"
 
 // CLI Options
-const skipValidation = Options.boolean("skip-validation").pipe(
+export const skipValidation = Options.boolean("skip-validation").pipe(
 	Options.withDescription("Skip credential validation (API calls)"),
 	Options.withDefault(false)
 )
 
-const force = Options.boolean("force").pipe(
+export const force = Options.boolean("force").pipe(
 	Options.withAlias("f"),
 	Options.withDescription("Overwrite existing .env files without prompting"),
 	Options.withDefault(false)
 )
 
-const dryRun = Options.boolean("dry-run").pipe(
+export const dryRun = Options.boolean("dry-run").pipe(
 	Options.withAlias("n"),
 	Options.withDescription("Show what would be done without writing files"),
 	Options.withDefault(false)
 )
 
-const skipDoctor = Options.boolean("skip-doctor").pipe(
-	Options.withDescription("Skip environment checks"),
-	Options.withDefault(false)
-)
-
-export const setupCommand = Command.make(
-	"setup",
-	{ skipValidation, force, dryRun, skipDoctor },
-	({ skipValidation, force, dryRun, skipDoctor }) =>
+export const envCommand = Command.make(
+	"env",
+	{ skipValidation, force, dryRun },
+	({ skipValidation, force, dryRun }) =>
 		Effect.gen(function* () {
-			yield* Console.log(`\n${pc.bold("\u{1F33F} Hazel Local Development Setup")}\n`)
-
-			// Run doctor first (unless skipped)
-			if (!skipDoctor) {
-				yield* Console.log(pc.cyan("\u2500\u2500\u2500 Environment Check \u2500\u2500\u2500"))
-
-				const doctor = yield* Doctor
-				const results = yield* doctor.runAllChecks()
-
-				let hasFailure = false
-				for (const result of results) {
-					const icon =
-						result.status === "ok"
-							? pc.green("\u2713")
-							: result.status === "warn"
-								? pc.yellow("\u26A0")
-								: pc.red("\u2717")
-
-					const msg =
-						result.status === "fail"
-							? pc.red(result.message)
-							: result.status === "warn"
-								? pc.yellow(result.message)
-								: result.message
-
-					yield* Console.log(`  ${icon} ${pc.bold(result.name)}: ${msg}`)
-					if (result.status === "fail") hasFailure = true
-				}
-
-				if (hasFailure) {
-					yield* Console.log(
-						`\n${pc.yellow("\u26A0 Some checks failed.")} Run ${pc.cyan("`hazel-setup doctor`")} for details.`
-					)
-					const continueAnyway = yield* Prompt.confirm({
-						message: "Continue anyway?",
-						initial: false,
-					})
-					if (!continueAnyway) return
-				}
-				yield* Console.log("")
-			}
+			yield* Console.log(`\n${pc.bold("Hazel Environment Setup")}\n`)
 
 			// Get services
 			const envWriter = yield* EnvWriter

@@ -16,8 +16,9 @@
 		"@effect/platform-bun": "catalog:effect",
 		"@effect/printer": "catalog:effect",
 		"@effect/printer-ansi": "catalog:effect",
+		"@workos-inc/node": "^7.77.0",
 		"effect": "catalog:effect",
-		"@workos-inc/node": "^7.77.0"
+		"picocolors": "^1.1.1"
 	},
 	"devDependencies": {
 		"@effect/language-service": "catalog:effect",
