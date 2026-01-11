@@ -5,7 +5,6 @@ This directory contains notification sound files for the application.
 ## Current Files
 
 - `notification01.mp3` - Classic notification
-- `notification02.mp3` - Gentle chime
 - `notification03.mp3` - Modern alert
 
 ## Required Files (To Add)

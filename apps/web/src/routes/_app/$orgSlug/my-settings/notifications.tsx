@@ -31,8 +31,7 @@ function NotificationSettings() {
 
 	const soundOptions = [
 		{ value: "notification01", label: "Sound 1", description: "Classic notification" },
-		{ value: "notification02", label: "Sound 2", description: "Gentle chime" },
-		{ value: "notification03", label: "Sound 3", description: "Modern alert" },
+		{ value: "notification03", label: "Sound 2", description: "Modern alert" },
 	] as const
 
 	return (
@@ -71,7 +70,6 @@ function NotificationSettings() {
 									updateSettings({
 										soundFile: value as
 											| "notification01"
-											| "notification02"
 											| "notification03"
 											| "ping"
 											| "chime"
