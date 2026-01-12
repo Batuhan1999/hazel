@@ -1,47 +1,52 @@
-import { Atom, Result, useAtomMount } from "@effect-atom/atom-react"
+import { useEffect } from "react"
 import { toast } from "sonner"
-import { versionCheckAtom } from "~/atoms/version-atom"
-
-/**
- * Atom that applies the version update toast as a side effect
- * Reads from versionCheckAtom and shows toast when update is available
- */
-const applyVersionToastAtom = Atom.make((get) => {
-	const versionStateResult = get(versionCheckAtom)
-	const versionState = Result.getOrElse(versionStateResult, () => null)
-
-	if (versionState?.shouldShowToast) {
-		toast("A new version is available", {
-			id: "version-update",
-			description: "Reload the page to get the latest updates",
-			duration: Number.POSITIVE_INFINITY,
-			action: {
-				label: "Reload",
-				onClick: () => {
-					window.location.reload()
-				},
-			},
-			cancel: {
-				label: "Dismiss",
-				onClick: () => {},
-			},
-		})
-	}
-})
+import { useRegisterSW } from "virtual:pwa-register/react"
 
 /**
  * Component that monitors for new app versions and displays a toast notification
  * when an update is available, prompting the user to reload the page.
  *
  * Features:
- * - Checks immediately on mount, then polls every 1 minute
- * - Shows toast whenever a new version is detected
- * - Provides "Reload" action button in toast
- * - Gracefully handles errors (fails silently)
+ * - Checks for updates every 60 seconds via service worker
+ * - Shows toast when a new version is detected
+ * - Properly activates new service worker before reloading
+ * - Gracefully handles offline scenarios
  */
 export const VersionCheck = () => {
-	// useAtomMount activates the toast atom without subscribing to it
-	useAtomMount(applyVersionToastAtom)
+	const {
+		needRefresh: [needRefresh],
+		updateServiceWorker,
+	} = useRegisterSW({
+		onRegisteredSW(_swUrl, registration) {
+			// Check for updates every 60 seconds
+			if (registration) {
+				setInterval(() => {
+					registration.update()
+				}, 60 * 1000)
+			}
+		},
+	})
+
+	useEffect(() => {
+		if (needRefresh) {
+			toast("A new version is available", {
+				id: "version-update",
+				description: "Reload the page to get the latest updates",
+				duration: Number.POSITIVE_INFINITY,
+				action: {
+					label: "Reload",
+					onClick: () => {
+						// This activates the new SW and reloads
+						updateServiceWorker(true)
+					},
+				},
+				cancel: {
+					label: "Dismiss",
+					onClick: () => {},
+				},
+			})
+		}
+	}, [needRefresh, updateServiceWorker])
 
 	return null
 }
