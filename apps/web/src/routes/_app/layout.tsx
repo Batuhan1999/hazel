@@ -1,6 +1,6 @@
-import { createFileRoute, Outlet, useSearch } from "@tanstack/react-router"
+import { createFileRoute, Outlet, useRouter, useSearch } from "@tanstack/react-router"
 import { Match, Option } from "effect"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import IconCheck from "~/components/icons/icon-check"
 import IconCopy from "~/components/icons/icon-copy"
@@ -11,6 +11,7 @@ import { Text } from "~/components/ui/text"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
 import { usePostHogIdentify } from "~/hooks/use-posthog-identify"
 import { useAuth } from "~/lib/auth"
+import { isTauri } from "~/lib/tauri"
 
 export const Route = createFileRoute("/_app")({
 	component: RouteComponent,
@@ -23,7 +24,8 @@ export const Route = createFileRoute("/_app")({
 })
 
 function RouteComponent() {
-	const { user, error, isLoading } = useAuth()
+	const { user, error, isLoading, login } = useAuth()
+	const router = useRouter()
 	usePostHogIdentify()
 	const search = useSearch({ from: "/_app" }) as {
 		loginRetry?: string
@@ -31,6 +33,36 @@ function RouteComponent() {
 	const [copied, setCopied] = useState(false)
 
 	const loginRetry = Number(search.loginRetry) || 0
+
+	// Handle redirect to login - must be in useEffect, not during render
+	useEffect(() => {
+		if (user || isLoading) return // Don't redirect if logged in or still loading
+
+		// Check if there's an auth error that requires login
+		const hasAuthError =
+			Option.isSome(error) && !["SessionLoadError", "WorkOSUserFetchError"].includes(error.value._tag)
+		const needsLogin = !user && (hasAuthError || Option.isNone(error))
+
+		if (needsLogin) {
+			if (isTauri()) {
+				router.navigate({ to: "/auth/desktop-login" })
+			} else {
+				login({ returnTo: `${location.pathname}${location.search}${location.hash}` })
+			}
+		}
+	}, [user, error, isLoading, login, router])
+
+	// Handle session expiry events from token refresh failures (desktop only)
+	useEffect(() => {
+		if (!isTauri()) return
+
+		const handleSessionExpired = () => {
+			router.navigate({ to: "/auth/desktop-login" })
+		}
+
+		window.addEventListener("auth:session-expired", handleSessionExpired)
+		return () => window.removeEventListener("auth:session-expired", handleSessionExpired)
+	}, [router])
 
 	const handleCopyEmail = async () => {
 		try {
@@ -128,26 +160,13 @@ function RouteComponent() {
 			// 503 errors - infrastructure/service issues - show error screen with retry
 			Match.when("SessionLoadError", () => serviceErrorScreen),
 			Match.when("WorkOSUserFetchError", () => serviceErrorScreen),
-			// 401 errors - user needs to re-authenticate - redirect to login
-			Match.orElse(() => {
-				const currentUrl = new URL(window.location.href)
-				currentUrl.searchParams.set("loginRetry", String(loginRetry + 1))
-				const returnTo = encodeURIComponent(currentUrl.pathname + currentUrl.search + currentUrl.hash)
-				const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"
-				window.location.href = `${backendUrl}/auth/login?returnTo=${returnTo}`
-
-				return <Loader />
-			}),
+			// 401 errors - user needs to re-authenticate - useEffect handles redirect
+			Match.orElse(() => <Loader />),
 		)
 	}
 
-	// No user and no error - redirect to login
+	// No user and no error - useEffect handles redirect
 	if (!user) {
-		const currentUrl = new URL(window.location.href)
-		currentUrl.searchParams.set("loginRetry", String(loginRetry + 1))
-		const returnTo = encodeURIComponent(currentUrl.pathname + currentUrl.search + currentUrl.hash)
-		const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001"
-		window.location.href = `${backendUrl}/auth/login?returnTo=${returnTo}`
 		return <Loader />
 	}
 

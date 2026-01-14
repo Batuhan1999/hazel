@@ -1,24 +1,21 @@
 import { Database, eq, schema } from "@hazel/db"
 import type { OrganizationId, UserId } from "@hazel/schema"
-import { Effect, Option } from "effect"
+import { Config, Effect, Option, Schema } from "effect"
+import { createRemoteJWKSet, jwtVerify } from "jose"
 import { UserLookupCache } from "../cache/user-lookup-cache.ts"
 import { SessionValidator } from "../session/session-validator.ts"
 import type { AuthenticatedUserContext } from "../types.ts"
 
 /**
  * Authentication error for proxy auth.
- * Simpler error type than backend since we don't need HTTP status codes.
  */
-export class ProxyAuthenticationError extends Error {
-	readonly _tag = "ProxyAuthenticationError"
-	constructor(
-		message: string,
-		readonly detail?: string,
-	) {
-		super(message)
-		this.name = "ProxyAuthenticationError"
-	}
-}
+export class ProxyAuthenticationError extends Schema.TaggedError<ProxyAuthenticationError>()(
+	"ProxyAuthenticationError",
+	{
+		message: Schema.String,
+		detail: Schema.optional(Schema.String),
+	},
+) {}
 
 /**
  * Electric-proxy authentication service.
@@ -61,7 +58,7 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 			}
 
 			// Cache miss - lookup in database
-			const userOption = yield* db
+			const userResult = yield* db
 				.execute((client) =>
 					client
 						.select({ id: schema.usersTable.id })
@@ -70,12 +67,16 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 						.limit(1),
 				)
 				.pipe(
-					Effect.map((results) => Option.fromNullable(results[0])),
-					Effect.mapError(
+					Effect.catchTag(
+						"DatabaseError",
 						(error) =>
-							new ProxyAuthenticationError("Failed to lookup user in database", String(error)),
+							new ProxyAuthenticationError({
+								message: "Failed to lookup user in database",
+								detail: error.message,
+							}),
 					),
 				)
+			const userOption = Option.fromNullable(userResult[0])
 
 			// Cache successful lookup
 			if (Option.isSome(userOption)) {
@@ -109,12 +110,10 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 
 			if (Option.isNone(userIdOption)) {
 				yield* Effect.annotateCurrentSpan("user.found", false)
-				return yield* Effect.fail(
-					new ProxyAuthenticationError(
-						"User not found in database",
-						`User must be created via backend first. WorkOS ID: ${session.workosUserId}`,
-					),
-				)
+				return yield* new ProxyAuthenticationError({
+					message: "User not found in database",
+					detail: `User must be created via backend first. WorkOS ID: ${session.workosUserId}`,
+				})
 			}
 
 			yield* Effect.annotateCurrentSpan("user.found", true)
@@ -135,8 +134,70 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 			} satisfies AuthenticatedUserContext
 		})
 
+		/**
+		 * Validate a Bearer token (JWT) and return user context.
+		 * Used by Tauri desktop apps that authenticate via JWT instead of cookies.
+		 * Rejects if user is not found in database.
+		 */
+		const validateBearerToken = Effect.fn("ProxyAuth.validateBearerToken")(function* (
+			bearerToken: string,
+		) {
+			const clientId = yield* Config.string("WORKOS_CLIENT_ID").pipe(Effect.orDie)
+
+			// Verify JWT signature using WorkOS JWKS
+			const jwks = createRemoteJWKSet(new URL(`https://api.workos.com/sso/jwks/${clientId}`))
+
+			const { payload } = yield* Effect.tryPromise({
+				try: () =>
+					jwtVerify(bearerToken, jwks, {
+						issuer: "https://api.workos.com",
+					}),
+				catch: (error) =>
+					new ProxyAuthenticationError({
+						message: `Invalid token: ${error}`,
+						detail: "JWT verification failed",
+					}),
+			})
+
+			const workOsUserId = payload.sub
+			if (!workOsUserId) {
+				return yield* new ProxyAuthenticationError({
+					message: "Token missing user ID",
+					detail: "The JWT does not contain a subject claim",
+				})
+			}
+
+			// Lookup user (uses cache, falls back to database)
+			const userIdOption = yield* lookupUser(workOsUserId).pipe(
+				Effect.withSpan("ProxyAuth.lookupUser", {
+					attributes: { "workos.user_id": workOsUserId },
+				}),
+			)
+
+			if (Option.isNone(userIdOption)) {
+				yield* Effect.annotateCurrentSpan("user.found", false)
+				return yield* new ProxyAuthenticationError({
+					message: "User not found in database",
+					detail: `User must be created via backend first. WorkOS ID: ${workOsUserId}`,
+				})
+			}
+
+			yield* Effect.annotateCurrentSpan("user.found", true)
+			yield* Effect.annotateCurrentSpan("user.id", userIdOption.value)
+
+			return {
+				workosUserId: workOsUserId,
+				internalUserId: userIdOption.value as UserId,
+				email: (payload.email as string) ?? "",
+				organizationId: (payload.org_id as OrganizationId) ?? undefined,
+				role: (payload.role as string) ?? undefined,
+				refreshedSession: undefined, // No session refresh for JWT auth
+			} satisfies AuthenticatedUserContext
+		})
+
 		return {
 			validateSession,
+			validateBearerToken,
 		}
 	}),
 }) {}

@@ -1,3 +1,9 @@
+/**
+ * @module Application entry point
+ * @platform shared (with platform-specific sections)
+ * @description Main entry point with Tauri initialization for desktop
+ */
+
 import { createRouter, type NavigateOptions, RouterProvider, type ToOptions } from "@tanstack/react-router"
 import { StrictMode } from "react"
 import ReactDOM from "react-dom/client"
@@ -13,8 +19,12 @@ import "./styles/styles.css"
 // Note: RPC devtools are now integrated via Effect layers in rpc-atom-client.ts
 import "./lib/registry.ts"
 
+// Initialize Tauri-specific features (no-op in browser)
+import { initTauri } from "./lib/tauri.ts"
+
 import { PostHogProvider } from "posthog-js/react"
 import { Loader } from "./components/loader.tsx"
+import { TauriUpdateCheck } from "./components/tauri-update-check.tsx"
 import { ThemeProvider } from "./components/theme-provider.tsx"
 import { Toast } from "./components/ui/toast.tsx"
 import reportWebVitals from "./reportWebVitals.ts"
@@ -50,6 +60,7 @@ export const router = createRouter({
 			<PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>
 				<ThemeProvider>
 					<Toast />
+					<TauriUpdateCheck />
 					{children}
 				</ThemeProvider>
 			</PostHogProvider>
@@ -70,14 +81,20 @@ declare module "react-aria-components" {
 	}
 }
 
-const rootElement = document.getElementById("app")
-if (rootElement && !rootElement.innerHTML) {
-	const root = ReactDOM.createRoot(rootElement)
-	root.render(
-		<StrictMode>
-			<RouterProvider router={router} />
-		</StrictMode>,
-	)
-}
+// Initialize Tauri and render app
+// Must await initTauri to ensure tokens are synced before first API call
+;(async () => {
+	await initTauri()
 
-reportWebVitals()
+	const rootElement = document.getElementById("app")
+	if (rootElement && !rootElement.innerHTML) {
+		const root = ReactDOM.createRoot(rootElement)
+		root.render(
+			<StrictMode>
+				<RouterProvider router={router} />
+			</StrictMode>,
+		)
+	}
+
+	reportWebVitals()
+})()

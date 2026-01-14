@@ -2,7 +2,7 @@ import { Reactivity } from "@effect/experimental"
 import * as BrowserSocket from "@effect/platform-browser/BrowserSocket"
 import { RpcClient as RpcClientBuilder, RpcSerialization } from "@effect/rpc"
 import { AtomRpc } from "@effect-atom/atom-react"
-import { AuthMiddlewareClientLive } from "@hazel/backend/rpc/middleware/client"
+import { AuthMiddlewareClientLive } from "~/lib/rpc-auth-middleware"
 import {
 	AttachmentRpcs,
 	ChannelMemberRpcs,
@@ -32,21 +32,15 @@ import {
 const backendUrl = import.meta.env.VITE_BACKEND_URL
 const wsUrl = `${backendUrl.replace(/^http/, "ws")}/rpc`
 
-// Base protocol layer
 const BaseProtocolLive = RpcClientBuilder.layerProtocolSocket({
 	retryTransientErrors: true,
 }).pipe(Layer.provide(BrowserSocket.layerWebSocket(wsUrl)), Layer.provide(RpcSerialization.layerNdjson))
 
-// Conditional layer composition - tree-shakeable via import.meta.env.DEV
-export const RpcProtocolLive = import.meta.env.DEV
-	? Layer.provideMerge(DevtoolsProtocolLayer, BaseProtocolLive)
-	: BaseProtocolLive
+export const RpcProtocolLive = BaseProtocolLive
 
 // Build the protocol layer with middleware
-const AtomRpcProtocolLive = RpcProtocolLive.pipe(
-	Layer.provide(AuthMiddlewareClientLive),
-	Layer.provide(Reactivity.layer),
-)
+// Use Layer.mergeAll to make AuthMiddlewareClientLive available alongside the protocol
+const AtomRpcProtocolLive = Layer.mergeAll(RpcProtocolLive, AuthMiddlewareClientLive, Reactivity.layer)
 
 const AllRpcs = MessageRpcs.merge(
 	NotificationRpcs,

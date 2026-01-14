@@ -19,7 +19,6 @@ import { SectionHeader } from "~/components/ui/section-header"
 import { SectionLabel } from "~/components/ui/section-label"
 import { Switch, SwitchLabel } from "~/components/ui/switch"
 import { useOrganization } from "~/hooks/use-organization"
-import { useAuth } from "~/lib/auth"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
 import { toastExit } from "~/lib/toast-exit"
 
@@ -40,8 +39,6 @@ function DebugSettings() {
 	const [isGeneratingMockData, setIsGeneratingMockData] = useState(false)
 
 	const { organizationId } = useOrganization()
-
-	const { user } = useAuth()
 
 	const reactScanEnabled = useAtomValue(reactScanEnabledAtom)
 	const setReactScanEnabled = useAtomSet(reactScanEnabledAtom)

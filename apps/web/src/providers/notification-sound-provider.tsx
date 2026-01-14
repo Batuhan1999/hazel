@@ -6,6 +6,8 @@ import { doNotDisturbAtom, quietHoursEndAtom, quietHoursStartAtom } from "~/atom
 import { organizationMemberCollection } from "~/db/collections"
 import { useNotificationSound } from "~/hooks/use-notification-sound"
 import { useAuth } from "~/lib/auth"
+import { authenticatedFetch } from "~/lib/auth-fetch"
+import { sendNativeNotification } from "~/lib/native-notifications"
 
 interface NotificationSoundProviderProps {
 	children: ReactNode
@@ -18,6 +20,12 @@ export function NotificationSoundProvider({ children }: NotificationSoundProvide
 	const quietHoursStart = useAtomValue(quietHoursStartAtom)
 	const quietHoursEnd = useAtomValue(quietHoursEndAtom)
 	const streamRef = useRef<ShapeStream | null>(null)
+	const playSoundRef = useRef(playSound)
+
+	// Keep playSound ref updated without triggering main effect re-runs
+	useEffect(() => {
+		playSoundRef.current = playSound
+	}, [playSound])
 
 	const { data: member } = useLiveQuery(
 		(q) =>
@@ -88,7 +96,7 @@ export function NotificationSoundProvider({ children }: NotificationSoundProvide
 				table: "notifications",
 				where: `"memberId" = '${organizationMemberId}'`,
 			},
-			fetchClient: (url, init) => fetch(url, { ...init, credentials: "include" }),
+			fetchClient: authenticatedFetch,
 			offset: "now",
 			log: "changes_only",
 			liveSse: true,
@@ -99,7 +107,8 @@ export function NotificationSoundProvider({ children }: NotificationSoundProvide
 		const unsubscribe = stream.subscribe((messages) => {
 			for (const message of messages) {
 				if (isChangeMessage(message) && message.headers.operation === "insert") {
-					playSound()
+					playSoundRef.current()
+					sendNativeNotification("Hazel", "You have a new notification")
 					break
 				}
 			}
@@ -109,15 +118,7 @@ export function NotificationSoundProvider({ children }: NotificationSoundProvide
 			unsubscribe()
 			streamRef.current = null
 		}
-	}, [
-		isPrimed,
-		organizationMemberId,
-		settings.enabled,
-		doNotDisturb,
-		quietHoursStart,
-		quietHoursEnd,
-		playSound,
-	])
+	}, [isPrimed, organizationMemberId, settings.enabled, doNotDisturb, quietHoursStart, quietHoursEnd])
 
 	return <>{children}</>
 }
