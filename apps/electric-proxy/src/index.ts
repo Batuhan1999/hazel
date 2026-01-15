@@ -27,7 +27,7 @@ import { applyWhereToElectricUrl } from "./tables/where-clause-builder"
  */
 function isAllowedOrigin(origin: string | null, allowedOrigin: string): boolean {
 	if (!origin) return false
-	return origin === allowedOrigin || origin === "tauri://localhost"
+	return origin === allowedOrigin || origin === "tauri://localhost" || origin === "http://tauri.localhost"
 }
 
 /**
