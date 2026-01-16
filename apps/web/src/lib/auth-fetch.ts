@@ -38,5 +38,12 @@ export const authenticatedFetch = async (input: RequestInfo | URL, init?: Reques
 	}
 
 	// Web: use cookies
-	return fetch(input, { ...init, credentials: "include" })
+	const response = await fetch(input, { ...init, credentials: "include" })
+
+	// If 401 (expired/invalid session), trigger session expired event for redirect to login
+	if (response.status === 401) {
+		window.dispatchEvent(new CustomEvent("auth:session-expired"))
+	}
+
+	return response
 }

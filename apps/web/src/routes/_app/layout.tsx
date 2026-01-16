@@ -52,17 +52,19 @@ function RouteComponent() {
 		}
 	}, [user, error, isLoading, login, router])
 
-	// Handle session expiry events from token refresh failures (desktop only)
+	// Handle session expiry events from token refresh failures (web and desktop)
 	useEffect(() => {
-		if (!isTauri()) return
-
 		const handleSessionExpired = () => {
-			router.navigate({ to: "/auth/desktop-login" })
+			if (isTauri()) {
+				router.navigate({ to: "/auth/desktop-login" })
+			} else {
+				login({ returnTo: `${location.pathname}${location.search}${location.hash}` })
+			}
 		}
 
 		window.addEventListener("auth:session-expired", handleSessionExpired)
 		return () => window.removeEventListener("auth:session-expired", handleSessionExpired)
-	}, [router])
+	}, [router, login])
 
 	const handleCopyEmail = async () => {
 		try {

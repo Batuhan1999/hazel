@@ -10,8 +10,8 @@
 	},
 	"scripts": {
 		"db": "drizzle-kit",
-		"setup": "drizzle-kit push",
-		"db:push": "drizzle-kit push",
+		"setup": "drizzle-kit push --force",
+		"db:push": "drizzle-kit push --force",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:studio": "drizzle-kit studio"

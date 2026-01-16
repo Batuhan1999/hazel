@@ -18,9 +18,7 @@ import {
 	User,
 	UserPresenceStatus,
 } from "@hazel/domain/models"
-import { Effect } from "effect"
 import { electricFetchClient } from "~/lib/electric-fetch"
-import { HazelRpcClient } from "~/lib/services/common/rpc-atom-client"
 import { runtime } from "~/lib/services/common/runtime"
 import { createEffectCollection } from "../../../../libs/effect-electric-db-collection/src"
 
@@ -29,6 +27,7 @@ const electricUrl: string = import.meta.env.VITE_ELECTRIC_URL
 export const organizationCollection = createEffectCollection({
 	id: "organizations",
 	runtime: runtime,
+	backoff: false, // Retry handled at fetch level in electric-fetch.ts
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -49,6 +48,7 @@ export const organizationCollection = createEffectCollection({
 export const invitationCollection = createEffectCollection({
 	id: "invitations",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -68,6 +68,7 @@ export const messageCollection = createEffectCollection({
 	id: "messages",
 	// syncMode: "on-demand",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -87,6 +88,7 @@ export const messageReactionCollection = createEffectCollection({
 	id: "message_reactions",
 	syncMode: "on-demand",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -104,6 +106,7 @@ export const messageReactionCollection = createEffectCollection({
 export const pinnedMessageCollection = createEffectCollection({
 	id: "pinned_messages",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -123,6 +126,7 @@ export const notificationCollection = createEffectCollection({
 	id: "notifications",
 	syncMode: "on-demand",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -142,6 +146,7 @@ export const userCollection = createEffectCollection({
 	id: "users",
 	// syncMode: "progressive",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//// liveSse: true,
@@ -160,6 +165,7 @@ export const userCollection = createEffectCollection({
 export const organizationMemberCollection = createEffectCollection({
 	id: "organization_members",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -178,6 +184,7 @@ export const organizationMemberCollection = createEffectCollection({
 export const channelCollection = createEffectCollection({
 	id: "channels",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -197,6 +204,7 @@ export const channelMemberCollection = createEffectCollection({
 	id: "channel_members",
 	// syncMode: "progressive",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: `${electricUrl}`,
 		//liveSse: true,
@@ -215,6 +223,7 @@ export const channelMemberCollection = createEffectCollection({
 export const channelSectionCollection = createEffectCollection({
 	id: "channel_sections",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -232,6 +241,7 @@ export const channelSectionCollection = createEffectCollection({
 export const attachmentCollection = createEffectCollection({
 	id: "attachments",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -251,6 +261,7 @@ export const typingIndicatorCollection = createEffectCollection({
 	id: "typing_indicators",
 	syncMode: "on-demand",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -266,6 +277,7 @@ export const typingIndicatorCollection = createEffectCollection({
 export const userPresenceStatusCollection = createEffectCollection({
 	id: "user_presence_status",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -285,6 +297,7 @@ export const integrationConnectionCollection = createEffectCollection({
 	id: "integration_connections",
 	// syncMode: "on-demand",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		//liveSse: true,
@@ -303,6 +316,7 @@ export const integrationConnectionCollection = createEffectCollection({
 export const botCollection = createEffectCollection({
 	id: "bots",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -320,6 +334,7 @@ export const botCollection = createEffectCollection({
 export const botCommandCollection = createEffectCollection({
 	id: "bot_commands",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {
@@ -337,6 +352,7 @@ export const botCommandCollection = createEffectCollection({
 export const botInstallationCollection = createEffectCollection({
 	id: "bot_installations",
 	runtime: runtime,
+	backoff: false,
 	shapeOptions: {
 		url: electricUrl,
 		params: {

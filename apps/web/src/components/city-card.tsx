@@ -19,13 +19,7 @@ interface CityCardProps {
 	onHover: (isHovered: boolean) => void
 }
 
-export function CityCard({
-	city,
-	isSelected,
-	isDetected,
-	onClick,
-	onHover,
-}: CityCardProps) {
+export function CityCard({ city, isSelected, isDetected, onClick, onHover }: CityCardProps) {
 	const [time, setTime] = useState("")
 
 	useEffect(() => {

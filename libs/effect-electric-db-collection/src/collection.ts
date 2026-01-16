@@ -55,6 +55,18 @@ function createBackoffOnError(
 
 		const prefix = collectionId ? `[${collectionId}]` : "[electric]"
 
+		// Check if this is a 401 auth error - stop retrying and trigger session expired
+		const errorStatus = (error as { status?: number })?.status
+		if (errorStatus === 401) {
+			console.warn(`${prefix} Authentication error (401), stopping sync and triggering logout`)
+			// Dispatch session expired event - the app layout will handle redirect to login
+			if (typeof window !== "undefined") {
+				window.dispatchEvent(new CustomEvent("auth:session-expired"))
+			}
+			// Return undefined to stop syncing
+			return
+		}
+
 		// Check if max retries exceeded
 		if (retryCount > backoffConfig.maxRetries) {
 			console.error(

@@ -1,4 +1,5 @@
 import { BunRuntime } from "@effect/platform-bun"
+// SessionExpiredError and SessionRefreshError are caught by string tags below
 import { ProxyAuth } from "@hazel/auth/proxy"
 import { Database } from "@hazel/db"
 import { Effect, Layer, Logger, Runtime } from "effect"
@@ -126,7 +127,7 @@ const handleUserRequest = (request: Request) =>
 			headers,
 		})
 	}).pipe(
-		// Error handling
+		// Auth errors → 401
 		Effect.catchTag("ProxyAuthenticationError", (error) =>
 			Effect.gen(function* () {
 				const config = yield* ProxyConfigService
@@ -149,6 +150,49 @@ const handleUserRequest = (request: Request) =>
 				)
 			}),
 		),
+		Effect.catchTag("SessionExpiredError", (error) =>
+			Effect.gen(function* () {
+				const config = yield* ProxyConfigService
+				const requestOrigin = request.headers.get("Origin")
+				yield* Effect.logInfo("Session expired", { error: error.message })
+				return new Response(
+					JSON.stringify({
+						error: error.message,
+						detail: error.detail,
+						timestamp: new Date().toISOString(),
+					}),
+					{
+						status: 401,
+						headers: {
+							"Content-Type": "application/json",
+							...getUserCorsHeaders(config.allowedOrigin, requestOrigin),
+						},
+					},
+				)
+			}),
+		),
+		Effect.catchTag("SessionRefreshError", (error) =>
+			Effect.gen(function* () {
+				const config = yield* ProxyConfigService
+				const requestOrigin = request.headers.get("Origin")
+				yield* Effect.logInfo("Session refresh failed", { error: error.message })
+				return new Response(
+					JSON.stringify({
+						error: error.message,
+						detail: error.detail,
+						timestamp: new Date().toISOString(),
+					}),
+					{
+						status: 401,
+						headers: {
+							"Content-Type": "application/json",
+							...getUserCorsHeaders(config.allowedOrigin, requestOrigin),
+						},
+					},
+				)
+			}),
+		),
+		// Access/table errors → 500
 		Effect.catchTag("AccessContextLookupError", (error) =>
 			Effect.gen(function* () {
 				const config = yield* ProxyConfigService
@@ -191,6 +235,7 @@ const handleUserRequest = (request: Request) =>
 				)
 			}),
 		),
+		// Upstream errors → 502
 		Effect.catchTag("ElectricProxyError", (error: ElectricProxyError) =>
 			Effect.gen(function* () {
 				const config = yield* ProxyConfigService
@@ -205,13 +250,22 @@ const handleUserRequest = (request: Request) =>
 				})
 			}),
 		),
+		// Fallback for any unhandled errors - returns error details to client for debugging
 		Effect.catchAll((error) =>
 			Effect.gen(function* () {
 				const config = yield* ProxyConfigService
 				const requestOrigin = request.headers.get("Origin")
-				yield* Effect.logError("Unexpected error in user flow", { error: String(error) })
+				const errorTag = (error as { _tag?: string })?._tag ?? "UnknownError"
+				yield* Effect.logError("Unhandled error in user flow", {
+					tag: errorTag,
+					error: String(error),
+				})
 				return new Response(
-					JSON.stringify({ error: "Internal server error", detail: String(error) }),
+					JSON.stringify({
+						error: errorTag,
+						detail: String(error),
+						timestamp: new Date().toISOString(),
+					}),
 					{
 						status: 500,
 						headers: {
@@ -282,7 +336,7 @@ const handleBotRequest = (request: Request) =>
 			headers,
 		})
 	}).pipe(
-		// Error handling
+		// Auth errors → 401
 		Effect.catchTag("BotAuthenticationError", (error) =>
 			Effect.gen(function* () {
 				yield* Effect.logInfo("Bot authentication failed", {
@@ -338,11 +392,17 @@ const handleBotRequest = (request: Request) =>
 				})
 			}),
 		),
+		// Fallback for any unhandled errors - returns error details to client for debugging
 		Effect.catchAll((error) =>
 			Effect.gen(function* () {
-				yield* Effect.logError("Unexpected error in bot flow", { error: String(error) })
+				const errorTag = (error as { _tag?: string })?._tag ?? "UnknownError"
+				yield* Effect.logError("Unhandled error in bot flow", { tag: errorTag, error: String(error) })
 				return new Response(
-					JSON.stringify({ error: "Internal server error", detail: String(error) }),
+					JSON.stringify({
+						error: errorTag,
+						detail: String(error),
+						timestamp: new Date().toISOString(),
+					}),
 					{
 						status: 500,
 						headers: { "Content-Type": "application/json", ...BOT_CORS_HEADERS },
