@@ -33,6 +33,8 @@
 		"GITHUB_APP_SLUG",
 		"GITHUB_WEBHOOK_SECRET",
 		"OTEL_ENVIRONMENT",
+		"OTEL_BASE_URL",
+		"OTEL_SERVICE_NAME",
 		"SIGNOZ_INGESTION_KEY",
 		"RAILWAY_GIT_COMMIT_SHA,",
 		"OPENROUTER_API_KEY"
@@ -40,14 +42,20 @@
 	"ui": "tui",
 	"tasks": {
 		"build": {
-			"outputs": ["dist/**"]
+			"outputs": [
+				"dist/**"
+			]
 		},
 		"typecheck": {
-			"dependsOn": ["^typecheck"]
+			"dependsOn": [
+				"^typecheck"
+			]
 		},
 		"setup": {
 			"cache": false,
-			"dependsOn": ["^setup"]
+			"dependsOn": [
+				"^setup"
+			]
 		},
 		"db:push": {
 			"cache": false
