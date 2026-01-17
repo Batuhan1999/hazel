@@ -11,7 +11,16 @@ processors:
         timeout: 5s
         send_batch_size: 8192
 
+    # Probabilistic sampling for traces (10% sample rate)
+    probabilistic_sampler:
+        sampling_percentage: 10
+
 exporters:
+    debug:
+        verbosity: basic
+        sampling_initial: 5
+        sampling_thereafter: 200
+
     tinybird:
         endpoint: ${OTEL_TINYBIRD_API_HOST}
         token: ${OTEL_TINYBIRD_TOKEN}
@@ -37,20 +46,23 @@ exporters:
             sizer: bytes
             batch:
                 flush_timeout: 5s
-                min_size: 1024000 # 1 MB min batch size
+                min_size: 1024 # 1 KB min batch size (lowered for faster flushes)
                 max_size: 10000000 # ~10 MB max batch size
 
 service:
+    telemetry:
+        logs:
+            level: info
     pipelines:
         traces:
             receivers: [otlp]
-            processors: [batch]
-            exporters: [tinybird]
+            processors: [probabilistic_sampler, batch]
+            exporters: [debug, tinybird]
         metrics:
             receivers: [otlp]
             processors: [batch]
-            exporters: [tinybird]
+            exporters: [debug, tinybird]
         logs:
             receivers: [otlp]
             processors: [batch]
-            exporters: [tinybird]
+            exporters: [debug, tinybird]
