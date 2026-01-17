@@ -42,10 +42,10 @@ function ProfilePage() {
 
 	return (
 		<div className="flex flex-col gap-6 px-4 py-6 lg:px-8">
-			<SectionHeader.Root>
+			<SectionHeader.Root className="border-none pb-0">
 				<SectionHeader.Group>
 					<div className="flex flex-1 flex-col justify-center gap-0.5 self-stretch">
-						<SectionHeader.Heading>Profile</SectionHeader.Heading>
+						<SectionHeader.Heading size="xl">Profile</SectionHeader.Heading>
 						<SectionHeader.Subheading>
 							{isOwnProfile
 								? "View your profile information."

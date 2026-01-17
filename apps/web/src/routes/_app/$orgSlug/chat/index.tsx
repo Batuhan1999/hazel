@@ -96,7 +96,7 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-6 lg:p-12">
+		<div className="flex flex-col gap-6 px-4 py-6 lg:px-8">
 			<SectionHeader.Root className="border-none pb-0">
 				<SectionHeader.Group>
 					<div className="space-y-0.5">

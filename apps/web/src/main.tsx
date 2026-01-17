@@ -24,6 +24,8 @@ import { initTauri } from "./lib/tauri.ts"
 
 import { PostHogProvider } from "posthog-js/react"
 import { Loader } from "./components/loader.tsx"
+import { RouteErrorComponent } from "./components/route-error.tsx"
+import { RouteNotFoundComponent } from "./components/route-not-found.tsx"
 import { TauriUpdateCheck } from "./components/tauri-update-check.tsx"
 import { ThemeProvider } from "./components/theme-provider.tsx"
 import { Toast } from "./components/ui/toast.tsx"
@@ -55,6 +57,8 @@ export const router = createRouter({
 	defaultPendingMs: 300,
 	defaultPendingMinMs: 300,
 	defaultPendingComponent: Loader,
+	defaultErrorComponent: RouteErrorComponent,
+	defaultNotFoundComponent: RouteNotFoundComponent,
 	Wrap: ({ children }) => {
 		return (
 			<PostHogProvider apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY} options={posthogOptions}>

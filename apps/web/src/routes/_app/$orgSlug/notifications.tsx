@@ -39,11 +39,11 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className="flex flex-col gap-6 p-6 lg:p-12">
-			<SectionHeader.Root>
+		<div className="flex flex-col gap-6 px-4 py-6 lg:px-8">
+			<SectionHeader.Root className="border-none pb-0">
 				<SectionHeader.Group>
 					<div className="space-y-0.5">
-						<SectionHeader.Heading>Notifications</SectionHeader.Heading>
+						<SectionHeader.Heading size="xl">Notifications</SectionHeader.Heading>
 						<SectionHeader.Subheading>
 							Stay updated on messages and activity in your channels.
 						</SectionHeader.Subheading>
