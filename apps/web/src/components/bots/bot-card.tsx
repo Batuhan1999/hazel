@@ -1,15 +1,18 @@
 import { useAtomSet } from "@effect-atom/atom-react"
 import { useState } from "react"
-import { type BotData, deleteBotMutation, regenerateBotTokenMutation } from "~/atoms/bot-atoms"
+import { deleteBotMutation, regenerateBotTokenMutation } from "~/atoms/bot-atoms"
+import { BotAvatar } from "~/components/bots/bot-avatar"
+import { BotTokenDisplay } from "~/components/bots/bot-token-display"
+import IconArrowPath from "~/components/icons/icon-arrow-path"
 import IconCode from "~/components/icons/icon-code"
 import IconDotsVertical from "~/components/icons/icon-dots-vertical"
-import IconRobot from "~/components/icons/icon-robot"
+import IconEdit from "~/components/icons/icon-edit"
 import IconTrash from "~/components/icons/icon-trash"
-import { BotTokenDisplay } from "~/components/bots/bot-token-display"
-import { Avatar } from "~/components/ui/avatar"
+import { EditBotModal } from "~/components/modals/edit-bot-modal"
+import type { BotWithUser } from "~/db/hooks"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
-import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "~/components/ui/menu"
+import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator, MenuTrigger } from "~/components/ui/menu"
 import {
 	Modal,
 	ModalBody,
@@ -22,16 +25,25 @@ import {
 import { toastExit } from "~/lib/toast-exit"
 
 interface BotCardProps {
-	bot: BotData
+	bot: BotWithUser
 	showUninstall?: boolean
 	onDelete?: () => void
 	onUpdate?: () => void
 	onUninstall?: () => void
+	reactivityKeys?: readonly string[]
 }
 
-export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }: BotCardProps) {
+export function BotCard({
+	bot,
+	showUninstall,
+	onDelete,
+	onUpdate,
+	onUninstall,
+	reactivityKeys,
+}: BotCardProps) {
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 	const [showRegenerateConfirm, setShowRegenerateConfirm] = useState(false)
+	const [showEditModal, setShowEditModal] = useState(false)
 	const [regeneratedToken, setRegeneratedToken] = useState<string | null>(null)
 	const [isDeleting, setIsDeleting] = useState(false)
 	const [isRegenerating, setIsRegenerating] = useState(false)
@@ -41,17 +53,17 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 
 	const handleDelete = async () => {
 		setIsDeleting(true)
-		await toastExit(deleteBot({ payload: { id: bot.id } }), {
-			loading: "Deleting bot...",
+		await toastExit(deleteBot({ payload: { id: bot.id }, reactivityKeys }), {
+			loading: "Deleting application...",
 			success: () => {
 				setShowDeleteConfirm(false)
 				onDelete?.()
-				return "Bot deleted successfully"
+				return "Application deleted successfully"
 			},
 			customErrors: {
 				BotNotFoundError: () => ({
-					title: "Bot not found",
-					description: "This bot may have already been deleted.",
+					title: "Application not found",
+					description: "This application may have already been deleted.",
 					isRetryable: false,
 				}),
 			},
@@ -69,9 +81,14 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 			},
 			customErrors: {
 				BotNotFoundError: () => ({
-					title: "Bot not found",
-					description: "This bot may have been deleted.",
+					title: "Application not found",
+					description: "This application may have been deleted.",
 					isRetryable: false,
+				}),
+				RateLimitExceededError: () => ({
+					title: "Rate limit exceeded",
+					description: "Please wait before trying again.",
+					isRetryable: true,
 				}),
 			},
 		})
@@ -85,7 +102,7 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 			<div className="flex flex-col overflow-hidden rounded-xl border border-border bg-bg transition-all duration-200 hover:border-border-hover hover:shadow-md">
 				{/* Header */}
 				<div className="flex items-start gap-3 p-4">
-					<Avatar size="md" placeholderIcon={IconRobot} className="bg-primary/10" />
+					<BotAvatar size="md" bot={bot} className="bg-primary/10" />
 					<div className="flex flex-1 flex-col gap-0.5">
 						<div className="flex items-center gap-2">
 							<h3 className="font-semibold text-fg text-sm">{bot.name}</h3>
@@ -103,19 +120,29 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 					{/* Actions */}
 					{!showUninstall && (
 						<Menu>
-							<MenuTrigger>
-								<Button size="sm" intent="plain" className="size-8 p-0">
+							<MenuTrigger aria-label="Bot actions">
+								<Button
+									size="sm"
+									intent="plain"
+									className="size-8 p-0 hover:bg-secondary"
+									aria-label="Bot actions"
+								>
 									<IconDotsVertical className="size-4" />
 								</Button>
 							</MenuTrigger>
 							<MenuContent placement="bottom end">
+								<MenuItem onAction={() => setShowEditModal(true)}>
+									<IconEdit data-slot="icon" className="size-4" />
+									<MenuLabel>Edit</MenuLabel>
+								</MenuItem>
 								<MenuItem onAction={() => setShowRegenerateConfirm(true)}>
-									Regenerate Token
+									<IconArrowPath data-slot="icon" className="size-4" />
+									<MenuLabel>Regenerate Token</MenuLabel>
 								</MenuItem>
 								<MenuSeparator />
 								<MenuItem onAction={() => setShowDeleteConfirm(true)} intent="danger">
-									<IconTrash className="size-4" />
-									Delete
+									<IconTrash data-slot="icon" className="size-4" />
+									<MenuLabel>Delete</MenuLabel>
 								</MenuItem>
 							</MenuContent>
 						</Menu>
@@ -139,11 +166,20 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 				</div>
 			</div>
 
+			{/* Edit Modal */}
+			<EditBotModal
+				isOpen={showEditModal}
+				onOpenChange={setShowEditModal}
+				bot={bot}
+				onSuccess={onUpdate}
+				reactivityKeys={reactivityKeys}
+			/>
+
 			{/* Delete Confirmation Modal */}
 			<Modal isOpen={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
 				<ModalContent>
 					<ModalHeader>
-						<ModalTitle>Delete Bot</ModalTitle>
+						<ModalTitle>Delete Application</ModalTitle>
 						<ModalDescription>
 							Are you sure you want to delete "{bot.name}"? This action cannot be undone.
 						</ModalDescription>
@@ -153,7 +189,7 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 							Cancel
 						</Button>
 						<Button intent="danger" onPress={handleDelete} isDisabled={isDeleting}>
-							{isDeleting ? "Deleting..." : "Delete Bot"}
+							{isDeleting ? "Deleting..." : "Delete Application"}
 						</Button>
 					</ModalFooter>
 				</ModalContent>
@@ -177,7 +213,7 @@ export function BotCard({ bot, showUninstall, onDelete, onUpdate, onUninstall }:
 						<ModalDescription>
 							{regeneratedToken
 								? "Save this new token now. The old token has been invalidated."
-								: "This will invalidate the current token. The bot will need to be updated with the new token."}
+								: "This will invalidate the current token. The application will need to be updated with the new token."}
 						</ModalDescription>
 					</ModalHeader>
 					<ModalBody>
