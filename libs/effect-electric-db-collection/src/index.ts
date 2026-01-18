@@ -3,6 +3,9 @@
 // Re-export useful types from electric-db-collection
 export type { Txid } from "@tanstack/electric-db-collection"
 export {
+	COLLECTION_ERROR_STATE_CHANGED_EVENT,
+	CollectionSyncEffectError,
+	type CollectionStatus,
 	createEffectCollection,
 	type EffectCollection,
 	type EffectElectricCollectionUtils,
@@ -21,6 +24,22 @@ export {
 	TxIdTimeoutError,
 	UpdateError,
 } from "./errors"
+// TanStack DB Error Wrappers
+export {
+	CollectionInErrorEffectError,
+	DuplicateKeyEffectError,
+	isPermanentError,
+	isRecoverableError,
+	KeyNotFoundEffectError,
+	KeyUpdateNotAllowedEffectError,
+	SchemaValidationEffectError,
+	type TanStackEffectError,
+	TanStackEffectErrorSchema,
+	TransactionStateEffectError,
+	UndefinedKeyEffectError,
+	type ValidationIssue,
+	wrapTanStackError,
+} from "./tanstack-errors"
 // Effect handlers
 export { convertDeleteHandler, convertInsertHandler, convertUpdateHandler } from "./handlers"
 // Optimistic Actions
