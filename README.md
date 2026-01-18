@@ -75,7 +75,7 @@ Hazel Chat is a full-stack chat application featuring:
 
 ## Prerequisites
 
-- [Bun](https://bun.sh/) (latest version)
+- [Bun](https://bun.sh/) **v1.2.14 or later** (required for [workspace catalogs](https://bun.sh/blog/release-notes/bun-v1.2.14))
 - [Docker](https://docker.com/) (for local services)
 - [WorkOS](https://workos.com/) account (for authentication)
 
