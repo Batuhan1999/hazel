@@ -1,15 +1,20 @@
 import type { UserId } from "@hazel/schema"
-import { IconChevronRight } from "~/components/icons/icon-chevron-right"
 import { Link } from "@tanstack/react-router"
 import { ChannelIcon } from "~/components/channel-icon"
+import { IconChevronRight } from "~/components/icons/icon-chevron-right"
 import { Avatar } from "~/components/ui/avatar"
+import { Button } from "~/components/ui/button"
 import { useSidebar } from "~/components/ui/sidebar"
-import { useChannel, useParentChannel } from "~/db/hooks"
+import { Tooltip } from "~/components/ui/tooltip"
+import { useChannelWithCurrentUser, useParentChannel } from "~/db/hooks"
+import { useChannelMemberActions } from "~/hooks/use-channel-member-actions"
 import { useChat } from "~/hooks/use-chat"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
-import IconThread from "../icons/icon-thread"
+import IconEye from "../icons/icon-eye"
+import IconEyeSlash from "../icons/icon-eye-slash"
 import { IconMenu } from "../icons/icon-menu"
+import IconThread from "../icons/icon-thread"
 import { PinnedMessagesModal } from "./pinned-messages-modal"
 
 interface OtherMemberAvatarProps {
@@ -39,17 +44,19 @@ function OtherMemberAvatar({ member }: OtherMemberAvatarProps) {
 export function ChatHeader() {
 	const { channelId } = useChat()
 	const { user } = useAuth()
-	const { channel } = useChannel(channelId)
+	const { channel } = useChannelWithCurrentUser(channelId)
 	const { isMobile, setIsOpenOnMobile } = useSidebar()
 	const { slug } = useOrganization()
 
+	const { handleToggleHidden } = useChannelMemberActions(channel?.currentUser, "conversation")
+
 	// Determine if this is a thread and fetch parent channel data
 	const isThread = channel?.type === "thread"
-	const { parentChannel } = useParentChannel(isThread ? channel.parentChannelId : null)
+	const { parentChannel } = useParentChannel(isThread ? (channel.parentChannelId ?? null) : null)
 
 	if (!channel) {
 		return (
-			<div className="flex h-14 flex-shrink-0 items-center border-border border-b px-4">
+			<div className="flex h-14 shrink-0 items-center border-border border-b px-4">
 				{isMobile && (
 					<button
 						type="button"
@@ -65,7 +72,7 @@ export function ChatHeader() {
 	}
 
 	const isDirectMessage = channel.type === "direct" || channel.type === "single"
-	const otherMembers = channel.members.filter((member) => member.userId !== user?.id)
+	const otherMembers = (channel.members ?? []).filter((member) => member.userId !== user?.id)
 
 	return (
 		<div className="flex h-14 shrink-0 items-center justify-between border-border border-b bg-bg px-4">
@@ -132,6 +139,19 @@ export function ChatHeader() {
 			</div>
 
 			<div className="flex items-center gap-2">
+				{isDirectMessage && (
+					<Tooltip delay={100} closeDelay={20}>
+						<Button
+							intent="plain"
+							onPress={handleToggleHidden}
+							aria-label={
+								channel.currentUser.isHidden ? "Unhide conversation" : "Hide conversation"
+							}
+						>
+							{channel.currentUser.isHidden ? <IconEyeSlash /> : <IconEye />}
+						</Button>
+					</Tooltip>
+				)}
 				<PinnedMessagesModal />
 			</div>
 		</div>
