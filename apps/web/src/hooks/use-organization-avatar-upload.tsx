@@ -3,12 +3,11 @@ import type { OrganizationId } from "@hazel/schema"
 import { Exit } from "effect"
 import { useCallback } from "react"
 import { toast } from "sonner"
-import { updateOrganizationMutation } from "~/atoms/organization-atoms"
-import { organizationCollection } from "~/db/collections"
+import { updateOrganizationAction } from "~/db/actions"
 import { useUpload } from "./use-upload"
 
 export function useOrganizationAvatarUpload(organizationId: OrganizationId) {
-	const updateOrganization = useAtomSet(updateOrganizationMutation, {
+	const updateOrganization = useAtomSet(updateOrganizationAction, {
 		mode: "promiseExit",
 	})
 
@@ -45,12 +44,10 @@ export function useOrganizationAvatarUpload(organizationId: OrganizationId) {
 			}
 			const publicUrl = `${r2PublicUrl}/${result.key}`
 
-			// Update organization's logo URL
+			// Update organization's logo URL (optimistic update happens in action's onMutate)
 			const updateResult = await updateOrganization({
-				payload: {
-					id: organizationId,
-					logoUrl: publicUrl,
-				},
+				organizationId,
+				logoUrl: publicUrl,
 			})
 
 			if (!Exit.isSuccess(updateResult)) {
@@ -59,11 +56,6 @@ export function useOrganizationAvatarUpload(organizationId: OrganizationId) {
 				})
 				return null
 			}
-
-			// Optimistically update the organization collection
-			organizationCollection.update(organizationId, (org) => {
-				org.logoUrl = publicUrl
-			})
 
 			toast.success("Organization logo updated")
 			return publicUrl

@@ -24,7 +24,7 @@ export const organizationsTable = pgTable(
 		slug: varchar({ length: 100 }).unique(),
 		logoUrl: text(),
 		settings: jsonb(),
-		isPublic: boolean("is_public").notNull().default(false),
+		isPublic: boolean().notNull().default(false),
 		createdAt: timestamp({ mode: "date", withTimezone: true }).notNull().defaultNow(),
 		updatedAt: timestamp({ mode: "date", withTimezone: true }).notNull().defaultNow(),
 		deletedAt: timestamp({ mode: "date", withTimezone: true }),

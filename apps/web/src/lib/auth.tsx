@@ -53,14 +53,6 @@ export const currentUserQueryAtom = HazelRpcClient.query("user.me", void 0, {
  * to avoid triggering duplicate RPC calls
  */
 const authStateAtom = Atom.make((get) => {
-	const isPublicRoute = get(isPublicRouteAtom)
-	if (isPublicRoute) {
-		return {
-			user: Result.success(null),
-			isLoading: false,
-		}
-	}
-
 	const result = get(currentUserQueryAtom)
 	return {
 		user: result,

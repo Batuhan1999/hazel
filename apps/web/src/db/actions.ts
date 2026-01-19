@@ -765,3 +765,49 @@ export const reorderSectionsAction = optimisticAction({
 			return { data: result, transactionId: result.transactionId }
 		}),
 })
+
+export const updateOrganizationAction = optimisticAction({
+	collections: [organizationCollection],
+	runtime: runtime,
+
+	onMutate: (props: { organizationId: OrganizationId; name?: string; logoUrl?: string | null }) => {
+		organizationCollection.update(props.organizationId, (org) => {
+			if (props.name !== undefined) org.name = props.name
+			if (props.logoUrl !== undefined) org.logoUrl = props.logoUrl
+		})
+		return { organizationId: props.organizationId }
+	},
+
+	mutate: (props, _ctx) =>
+		Effect.gen(function* () {
+			const client = yield* HazelRpcClient
+			const result = yield* client("organization.update", {
+				id: props.organizationId,
+				...(props.name !== undefined && { name: props.name }),
+				...(props.logoUrl !== undefined && { logoUrl: props.logoUrl }),
+			})
+			return { data: result, transactionId: result.transactionId }
+		}),
+})
+
+export const setPublicModeAction = optimisticAction({
+	collections: [organizationCollection],
+	runtime: runtime,
+
+	onMutate: (props: { organizationId: OrganizationId; isPublic: boolean }) => {
+		organizationCollection.update(props.organizationId, (org) => {
+			org.isPublic = props.isPublic
+		})
+		return { organizationId: props.organizationId }
+	},
+
+	mutate: (props, _ctx) =>
+		Effect.gen(function* () {
+			const client = yield* HazelRpcClient
+			const result = yield* client("organization.setPublicMode", {
+				id: props.organizationId,
+				isPublic: props.isPublic,
+			})
+			return { data: result, transactionId: result.transactionId }
+		}),
+})
