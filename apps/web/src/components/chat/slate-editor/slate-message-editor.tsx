@@ -46,6 +46,7 @@ import { detectLanguage } from "./detect-language"
 import { MentionElement } from "./mention-element"
 import { MentionLeaf } from "./mention-leaf"
 import { withCodeBlockPaste } from "./slate-code-block-paste-plugin"
+import { withFilePaste } from "./slate-file-paste-plugin"
 import { decorateCodeBlock } from "./slate-code-decorator"
 import { decorateMarkdown } from "./slate-markdown-decorators"
 import {
@@ -96,6 +97,8 @@ interface SlateMessageEditorProps {
 	hasAttachments?: boolean
 	/** Disable global keyboard focus capture (e.g., when a thread panel is open) */
 	disableGlobalKeyboardFocus?: boolean
+	/** Callback when files are pasted via Cmd+V / Ctrl+V */
+	onFilePaste?: (files: File[]) => void
 }
 
 // Autoformat plugin to convert markdown shortcuts to block types
@@ -309,6 +312,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 			isUploading = false,
 			hasAttachments = false,
 			disableGlobalKeyboardFocus = false,
+			onFilePaste,
 		},
 		ref,
 	) => {
@@ -328,6 +332,10 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 		const [commandInputState, setCommandInputState] =
 			useState<CommandInputState>(initialCommandInputState)
 
+		// Stable reference for file paste handler to avoid editor recreation
+		const onFilePasteRef = useRef(onFilePaste)
+		onFilePasteRef.current = onFilePaste
+
 		// Create Slate editor with plugins
 		const editor = useMemo(
 			() =>
@@ -338,6 +346,7 @@ export const SlateMessageEditor = forwardRef<SlateMessageEditorRef, SlateMessage
 					(e) => withAutocomplete(e, DEFAULT_TRIGGERS, setAutocompleteState),
 					withMentionElements,
 					withAutoformat,
+					(e) => withFilePaste(e, (files) => onFilePasteRef.current?.(files)),
 					withCodeBlockPaste,
 				) as CustomEditor,
 			[],

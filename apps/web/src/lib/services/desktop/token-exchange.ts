@@ -8,7 +8,7 @@ import { FetchHttpClient, HttpBody, HttpClient, HttpClientRequest } from "@effec
 import { Http, TokenDecodeError, TokenExchangeError } from "@hazel/domain"
 import { Duration, Effect, Schema } from "effect"
 
-const DEFAULT_TIMEOUT = Duration.seconds(30)
+const DEFAULT_TIMEOUT = Duration.seconds(60)
 
 export class TokenExchange extends Effect.Service<TokenExchange>()("TokenExchange", {
 	accessors: true,
@@ -157,4 +157,28 @@ export class TokenExchange extends Effect.Service<TokenExchange>()("TokenExchang
 				),
 		}
 	}),
-}) {}
+}) {
+	/**
+	 * Mock token response for testing
+	 */
+	static mockTokenResponse = () => ({
+		accessToken: "new-access-token",
+		refreshToken: "new-refresh-token",
+		expiresIn: 3600,
+	})
+
+	/**
+	 * Mock full token response with user data for testing
+	 */
+	static mockFullTokenResponse = () => ({
+		accessToken: "new-access-token",
+		refreshToken: "new-refresh-token",
+		expiresIn: 3600,
+		user: {
+			id: "user-123",
+			email: "test@example.com",
+			firstName: "Test",
+			lastName: "User",
+		},
+	})
+}

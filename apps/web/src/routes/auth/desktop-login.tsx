@@ -10,6 +10,7 @@ import {
 	desktopAuthErrorAtom,
 	desktopAuthStatusAtom,
 	desktopLoginAtom,
+	desktopLoginFromClipboardAtom,
 	getDesktopAccessToken,
 } from "~/atoms/desktop-auth"
 import { Logo } from "~/components/logo"
@@ -34,6 +35,7 @@ function DesktopLoginPage() {
 	const authStatus = useAtomValue(desktopAuthStatusAtom)
 	const authError = useAtomValue(desktopAuthErrorAtom)
 	const login = useAtomSet(desktopLoginAtom)
+	const loginFromClipboard = useAtomSet(desktopLoginFromClipboardAtom)
 
 	// Redirect web users to regular login
 	if (!isTauri()) {
@@ -45,6 +47,10 @@ function DesktopLoginPage() {
 
 	const handleLogin = () => {
 		login({ returnTo: "/" })
+	}
+
+	const handlePasteFromClipboard = () => {
+		loginFromClipboard()
 	}
 
 	return (
@@ -78,6 +84,19 @@ function DesktopLoginPage() {
 
 				{/* Footer */}
 				<p className="text-muted-fg text-xs">Opens in your default browser</p>
+
+				{/* Clipboard fallback */}
+				<div className="mt-4 border-t border-border pt-4">
+					<p className="mb-2 text-muted-fg text-xs">Having trouble connecting?</p>
+					<Button
+						intent="plain"
+						size="sm"
+						onPress={handlePasteFromClipboard}
+						isDisabled={isLoading}
+					>
+						Paste from clipboard
+					</Button>
+				</div>
 			</div>
 		</div>
 	)

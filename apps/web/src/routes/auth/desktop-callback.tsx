@@ -29,7 +29,8 @@ const RawSearchParams = Schema.Struct({
 type CallbackStatus =
 	| { type: "connecting" }
 	| { type: "success" }
-	| { type: "error"; message: string; isRetryable: boolean }
+	| { type: "error"; message: string; isRetryable: boolean; isConnectionError?: boolean }
+	| { type: "copied"; message: string }
 
 export const Route = createFileRoute("/auth/desktop-callback")({
 	component: DesktopCallbackPage,
@@ -132,7 +133,7 @@ const handleCallbackEffect = (search: typeof RawSearchParams.Type) =>
 /**
  * Error info type for UI display
  */
-type ErrorInfo = { message: string; isRetryable: boolean }
+type ErrorInfo = { message: string; isRetryable: boolean; isConnectionError?: boolean }
 
 /**
  * Desktop callback error types
@@ -167,6 +168,7 @@ function getErrorMessage(error: CallbackError): ErrorInfo {
 			return {
 				message: "Could not connect to Hazel desktop app. Make sure Hazel is running.",
 				isRetryable: true,
+				isConnectionError: true,
 			}
 	}
 }
@@ -232,6 +234,22 @@ function DesktopCallbackPage() {
 		hasStarted.current = false
 		setStatus({ type: "connecting" })
 		handleCallback()
+	}
+
+	async function handleCopyToClipboard() {
+		if (!search.code || !search.state) return
+
+		const payload = JSON.stringify({
+			code: search.code,
+			state: search.state,
+		})
+
+		await navigator.clipboard.writeText(payload)
+		setStatus({
+			type: "copied",
+			message:
+				'Copied! Open the Hazel desktop app and click "Paste from clipboard" to complete sign in.',
+		})
 	}
 
 	return (
@@ -303,15 +321,48 @@ function DesktopCallbackPage() {
 							<p className="text-muted-fg text-sm">{status.message}</p>
 						</div>
 						{status.isRetryable && (
-							<div className="space-y-2">
-								<Button intent="primary" onPress={handleRetry}>
-									Try Again
-								</Button>
+							<div className="space-y-3">
+								<div className="flex flex-col gap-2">
+									<Button intent="primary" onPress={handleRetry}>
+										Try Again
+									</Button>
+									{status.isConnectionError && (
+										<Button intent="secondary" onPress={handleCopyToClipboard}>
+											Copy to clipboard
+										</Button>
+									)}
+								</div>
 								<p className="text-muted-fg text-xs">
-									Make sure Hazel is running on your computer
+									{status.isConnectionError
+										? "If automatic connection keeps failing, copy your auth code and paste it in the desktop app"
+										: "Make sure Hazel is running on your computer"}
 								</p>
 							</div>
 						)}
+					</div>
+				)}
+
+				{status.type === "copied" && (
+					<div className="space-y-4">
+						<div className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/10">
+							<svg
+								className="size-8 text-success"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+								/>
+							</svg>
+						</div>
+						<div className="space-y-2">
+							<h1 className="font-semibold text-xl">Copied to Clipboard</h1>
+							<p className="text-muted-fg text-sm">{status.message}</p>
+						</div>
 					</div>
 				)}
 			</div>

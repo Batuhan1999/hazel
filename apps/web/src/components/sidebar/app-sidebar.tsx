@@ -1,5 +1,6 @@
 import { useMatchRoute, useParams } from "@tanstack/react-router"
 import { ChannelsSidebar } from "~/components/sidebar/channels-sidebar"
+import { MySettingsSidebar } from "~/components/sidebar/my-settings-sidebar"
 import { NavSidebar } from "~/components/sidebar/nav-sidebar"
 import { SettingsSidebar } from "~/components/sidebar/settings-sidebar"
 import { Sidebar } from "~/components/ui/sidebar"
@@ -9,6 +10,11 @@ export function AppSidebar(props: { openChannelsBrowser: () => void }) {
 	const params = useParams({ strict: false }) as { orgSlug?: string }
 	const orgSlug = params.orgSlug || ""
 	const isSettingsRoute = !!matchRoute({ to: "/$orgSlug/settings", params: { orgSlug }, fuzzy: true })
+	const isMySettingsRoute = !!matchRoute({
+		to: "/$orgSlug/my-settings",
+		params: { orgSlug },
+		fuzzy: true,
+	})
 
 	return (
 		<Sidebar
@@ -20,6 +26,8 @@ export function AppSidebar(props: { openChannelsBrowser: () => void }) {
 
 			{isSettingsRoute ? (
 				<SettingsSidebar />
+			) : isMySettingsRoute ? (
+				<MySettingsSidebar />
 			) : (
 				<ChannelsSidebar openChannelsBrowser={props.openChannelsBrowser} />
 			)}

@@ -232,4 +232,13 @@ export class TokenStorage extends Effect.Service<TokenStorage>()("TokenStorage",
 			}),
 		}
 	}),
-}) {}
+}) {
+	/**
+	 * Mock token data for testing
+	 */
+	static mockTokens = () => ({
+		accessToken: "mock-access-token",
+		refreshToken: "mock-refresh-token",
+		expiresAt: Date.now() + 3600 * 1000,
+	})
+}

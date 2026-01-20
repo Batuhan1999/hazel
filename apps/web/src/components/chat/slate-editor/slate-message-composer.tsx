@@ -328,6 +328,7 @@ export const SlateMessageComposer = ({ placeholder = "Type a message..." }: Slat
 								disableGlobalKeyboardFocus={
 									!!activeThreadChannelId && channelId !== activeThreadChannelId
 								}
+								onFilePaste={handleFileDrop}
 							/>
 							<MessageComposerActions onEmojiSelect={handleEmojiSelect} />
 						</div>
