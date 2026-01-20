@@ -12,7 +12,6 @@ import { useChat } from "~/hooks/use-chat"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import IconEye from "../icons/icon-eye"
-import IconEyeSlash from "../icons/icon-eye-slash"
 import { IconMenu } from "../icons/icon-menu"
 import IconThread from "../icons/icon-thread"
 import { PinnedMessagesModal } from "./pinned-messages-modal"
@@ -139,17 +138,15 @@ export function ChatHeader() {
 			</div>
 
 			<div className="flex items-center gap-2">
-				{isDirectMessage && (
-					<Tooltip delay={100} closeDelay={20} >
-						{channel.currentUser.isHidden && <Button
+				{isDirectMessage && channel.currentUser?.isHidden && (
+					<Tooltip delay={100} closeDelay={20}>
+						<Button
 							intent="plain"
 							onPress={handleToggleHidden}
-							aria-label={
-								"Unhide conversation"
-							}
+							aria-label="Unhide conversation"
 						>
 							<IconEye />
-						</Button>}
+						</Button>
 						<TooltipContent>Unhide conversation</TooltipContent>
 					</Tooltip>
 				)}
