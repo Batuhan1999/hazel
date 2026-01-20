@@ -1,7 +1,7 @@
 import { UserId } from "@hazel/schema"
 import { Schema } from "effect"
 import * as M from "./utils"
-import { baseFields, JsonDate } from "./utils"
+import { baseFields } from "./utils"
 
 export const UserType = Schema.Literal("user", "machine")
 export type UserType = Schema.Schema.Type<typeof UserType>
@@ -12,7 +12,7 @@ export class Model extends M.Class<Model>("User")({
 	email: Schema.String,
 	firstName: Schema.String,
 	lastName: Schema.String,
-	avatarUrl: Schema.String,
+	avatarUrl: Schema.NonEmptyTrimmedString,
 	userType: UserType,
 	settings: Schema.NullOr(
 		Schema.Record({

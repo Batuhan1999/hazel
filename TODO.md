@@ -2,7 +2,8 @@
 
 - voice to text
 - AI Threads/ AI MESSGAES
-- Add User Custom Status 
+- reset profile pic to workos pic button
+- Add User Custom Status
 - replace tanstack form with effect based form
 - setup sequin locally with config as code
 

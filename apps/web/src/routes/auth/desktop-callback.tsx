@@ -4,16 +4,17 @@
  * @description Receives OAuth callback from WorkOS and forwards to desktop app's local server
  */
 
-import {
-	DesktopConnectionError,
-	Http,
-	InvalidDesktopStateError,
-	MissingAuthCodeError,
-	OAuthCallbackError,
-} from "@hazel/domain"
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { Http } from "@hazel/domain"
 import { createFileRoute } from "@tanstack/react-router"
-import { Cause, Effect, Exit, Option, Schedule, Schema } from "effect"
-import { useEffect, useRef, useState } from "react"
+import { Schema } from "effect"
+import { useMemo } from "react"
+import {
+	copyCallbackToClipboardAtom,
+	createCallbackInitAtom,
+	desktopCallbackStatusAtom,
+	retryCallbackAtom,
+} from "~/atoms/desktop-callback-atoms"
 import { Logo } from "~/components/logo"
 import { Button } from "~/components/ui/button"
 import { Loader } from "~/components/ui/loader"
@@ -26,230 +27,29 @@ const RawSearchParams = Schema.Struct({
 	error_description: Schema.optional(Schema.String),
 })
 
-type CallbackStatus =
-	| { type: "connecting" }
-	| { type: "success" }
-	| { type: "error"; message: string; isRetryable: boolean; isConnectionError?: boolean }
-	| { type: "copied"; message: string }
-
 export const Route = createFileRoute("/auth/desktop-callback")({
 	component: DesktopCallbackPage,
 	validateSearch: (search: Record<string, unknown>) => Schema.decodeUnknownSync(RawSearchParams)(search),
 })
 
-/**
- * Connect to desktop app's local server
- */
-const connectToDesktop = (
-	port: number,
-	code: string,
-	state: typeof Http.DesktopAuthState.Type,
-	nonce: string,
-) =>
-	Effect.tryPromise({
-		try: async () => {
-			const response = await fetch(`http://127.0.0.1:${port}`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					code,
-					state: JSON.stringify(state),
-					nonce,
-				}),
-			})
-
-			if (!response.ok) {
-				const error = await response.json().catch(() => ({ error: "Unknown error" }))
-				throw new Error(error.error || `HTTP ${response.status}`)
-			}
-
-			return response
-		},
-		catch: (e) => e,
-	})
-
-/**
- * Effect-based callback handler with full error typing
- */
-const handleCallbackEffect = (search: typeof RawSearchParams.Type) =>
-	Effect.gen(function* () {
-		// Check for OAuth errors from WorkOS
-		if (search.error) {
-			return yield* new OAuthCallbackError({
-				message: search.error_description || search.error,
-				error: search.error,
-				errorDescription: search.error_description,
-			})
-		}
-
-		// Validate required code
-		if (!search.code) {
-			return yield* new MissingAuthCodeError({
-				message: "Missing authorization code",
-			})
-		}
-		const code = search.code
-
-		// State is already parsed and validated by TanStack Router + Schema
-		if (!search.state) {
-			return yield* new InvalidDesktopStateError({
-				message: "Missing state parameter",
-			})
-		}
-		const state = search.state
-
-		// Validate desktop connection params
-		if (state.desktopPort === undefined) {
-			return yield* new InvalidDesktopStateError({
-				message: "Missing desktop port in state",
-			})
-		}
-		const port = state.desktopPort
-
-		if (!state.desktopNonce) {
-			return yield* new InvalidDesktopStateError({
-				message: "Missing desktop nonce in state",
-			})
-		}
-		const nonce = state.desktopNonce
-
-		// Connect to desktop with exponential backoff retry
-		yield* connectToDesktop(port, code, state, nonce).pipe(
-			Effect.retry({
-				times: 3,
-				schedule: Schedule.exponential("500 millis"),
-			}),
-			Effect.mapError(
-				() =>
-					new DesktopConnectionError({
-						message: "Could not connect to Hazel",
-						port,
-						attempts: 3,
-					}),
-			),
-		)
-	})
-
-/**
- * Error info type for UI display
- */
-type ErrorInfo = { message: string; isRetryable: boolean; isConnectionError?: boolean }
-
-/**
- * Desktop callback error types
- */
-type CallbackError =
-	| OAuthCallbackError
-	| MissingAuthCodeError
-	| InvalidDesktopStateError
-	| DesktopConnectionError
-
-/**
- * Get user-friendly error message from typed error using switch statement
- */
-function getErrorMessage(error: CallbackError): ErrorInfo {
-	switch (error._tag) {
-		case "OAuthCallbackError":
-			return {
-				message: error.errorDescription || error.error,
-				isRetryable: true,
-			}
-		case "MissingAuthCodeError":
-			return {
-				message: "No authorization code received. Please try again.",
-				isRetryable: true,
-			}
-		case "InvalidDesktopStateError":
-			return {
-				message: "Invalid authentication state. Please try again.",
-				isRetryable: true,
-			}
-		case "DesktopConnectionError":
-			return {
-				message: "Could not connect to Hazel desktop app. Make sure Hazel is running.",
-				isRetryable: true,
-				isConnectionError: true,
-			}
-	}
-}
-
-/**
- * Extract error info from Effect Exit with typed error handling
- */
-function extractErrorFromExit(exit: Exit.Exit<void, CallbackError>): ErrorInfo {
-	if (Exit.isSuccess(exit)) {
-		return { message: "Success", isRetryable: false }
-	}
-
-	// Try to get the failure error
-	const failureOpt = Cause.failureOption(exit.cause)
-	if (Option.isSome(failureOpt)) {
-		return getErrorMessage(failureOpt.value)
-	}
-
-	// Try to get defect (die)
-	const dieOpt = Cause.dieOption(exit.cause)
-	if (Option.isSome(dieOpt)) {
-		const defect = dieOpt.value
-		return {
-			message: defect instanceof Error ? defect.message : String(defect),
-			isRetryable: false,
-		}
-	}
-
-	// Check if interrupted
-	if (Cause.isInterrupted(exit.cause)) {
-		return { message: "Operation was cancelled", isRetryable: true }
-	}
-
-	// Default fallback
-	return { message: "An unknown error occurred", isRetryable: false }
-}
-
 function DesktopCallbackPage() {
 	const search = Route.useSearch()
-	const [status, setStatus] = useState<CallbackStatus>({ type: "connecting" })
-	const hasStarted = useRef(false)
+	const status = useAtomValue(desktopCallbackStatusAtom)
 
-	useEffect(() => {
-		if (hasStarted.current) return
-		hasStarted.current = true
-		handleCallback()
-	}, [])
+	// Create and mount init atom - triggers callback automatically when mounted
+	const initAtom = useMemo(() => createCallbackInitAtom(search), [search])
+	useAtomValue(initAtom)
 
-	async function handleCallback() {
-		const exit = await Effect.runPromiseExit(handleCallbackEffect(search))
-
-		if (Exit.isSuccess(exit)) {
-			setStatus({ type: "success" })
-		} else {
-			// Extract error info using typed error handling
-			const errorInfo = extractErrorFromExit(exit)
-			console.error("[desktop-callback] Failed to contact desktop app:", exit.cause)
-			setStatus({ type: "error", ...errorInfo })
-		}
-	}
+	// Get action atom setters
+	const retryCallback = useAtomSet(retryCallbackAtom)
+	const copyToClipboard = useAtomSet(copyCallbackToClipboardAtom)
 
 	function handleRetry() {
-		hasStarted.current = false
-		setStatus({ type: "connecting" })
-		handleCallback()
+		retryCallback(search)
 	}
 
-	async function handleCopyToClipboard() {
-		if (!search.code || !search.state) return
-
-		const payload = JSON.stringify({
-			code: search.code,
-			state: search.state,
-		})
-
-		await navigator.clipboard.writeText(payload)
-		setStatus({
-			type: "copied",
-			message:
-				'Copied! Open the Hazel desktop app and click "Paste from clipboard" to complete sign in.',
-		})
+	function handleCopyToClipboard() {
+		copyToClipboard(search)
 	}
 
 	return (
@@ -261,7 +61,7 @@ function DesktopCallbackPage() {
 					<span className="font-semibold text-3xl">Hazel</span>
 				</div>
 
-				{status.type === "connecting" && (
+				{(status._tag === "idle" || status._tag === "connecting") && (
 					<>
 						<Loader className="size-8" />
 						<div className="space-y-2">
@@ -273,7 +73,7 @@ function DesktopCallbackPage() {
 					</>
 				)}
 
-				{status.type === "success" && (
+				{status._tag === "success" && (
 					<div className="space-y-4">
 						<div className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/10">
 							<svg
@@ -299,7 +99,7 @@ function DesktopCallbackPage() {
 					</div>
 				)}
 
-				{status.type === "error" && (
+				{status._tag === "error" && (
 					<div className="space-y-4">
 						<div className="mx-auto flex size-16 items-center justify-center rounded-full bg-danger/10">
 							<svg
@@ -342,7 +142,7 @@ function DesktopCallbackPage() {
 					</div>
 				)}
 
-				{status.type === "copied" && (
+				{status._tag === "copied" && (
 					<div className="space-y-4">
 						<div className="mx-auto flex size-16 items-center justify-center rounded-full bg-success/10">
 							<svg

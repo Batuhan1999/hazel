@@ -46,10 +46,7 @@ function isFileTypeAccepted(fileType: string): boolean {
  * - Images copied from any application
  * - Screenshots taken with system screenshot tools
  */
-export function withFilePaste<T extends CustomEditor>(
-	editor: T,
-	onFilePaste: (files: File[]) => void,
-): T {
+export function withFilePaste<T extends CustomEditor>(editor: T, onFilePaste: (files: File[]) => void): T {
 	const { insertData } = editor
 
 	editor.insertData = (data: DataTransfer) => {

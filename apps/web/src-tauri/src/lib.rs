@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use std::io::{Read, Write};
-use std::net::TcpListener;
+use std::io::Read;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 use tauri::{command, AppHandle, Emitter, Manager};
 use tauri_plugin_decorum::WebviewWindowExt;
+use tiny_http::{Header, Method, Response, Server};
 
 // Port range for OAuth callback server (dynamic)
 const OAUTH_PORT_MIN: u16 = 17900;
@@ -14,16 +14,6 @@ const OAUTH_PORT_MAX: u16 = 17999;
 fn active_nonces() -> &'static Mutex<HashMap<u16, String>> {
     static NONCES: OnceLock<Mutex<HashMap<u16, String>>> = OnceLock::new();
     NONCES.get_or_init(|| Mutex::new(HashMap::new()))
-}
-
-/// Find an available port and return the bound listener to avoid race conditions
-fn find_available_port() -> Option<(u16, TcpListener)> {
-    for port in OAUTH_PORT_MIN..=OAUTH_PORT_MAX {
-        if let Ok(listener) = TcpListener::bind(format!("127.0.0.1:{}", port)) {
-            return Some((port, listener));
-        }
-    }
-    None
 }
 
 /// Generate a unique nonce for OAuth session
@@ -38,31 +28,15 @@ fn generate_nonce() -> String {
     format!("{:x}{}", timestamp, thread_id.len())
 }
 
-/// Extract JSON body from HTTP request
-fn extract_json_body(request: &str) -> Option<serde_json::Value> {
-    // Find empty line separating headers from body
-    let body_start = request.find("\r\n\r\n").map(|i| i + 4)?;
-    let body = &request[body_start..];
-    serde_json::from_str(body).ok()
-}
-
-/// Send an error response with CORS headers
-fn send_error_response(stream: &mut std::net::TcpStream, status: u16, message: &str) {
-    let body = format!(r#"{{"error":"{}"}}"#, message);
-    let response = format!(
-        "HTTP/1.1 {} Error\r\n\
-         Access-Control-Allow-Origin: *\r\n\
-         Access-Control-Allow-Methods: POST, OPTIONS\r\n\
-         Access-Control-Allow-Headers: Content-Type\r\n\
-         Content-Type: application/json\r\n\
-         Content-Length: {}\r\n\
-         \r\n\
-         {}",
-        status,
-        body.len(),
-        body
-    );
-    let _ = stream.write_all(response.as_bytes());
+/// Create CORS headers for OAuth responses
+fn cors_headers() -> Vec<Header> {
+    vec![
+        Header::from_bytes("Access-Control-Allow-Origin", "*").unwrap(),
+        Header::from_bytes("Access-Control-Allow-Methods", "POST, OPTIONS").unwrap(),
+        Header::from_bytes("Access-Control-Allow-Headers", "Content-Type").unwrap(),
+        Header::from_bytes("Content-Type", "application/json").unwrap(),
+        Header::from_bytes("Connection", "close").unwrap(),
+    ]
 }
 
 /// Start OAuth server with dynamic port and nonce validation.
@@ -70,9 +44,18 @@ fn send_error_response(stream: &mut std::net::TcpStream, status: u16, message: &
 /// The web app callback page will POST auth data to this server.
 #[command]
 fn start_oauth_server(app: AppHandle) -> Result<(u16, String), String> {
-    // Get port AND listener together - no race condition!
-    let (port, listener) = find_available_port()
-        .ok_or("No available ports in range 17900-17999")?;
+    // Find available port
+    let mut port = None;
+    let mut server = None;
+    for p in OAUTH_PORT_MIN..=OAUTH_PORT_MAX {
+        if let Ok(s) = Server::http(format!("127.0.0.1:{}", p)) {
+            port = Some(p);
+            server = Some(s);
+            break;
+        }
+    }
+    let port = port.ok_or("No available ports in range 17900-17999")?;
+    let server = server.unwrap();
 
     // Generate and store nonce
     let nonce = generate_nonce();
@@ -81,89 +64,102 @@ fn start_oauth_server(app: AppHandle) -> Result<(u16, String), String> {
         nonces.insert(port, nonce.clone());
     }
 
-    // Listener is already bound, just configure it
-    listener
-        .set_nonblocking(false)
-        .map_err(|e| format!("Failed to set blocking mode: {}", e))?;
-
     let app_handle = app.clone();
     let expected_nonce = nonce.clone();
     let server_port = port;
 
     thread::spawn(move || {
-        // Set timeout for the listener (2 minutes)
-        let _ = listener.set_nonblocking(false);
-
-        // Handle requests (OPTIONS preflight + POST with auth data)
-        // Allow up to 10 connections to handle: preflight requests, the POST, and retries
+        // Handle up to 10 requests (OPTIONS preflight + POST + retries)
         for _ in 0..10 {
-            if let Ok((mut stream, _)) = listener.accept() {
-                let mut buffer = [0u8; 8192];
-                if let Ok(n) = stream.read(&mut buffer) {
-                    let request = String::from_utf8_lossy(&buffer[..n]);
+            let Ok(mut request) = server.recv() else {
+                continue;
+            };
 
-                    // Handle CORS preflight request
-                    if request.starts_with("OPTIONS") {
-                        let response = "HTTP/1.1 204 No Content\r\n\
-                            Access-Control-Allow-Origin: *\r\n\
-                            Access-Control-Allow-Methods: POST, OPTIONS\r\n\
-                            Access-Control-Allow-Headers: Content-Type\r\n\
-                            Access-Control-Max-Age: 86400\r\n\
-                            \r\n";
-                        let _ = stream.write_all(response.as_bytes());
-                        continue;
-                    }
+            // Handle CORS preflight
+            if *request.method() == Method::Options {
+                let response = Response::empty(204)
+                    .with_header(Header::from_bytes("Access-Control-Max-Age", "86400").unwrap());
+                let response = cors_headers()
+                    .into_iter()
+                    .fold(response, |r, h| r.with_header(h));
+                let _ = request.respond(response);
+                continue;
+            }
 
-                    // Handle POST request with auth data
-                    if request.starts_with("POST") {
-                        if let Some(body) = extract_json_body(&request) {
-                            let code = body.get("code").and_then(|v| v.as_str());
-                            let nonce = body.get("nonce").and_then(|v| v.as_str());
-                            let state = body.get("state").and_then(|v| v.as_str());
+            // Handle POST
+            if *request.method() == Method::Post {
+                let mut body = String::new();
+                if request.as_reader().read_to_string(&mut body).is_err() {
+                    let response = Response::from_string(r#"{"error":"Failed to read body"}"#)
+                        .with_status_code(400);
+                    let response = cors_headers()
+                        .into_iter()
+                        .fold(response, |r, h| r.with_header(h));
+                    let _ = request.respond(response);
+                    continue;
+                }
 
-                            if let (Some(code), Some(nonce), Some(state)) = (code, nonce, state) {
-                                // Validate nonce
-                                if nonce == expected_nonce {
-                                    // Clear nonce (one-time use)
-                                    {
-                                        let mut nonces = active_nonces().lock().unwrap();
-                                        nonces.remove(&server_port);
-                                    }
+                let Ok(json): Result<serde_json::Value, _> = serde_json::from_str(&body) else {
+                    let response =
+                        Response::from_string(r#"{"error":"Invalid JSON"}"#).with_status_code(400);
+                    let response = cors_headers()
+                        .into_iter()
+                        .fold(response, |r, h| r.with_header(h));
+                    let _ = request.respond(response);
+                    continue;
+                };
 
-                                    // Build callback URL for frontend
-                                    let callback_url = format!(
-                                        "http://localhost:{}?code={}&state={}",
-                                        server_port,
-                                        urlencoding::encode(code),
-                                        urlencoding::encode(state)
-                                    );
+                let code = json.get("code").and_then(|v| v.as_str());
+                let nonce = json.get("nonce").and_then(|v| v.as_str());
+                let state = json.get("state").and_then(|v| v.as_str());
 
-                                    let _ = app_handle.emit("oauth-callback", callback_url);
-
-                                    // Send success response
-                                    let success_body = r#"{"success":true}"#;
-                                    let response = format!(
-                                        "HTTP/1.1 200 OK\r\n\
-                                        Access-Control-Allow-Origin: *\r\n\
-                                        Content-Type: application/json\r\n\
-                                        Content-Length: {}\r\n\
-                                        \r\n\
-                                        {}",
-                                        success_body.len(),
-                                        success_body
-                                    );
-                                    let _ = stream.write_all(response.as_bytes());
-                                    break;
-                                } else {
-                                    // Invalid nonce - potential attack
-                                    send_error_response(&mut stream, 403, "Invalid nonce");
-                                }
-                            } else {
-                                send_error_response(&mut stream, 400, "Missing required fields");
-                            }
-                        } else {
-                            send_error_response(&mut stream, 400, "Invalid JSON body");
+                match (code, nonce, state) {
+                    (Some(code), Some(nonce), Some(state)) if nonce == expected_nonce => {
+                        // Clear nonce
+                        {
+                            let mut nonces = active_nonces().lock().unwrap();
+                            nonces.remove(&server_port);
                         }
+
+                        // Emit callback
+                        let callback_url = format!(
+                            "http://localhost:{}?code={}&state={}",
+                            server_port,
+                            urlencoding::encode(code),
+                            urlencoding::encode(state)
+                        );
+                        let _ = app_handle.emit("oauth-callback", callback_url);
+
+                        // Send success response with explicit content length
+                        let body = r#"{"success":true}"#;
+                        let response = Response::from_string(body)
+                            .with_header(
+                                Header::from_bytes("Content-Length", body.len().to_string())
+                                    .unwrap(),
+                            );
+                        let response = cors_headers()
+                            .into_iter()
+                            .fold(response, |r, h| r.with_header(h));
+                        let _ = request.respond(response);
+                        // Delay to ensure response is fully sent before thread exits
+                        thread::sleep(std::time::Duration::from_millis(500));
+                        break;
+                    }
+                    (Some(_), Some(_), Some(_)) => {
+                        let response = Response::from_string(r#"{"error":"Invalid nonce"}"#)
+                            .with_status_code(403);
+                        let response = cors_headers()
+                            .into_iter()
+                            .fold(response, |r, h| r.with_header(h));
+                        let _ = request.respond(response);
+                    }
+                    _ => {
+                        let response = Response::from_string(r#"{"error":"Missing fields"}"#)
+                            .with_status_code(400);
+                        let response = cors_headers()
+                            .into_iter()
+                            .fold(response, |r, h| r.with_header(h));
+                        let _ = request.respond(response);
                     }
                 }
             }

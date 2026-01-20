@@ -140,11 +140,7 @@ export function ChatHeader() {
 			<div className="flex items-center gap-2">
 				{isDirectMessage && channel.currentUser?.isHidden && (
 					<Tooltip delay={100} closeDelay={20}>
-						<Button
-							intent="plain"
-							onPress={handleToggleHidden}
-							aria-label="Unhide conversation"
-						>
+						<Button intent="plain" onPress={handleToggleHidden} aria-label="Unhide conversation">
 							<IconEye />
 						</Button>
 						<TooltipContent>Unhide conversation</TooltipContent>
