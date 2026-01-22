@@ -2,7 +2,8 @@
 
 import type { ChannelSectionId, OrganizationId, UserId } from "@hazel/schema"
 import { and, eq, isNull, or, useLiveQuery } from "@tanstack/react-db"
-import { useMemo } from "react"
+import { useParams } from "@tanstack/react-router"
+import { useEffect, useMemo, useRef } from "react"
 import { Button as PrimitiveButton } from "react-aria-components"
 import { useModal } from "~/atoms/modal-atoms"
 import { IconChevronUpDown } from "~/components/icons/icon-chevron-up-down"
@@ -216,6 +217,28 @@ export function ChannelsSidebar(props: { openChannelsBrowser: () => void }) {
 	const { threadsByParent } = useActiveThreads(organizationId ?? null, user?.id as UserId | undefined)
 	const hasTauriTitlebar = isTauriMacOS()
 
+	// Get active channel ID from route params (if on a chat route)
+	const params = useParams({ strict: false }) as { id?: string }
+	const activeChannelId = params.id
+	const sidebarContentRef = useRef<HTMLDivElement>(null)
+	console.log("activeChannelId", activeChannelId)
+
+	// Scroll to active channel on mount
+	useEffect(() => {
+		if (!activeChannelId || !sidebarContentRef.current) return
+
+		// Small delay to ensure DOM is ready after data loads
+		const timeoutId = setTimeout(() => {
+			const activeElement = sidebarContentRef.current?.querySelector('[aria-current="page"]')
+
+			if (activeElement) {
+				activeElement.scrollIntoView({ block: "nearest", behavior: "instant" })
+			}
+		}, 100)
+
+		return () => clearTimeout(timeoutId)
+	}, [activeChannelId])
+
 	// Modal hooks
 	const createOrgModal = useModal("create-organization")
 	const emailInviteModal = useModal("email-invite")
@@ -328,7 +351,7 @@ export function ChannelsSidebar(props: { openChannelsBrowser: () => void }) {
 					</MenuContent>
 				</Menu>
 			</SidebarHeader>
-			<SidebarContent>
+			<SidebarContent ref={sidebarContentRef}>
 				<SidebarSectionGroup>
 					<SidebarSection aria-label="Goto">
 						<SidebarItem onPress={props.openChannelsBrowser}>
