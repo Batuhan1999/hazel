@@ -52,7 +52,7 @@ export function NotificationsSidebar() {
 		<Sidebar collapsible="none" className="flex flex-1">
 			<SidebarHeader
 				data-tauri-drag-region
-				className={`border-b py-4 ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:h-px before:bg-sidebar-border" : ""}`}
+				className={`border-b py-4 ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:h-px before:bg-sidebar-border" : "h-14"}`}
 			>
 				<span className="text-muted-fg text-xs font-medium uppercase tracking-wider">Activity</span>
 			</SidebarHeader>

@@ -19,6 +19,7 @@ import { SidebarItem, SidebarLabel, SidebarLink, SidebarTreeItem } from "~/compo
 import { moveChannelToSectionAction } from "~/db/actions"
 import { useChannelMemberActions } from "~/hooks/use-channel-member-actions"
 import { useOrganization } from "~/hooks/use-organization"
+import { useScrollIntoViewOnActive } from "~/hooks/use-scroll-into-view-on-active"
 import { toastExit } from "~/lib/toast-exit"
 
 interface ChannelItemProps {
@@ -39,6 +40,7 @@ export function ChannelItem({ channel, member, threads, sections = [] }: Channel
 
 	const { slug } = useOrganization()
 	const navigate = useNavigate()
+	const scrollRef = useScrollIntoViewOnActive(channel.id)
 
 	const { handleToggleMute, handleToggleFavorite, handleLeave } = useChannelMemberActions(member, "channel")
 	const moveChannelToSection = useAtomSet(moveChannelToSectionAction, {
@@ -87,6 +89,7 @@ export function ChannelItem({ channel, member, threads, sections = [] }: Channel
 						badge={member.notificationCount > 0 ? member.notificationCount : undefined}
 					>
 						<SidebarLink
+							ref={scrollRef}
 							to="/$orgSlug/chat/$id"
 							params={{ orgSlug: slug, id: channel.id }}
 							activeProps={{

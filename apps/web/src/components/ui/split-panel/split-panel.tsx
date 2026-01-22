@@ -32,7 +32,7 @@ const rootStyles = tv({
 })
 
 const contentStyles = tv({
-	base: "relative flex min-w-0 flex-1 flex-col overflow-hidden",
+	base: "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overscroll-contain",
 })
 
 const panelStyles = tv({

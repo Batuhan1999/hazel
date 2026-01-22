@@ -283,7 +283,7 @@ const SidebarHeader = ({ className, ref, ...props }: React.ComponentProps<"div">
 			ref={ref}
 			data-slot="sidebar-header"
 			className={twMerge(
-				"flex flex-col gap-2 p-2.5 [.border-b]:border-sidebar-border",
+				"flex flex-col gap-2 [.border-b]:border-sidebar-border",
 				"in-data-[intent=inset]:p-4",
 				state === "collapsed" ? "items-center p-2.5" : "p-4",
 				className,
@@ -313,7 +313,7 @@ const SidebarContent = ({ className, ...props }: React.ComponentProps<"div">) =>
 		<div
 			data-slot="sidebar-content"
 			className={twMerge(
-				"flex min-h-0 flex-1 scroll-mb-96 flex-col overflow-auto *:data-[slot=sidebar-section]:border-l-0",
+				"flex min-h-0 flex-1 scroll-mb-96 flex-col overflow-auto overscroll-contain *:data-[slot=sidebar-section]:border-l-0",
 				state === "collapsed" ? "items-center" : "mask-b-from-95%",
 				className,
 			)}

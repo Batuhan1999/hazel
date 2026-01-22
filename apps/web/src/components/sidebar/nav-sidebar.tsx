@@ -35,7 +35,7 @@ export function NavSidebar() {
 		>
 			<SidebarHeader
 				data-tauri-drag-region
-				className={`px-3 py-4 ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:bottom-0 before:border-t before:border-r before:border-sidebar-border" : "h-14"}`}
+				className={`px-3 py-4  border-b ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:bottom-0 before:border-t before:border-r before:border-sidebar-border" : "h-14"}`}
 			>
 				<Link
 					href={{
@@ -46,7 +46,6 @@ export function NavSidebar() {
 					<Logo className="size-7" />
 				</Link>
 			</SidebarHeader>
-			{!hasTauriTitlebar && <SidebarSeparator className="hidden sm:block" />}
 			<SidebarContent
 				className={`mask-none ${hasTauriTitlebar ? "border-r border-sidebar-border" : ""}`}
 			>

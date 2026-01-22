@@ -18,6 +18,7 @@ import { Menu, MenuContent, MenuItem, MenuLabel } from "~/components/ui/menu"
 import { SidebarItem, SidebarLabel, SidebarLink } from "~/components/ui/sidebar"
 import { useChannelMemberActions } from "~/hooks/use-channel-member-actions"
 import { useOrganization } from "~/hooks/use-organization"
+import { useScrollIntoViewOnActive } from "~/hooks/use-scroll-into-view-on-active"
 
 interface ThreadItemProps {
 	thread: Omit<Channel, "updatedAt"> & { updatedAt: Date | null }
@@ -28,6 +29,7 @@ export function ThreadItem({ thread, member }: ThreadItemProps) {
 	const { slug } = useOrganization()
 	const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
 	const [isGenerating, setIsGenerating] = useState(false)
+	const scrollRef = useScrollIntoViewOnActive(thread.id)
 
 	const { handleToggleMute, handleLeave } = useChannelMemberActions(member, "thread")
 	const generateName = useAtomSet(generateThreadNameMutation, {
@@ -50,6 +52,7 @@ export function ThreadItem({ thread, member }: ThreadItemProps) {
 		<>
 			<SidebarItem tooltip={thread.name}>
 				<SidebarLink
+					ref={scrollRef}
 					to="/$orgSlug/chat/$id"
 					params={{ orgSlug: slug, id: thread.id }}
 					activeProps={{

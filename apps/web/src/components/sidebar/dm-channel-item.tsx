@@ -18,6 +18,7 @@ import { messageCollection } from "~/db/collections"
 import { useChannelWithCurrentUser } from "~/db/hooks"
 import { useOrganization } from "~/hooks/use-organization"
 import { useUserPresence } from "~/hooks/use-presence"
+import { useScrollIntoViewOnActive } from "~/hooks/use-scroll-into-view-on-active"
 import { useAuth } from "~/lib/auth"
 import { matchExitWithToast, toastExitOnError } from "~/lib/toast-exit"
 import { cx } from "~/utils/cx"
@@ -67,6 +68,7 @@ export interface DmChannelItemProps {
 export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 	const { slug: orgSlug } = useOrganization()
 	const router = useRouter()
+	const scrollRef = useScrollIntoViewOnActive(channelId)
 
 	const { channel } = useChannelWithCurrentUser(channelId)
 
@@ -96,7 +98,7 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			isMuted: !channel.currentUser.isMuted,
 		})
 		matchExitWithToast(exit, {
-			onSuccess: () => {},
+			onSuccess: () => { },
 			successMessage: channel.currentUser.isMuted ? "Channel unmuted" : "Channel muted",
 			customErrors: {
 				ChannelMemberNotFoundError: () => ({
@@ -115,7 +117,7 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			isFavorite: !channel.currentUser.isFavorite,
 		})
 		matchExitWithToast(exit, {
-			onSuccess: () => {},
+			onSuccess: () => { },
 			successMessage: channel.currentUser.isFavorite ? "Removed from favorites" : "Added to favorites",
 			customErrors: {
 				ChannelMemberNotFoundError: () => ({
@@ -170,6 +172,7 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 					{({ isCollapsed, isFocused }) => (
 						<>
 							<SidebarLink
+								ref={scrollRef}
 								to="/$orgSlug/chat/$id"
 								params={{ orgSlug: orgSlug || "", id: channelId }}
 								onMouseEnter={handleMouseEnter}
@@ -178,8 +181,8 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 								}}
 							>
 								{channel.type === "single" &&
-								filteredMembers.length === 1 &&
-								filteredMembers[0] ? (
+									filteredMembers.length === 1 &&
+									filteredMembers[0] ? (
 									<>
 										<DmAvatar member={filteredMembers[0]} />
 										<SidebarLabel
