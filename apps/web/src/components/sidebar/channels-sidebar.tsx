@@ -263,7 +263,7 @@ export function ChannelsSidebar(props: { openChannelsBrowser: () => void }) {
 		<Sidebar collapsible="none" className="flex flex-1">
 			<SidebarHeader
 				data-tauri-drag-region
-				className={`border-b py-4 ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:h-px before:bg-sidebar-border" : ""}`}
+				className={`border-b ${hasTauriTitlebar ? "pt-14 relative before:absolute before:top-10 before:left-0 before:right-0 before:h-px before:bg-sidebar-border" : "h-14"}`}
 			>
 				<Menu>
 					<PrimitiveButton className="relative flex items-center justify-between gap-x-2 font-semibold outline-hidden focus-visible:ring focus-visible:ring-primary">
