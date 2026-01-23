@@ -96,13 +96,7 @@ export function convertUpdateHandler<
 	if (!handler) return undefined
 
 	return async (params: UpdateMutationFnParams<T, TKey, TUtils>) => {
-		console.log("[handlers.ts] convertUpdateHandler: Starting update handler")
-
 		const effect = handler(params).pipe(
-			Effect.tap(() => Effect.sync(() => console.log("[handlers.ts] Effect executed successfully"))),
-			Effect.tapError((error: E | unknown) =>
-				Effect.sync(() => console.error("[handlers.ts] Effect error before catchAll:", error)),
-			),
 			Effect.catchAll((error: E | unknown) =>
 				Effect.fail(
 					new UpdateError({
@@ -114,46 +108,35 @@ export function convertUpdateHandler<
 			),
 		)
 
-		console.log("[handlers.ts] About to run effect with runtime:", !!runtime)
+		const exit = runtime
+			? await runtime.runPromiseExit(effect)
+			: await Effect.runPromiseExit(
+					effect as Effect.Effect<{ txid: Txid | Array<Txid> }, UpdateError, never>,
+				)
 
-		try {
-			const exit = runtime
-				? await runtime.runPromiseExit(effect)
-				: await Effect.runPromiseExit(
-						effect as Effect.Effect<{ txid: Txid | Array<Txid> }, UpdateError, never>,
-					)
-
-			console.log("[handlers.ts] Effect exit:", exit)
-
-			// Handle the Exit type
-			if (Exit.isFailure(exit)) {
-				const cause = exit.cause
-				console.error("[handlers.ts] Effect failed with cause:", cause)
-				if (cause._tag === "Fail") {
-					throw cause.error
-				}
-				throw new UpdateError({
-					message: `Update operation failed unexpectedly`,
-					key: params.transaction.mutations[0]?.key,
-					cause: cause,
-				})
+		// Handle the Exit type
+		if (Exit.isFailure(exit)) {
+			const cause = exit.cause
+			if (cause._tag === "Fail") {
+				throw cause.error
 			}
-
-			const result = exit.value
-			console.log("[handlers.ts] Effect completed, result:", result)
-
-			if (!result.txid) {
-				throw new MissingTxIdError({
-					message: `Update handler must return a txid`,
-					operation: "update",
-				})
-			}
-
-			return result
-		} catch (error) {
-			console.error("[handlers.ts] Error running effect:", error)
-			throw error
+			throw new UpdateError({
+				message: `Update operation failed unexpectedly`,
+				key: params.transaction.mutations[0]?.key,
+				cause: cause,
+			})
 		}
+
+		const result = exit.value
+
+		if (!result.txid) {
+			throw new MissingTxIdError({
+				message: `Update handler must return a txid`,
+				operation: "update",
+			})
+		}
+
+		return result
 	}
 }
 

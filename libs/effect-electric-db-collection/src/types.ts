@@ -81,6 +81,13 @@ export interface BackoffConfig {
 	 * @default true
 	 */
 	jitter?: boolean
+
+	/**
+	 * Time in milliseconds after which the backoff state resets to initial values
+	 * when no errors occur. This prevents indefinitely long delays after recovery.
+	 * @default 60000
+	 */
+	resetTimeoutMs?: number
 }
 
 /**

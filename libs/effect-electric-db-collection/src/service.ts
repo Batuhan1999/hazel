@@ -79,7 +79,42 @@ export interface ElectricCollectionService<
 }
 
 /**
- * Create a tag for an Electric collection service
+ * Create a tag for an Electric collection service.
+ *
+ * This factory uses `Context.Tag` instead of `Effect.Service` because collection
+ * instances are created at runtime with dynamic configuration (shape URLs, schemas,
+ * handlers) that vary per application context. The tag pattern allows:
+ *
+ * 1. **Runtime injection**: Collections are instantiated with user-provided config
+ *    and injected into the Effect context via `makeElectricCollectionLayer`.
+ *
+ * 2. **Multiple instances**: Different parts of the app can have different collections
+ *    of the same type (e.g., filtered vs unfiltered message collections).
+ *
+ * 3. **Type-safe service lookup**: Each collection gets a unique tag ID for proper
+ *    dependency resolution.
+ *
+ * @see {@link https://effect.website/docs/context-management/services} Effect Services docs
+ *
+ * @example
+ * ```typescript
+ * // Define the tag
+ * const MessageCollection = ElectricCollection<Message, string>("messages")
+ *
+ * // Create a layer with runtime config
+ * const MessageCollectionLive = makeElectricCollectionLayer(MessageCollection, {
+ *   id: "messages",
+ *   shapeOptions: { url: electricUrl, params: { table: "messages" } },
+ *   schema: MessageSchema,
+ *   getKey: (m) => m.id,
+ * })
+ *
+ * // Use in Effects
+ * const program = Effect.gen(function* () {
+ *   const messages = yield* MessageCollection
+ *   yield* messages.insert({ id: "1", content: "Hello" })
+ * })
+ * ```
  */
 export const ElectricCollection = <T extends Row<unknown>, TKey extends string | number = string | number>(
 	id: string,

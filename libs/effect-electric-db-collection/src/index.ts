@@ -45,16 +45,10 @@ export { convertDeleteHandler, convertInsertHandler, convertUpdateHandler } from
 // Optimistic Actions
 export {
 	type CollectionInput,
-	// Legacy API (still supported)
-	createEffectOptimisticAction,
-	type EffectOptimisticActionOptions,
 	type MutationContext,
-	type MutationParams,
 	type MutationResultWithTxId,
 	type OptimisticActionConfig,
 	type OptimisticActionResult,
-	type OptimisticMutateResult,
-	// New API with automatic collection sync
 	optimisticAction,
 } from "./optimistic-action"
 // Service and Layer APIs

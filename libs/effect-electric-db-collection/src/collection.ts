@@ -41,6 +41,7 @@ const DEFAULT_BACKOFF_CONFIG: Required<BackoffConfig> = {
 	multiplier: 2,
 	maxRetries: Number.POSITIVE_INFINITY,
 	jitter: true,
+	resetTimeoutMs: 60000,
 }
 
 /**
@@ -78,11 +79,11 @@ function createBackoffOnError(
 		if (resetTimeout) {
 			clearTimeout(resetTimeout)
 		}
-		// Reset after 60 seconds of no errors
+		// Reset after configured timeout of no errors
 		resetTimeout = setTimeout(() => {
 			retryCount = 0
 			currentDelay = backoffConfig.initialDelayMs
-		}, 60000)
+		}, backoffConfig.resetTimeoutMs)
 	}
 
 	return async (error) => {
