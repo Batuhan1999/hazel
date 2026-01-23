@@ -30,6 +30,7 @@ import { MessageAttachments } from "./message-attachments"
 import { MessageContextMenu } from "./message-context-menu"
 import { MessageEmbeds } from "./message-embeds"
 import { MessageReplySection } from "./message-reply-section"
+import { ReactionButton } from "./reaction-button"
 import { SlateMessageViewer } from "./slate-editor/slate-message-viewer"
 import { UserProfilePopover } from "./user-profile-popover"
 
@@ -249,19 +250,13 @@ export const MessageItem = memo(function MessageItem({
 						{aggregatedReactions.length > 0 && (
 							<div className="mt-2 flex flex-wrap gap-1">
 								{aggregatedReactions.map(([emoji, data]) => (
-									<button
-										type="button"
-										onClick={() => handleReaction(emoji)}
+									<ReactionButton
 										key={emoji}
-										className={cn(
-											"inline-flex size-max cursor-pointer items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium text-sm ring ring-inset transition-colors",
-											data.hasReacted
-												? "bg-primary/10 text-primary ring-primary/20 hover:bg-primary/20"
-												: "bg-secondary text-fg ring-border hover:bg-secondary/80",
-										)}
-									>
-										{emoji} {data.count}
-									</button>
+										emoji={emoji}
+										data={data}
+										onReaction={handleReaction}
+										currentUserId={currentUser?.id}
+									/>
 								))}
 							</div>
 						)}
