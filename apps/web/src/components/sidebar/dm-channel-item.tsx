@@ -20,7 +20,7 @@ import { useOrganization } from "~/hooks/use-organization"
 import { useUserPresence } from "~/hooks/use-presence"
 import { useScrollIntoViewOnActive } from "~/hooks/use-scroll-into-view-on-active"
 import { useAuth } from "~/lib/auth"
-import { matchExitWithToast, toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { cx } from "~/utils/cx"
 
 interface DmAvatarProps {
@@ -97,17 +97,14 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			memberId: channel.currentUser.id,
 			isMuted: !channel.currentUser.isMuted,
 		})
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: channel.currentUser.isMuted ? "Channel unmuted" : "Channel muted",
-			customErrors: {
-				ChannelMemberNotFoundError: () => ({
-					title: "Membership not found",
-					description: "You may no longer be a member of this conversation.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.successMessage(channel.currentUser.isMuted ? "Channel unmuted" : "Channel muted")
+			.onErrorTag("ChannelMemberNotFoundError", () => ({
+				title: "Membership not found",
+				description: "You may no longer be a member of this conversation.",
+				isRetryable: false,
+			}))
+			.run()
 	}, [channel, updateMember])
 
 	const handleToggleFavorite = useCallback(async () => {
@@ -116,17 +113,14 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			memberId: channel.currentUser.id,
 			isFavorite: !channel.currentUser.isFavorite,
 		})
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: channel.currentUser.isFavorite ? "Removed from favorites" : "Added to favorites",
-			customErrors: {
-				ChannelMemberNotFoundError: () => ({
-					title: "Membership not found",
-					description: "You may no longer be a member of this conversation.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.successMessage(channel.currentUser.isFavorite ? "Removed from favorites" : "Added to favorites")
+			.onErrorTag("ChannelMemberNotFoundError", () => ({
+				title: "Membership not found",
+				description: "You may no longer be a member of this conversation.",
+				isRetryable: false,
+			}))
+			.run()
 	}, [channel, updateMember])
 
 	const handleClose = useCallback(async () => {
@@ -136,15 +130,13 @@ export const DmChannelItem = ({ channelId }: DmChannelItemProps) => {
 			isHidden: true,
 		})
 		// Silent success, only show error
-		toastExitOnError(exit, {
-			customErrors: {
-				ChannelMemberNotFoundError: () => ({
-					title: "Membership not found",
-					description: "You may no longer be a member of this conversation.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onErrorTag("ChannelMemberNotFoundError", () => ({
+				title: "Membership not found",
+				description: "You may no longer be a member of this conversation.",
+				isRetryable: false,
+			}))
+			.run()
 	}, [channel, updateMember])
 
 	if (!channel) {

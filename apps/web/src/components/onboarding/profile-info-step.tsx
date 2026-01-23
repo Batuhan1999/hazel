@@ -8,7 +8,7 @@ import { Input } from "~/components/ui/input"
 import { TextField } from "~/components/ui/text-field"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useAuth } from "~/lib/auth"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { OnboardingNavigation } from "./onboarding-navigation"
 
 const profileSchema = type({
@@ -52,15 +52,13 @@ export function ProfileInfoStep({
 					lastName: value.lastName.trim(),
 				},
 			})
-			toastExitOnError(exit, {
-				customErrors: {
-					UserNotFoundError: () => ({
-						title: "User not found",
-						description: "Your account could not be found. Please try signing in again.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onErrorTag("UserNotFoundError", () => ({
+					title: "User not found",
+					description: "Your account could not be found. Please try signing in again.",
+					isRetryable: false,
+				}))
+				.run()
 
 			if (Exit.isSuccess(exit)) {
 				onContinue({

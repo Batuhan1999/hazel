@@ -8,7 +8,7 @@ import { Button } from "~/components/ui/button"
 import { CardDescription, CardHeader, CardTitle } from "~/components/ui/card"
 import { Input, InputGroup } from "~/components/ui/input"
 import { useAuth } from "~/lib/auth"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import {
 	getAllTimezoneCities,
 	getTimezoneOffsetNumber,
@@ -169,15 +169,13 @@ export function TimezoneSelectionStep({ onBack, onContinue, defaultTimezone }: T
 				timezone: selectedTimezone,
 			},
 		})
-		toastExitOnError(exit, {
-			customErrors: {
-				UserNotFoundError: () => ({
-					title: "User not found",
-					description: "Your account could not be found. Please try signing in again.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onErrorTag("UserNotFoundError", () => ({
+				title: "User not found",
+				description: "Your account could not be found. Please try signing in again.",
+				isRetryable: false,
+			}))
+			.run()
 
 		setIsSubmitting(false)
 

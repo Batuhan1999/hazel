@@ -21,7 +21,7 @@ import { organizationMemberCollection, userCollection, userPresenceStatusCollect
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import { findExistingDmChannel } from "~/lib/channels"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 import { cn } from "~/lib/utils"
 import { getStatusDotColor } from "~/utils/status"
 
@@ -83,7 +83,7 @@ function RouteComponent() {
 				params: { orgSlug, id: existingChannel.id },
 			})
 		} else {
-			await toastExit(
+			await exitToastAsync(
 				createDmChannel({
 					payload: {
 						organizationId,
@@ -91,20 +91,18 @@ function RouteComponent() {
 						type: "single",
 					},
 				}),
-				{
-					loading: `Starting conversation with ${targetUserName}...`,
-					success: (result) => {
-						// Navigate to the created channel
-						if (result.data.id) {
-							navigate({
-								to: "/$orgSlug/chat/$id",
-								params: { orgSlug, id: result.data.id },
-							})
-						}
-						return `Started conversation with ${targetUserName}`
-					},
-				},
 			)
+				.loading(`Starting conversation with ${targetUserName}...`)
+				.onSuccess((result) => {
+					if (result.data.id) {
+						navigate({
+							to: "/$orgSlug/chat/$id",
+							params: { orgSlug, id: result.data.id },
+						})
+					}
+				})
+				.successMessage(`Started conversation with ${targetUserName}`)
+				.run()
 		}
 	}
 

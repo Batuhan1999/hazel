@@ -20,7 +20,7 @@ import {
 	ModalTitle,
 } from "~/components/ui/modal"
 import { Switch, SwitchLabel } from "~/components/ui/switch"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { getProviderIconUrl } from "../embeds/use-embed-theme"
 
 type GitHubEventType = typeof GitHubSubscription.GitHubEventType.Type
@@ -79,20 +79,18 @@ export function EditGitHubSubscriptionModal({
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
+		exitToast(exit)
+			.onSuccess(() => {
 				onSuccess()
 				onClose()
-			},
-			successMessage: "Subscription updated",
-			customErrors: {
-				GitHubSubscriptionNotFoundError: () => ({
-					title: "Subscription not found",
-					description: "This subscription may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage("Subscription updated")
+			.onErrorTag("GitHubSubscriptionNotFoundError", () => ({
+				title: "Subscription not found",
+				description: "This subscription may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsSaving(false)
 	}
 

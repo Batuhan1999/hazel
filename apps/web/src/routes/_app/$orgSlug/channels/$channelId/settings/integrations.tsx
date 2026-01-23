@@ -27,7 +27,7 @@ import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator } from "~/compone
 import { SectionHeader } from "~/components/ui/section-header"
 import { channelCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/channels/$channelId/settings/integrations")({
 	component: IntegrationsPage,
@@ -71,16 +71,14 @@ function IntegrationsPage() {
 			payload: { channelId: channelId as ChannelId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: (result) => setWebhooks(result.data as unknown as WebhookData[]),
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess((result) => setWebhooks(result.data as unknown as WebhookData[]))
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsLoading(false)
 	}, [channelId])
 
@@ -216,17 +214,15 @@ function CompactWebhookItem({ webhook, onDelete }: { webhook: WebhookData; onDel
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => onDelete(),
-			successMessage: webhook.isEnabled ? "Webhook disabled" : "Webhook enabled",
-			customErrors: {
-				ChannelWebhookNotFoundError: () => ({
-					title: "Webhook not found",
-					description: "This webhook may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onDelete())
+			.successMessage(webhook.isEnabled ? "Webhook disabled" : "Webhook enabled")
+			.onErrorTag("ChannelWebhookNotFoundError", () => ({
+				title: "Webhook not found",
+				description: "This webhook may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsToggling(false)
 	}
 
@@ -242,17 +238,15 @@ function CompactWebhookItem({ webhook, onDelete }: { webhook: WebhookData; onDel
 			payload: { id: webhook.id as ChannelWebhookId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => onDelete(),
-			successMessage: "Webhook deleted",
-			customErrors: {
-				ChannelWebhookNotFoundError: () => ({
-					title: "Webhook not found",
-					description: "This webhook may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onDelete())
+			.successMessage("Webhook deleted")
+			.onErrorTag("ChannelWebhookNotFoundError", () => ({
+				title: "Webhook not found",
+				description: "This webhook may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsDeleting(false)
 	}
 

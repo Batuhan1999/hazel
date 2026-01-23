@@ -10,6 +10,10 @@ import {
 	type UserErrorMessage,
 } from "./error-messages"
 
+// =============================================================================
+// Type Utilities
+// =============================================================================
+
 /**
  * String literal union of all common error tags.
  * Derived from the CommonAppError type for single source of truth.
@@ -30,51 +34,6 @@ type NonCommonErrorTags<E> = E extends { _tag: infer T extends string }
  * Extracts ALL _tag literal types from a union of tagged errors.
  */
 type AllErrorTags<E> = E extends { _tag: infer T extends string } ? T : never
-
-/**
- * Maps error tags to their handler functions.
- * Handlers for non-common errors are required.
- * Handlers for common errors are optional (for context-specific overrides).
- */
-type CustomErrorHandlers<E> = {
-	[K in NonCommonErrorTags<E>]: (error: Extract<E, { _tag: K }>) => UserErrorMessage
-} & {
-	[K in AllErrorTags<E> & CommonErrorTag]?: (error: Extract<E, { _tag: K }>) => UserErrorMessage
-}
-
-/**
- * Conditionally requires customErrors if E contains non-common errors.
- * If all errors in E are CommonAppError, customErrors is optional but can still
- * be provided for context-specific overrides.
- */
-type RequireCustomErrorsIfNeeded<E> =
-	NonCommonErrorTags<E> extends never
-		? {
-				customErrors?: Partial<{
-					[K in AllErrorTags<E> & CommonErrorTag]: (
-						error: Extract<E, { _tag: K }>,
-					) => UserErrorMessage
-				}>
-			}
-		: { customErrors: CustomErrorHandlers<E> }
-
-export type ToastExitOptions<A, E> = {
-	loading: string
-	success?: string | ((value: A) => string)
-	/** @deprecated Use customErrors for type-safe error handling */
-	error?: string | ((cause: Cause.Cause<E>) => string)
-	/** Callback executed after success toast is shown */
-	onSuccess?: (value: A) => void | Promise<void>
-	/** Callback executed after error toast is shown */
-	onFailure?: (cause: Cause.Cause<E>) => void
-	/** Retry action configuration for error toasts */
-	retry?: {
-		label?: string
-		onRetry: () => void | Promise<void>
-	}
-	/** Show detailed error description from Cause.pretty() */
-	showErrorDescription?: boolean
-} & RequireCustomErrorsIfNeeded<E>
 
 /**
  * Gets the error message using custom handlers first, then common handlers.
@@ -101,277 +60,384 @@ function getErrorMessage<E extends { _tag: string }>(
 	return DEFAULT_ERROR_MESSAGE
 }
 
+// =============================================================================
+// Builder Pattern API
+// =============================================================================
+
 /**
- * Toast utility for Effect Exit types from promiseExit mode.
+ * Builder type for exitToast - chainable API for Exit toast handling.
  *
- * Unlike toast.promise(), this handles Exit<A, E> which always resolves
- * but contains either Success or Failure state.
- *
- * Common errors (UnauthorizedError, InternalServerError, etc.) are handled
- * automatically. For any other errors in E, you MUST provide customErrors.
- *
- * @example
- * ```tsx
- * // RPC returns: ChannelNotFoundError | UnauthorizedError | InternalServerError
- * toastExit(
- *   deleteChannel({ channelId }),
- *   {
- *     loading: "Deleting channel...",
- *     success: "Channel deleted",
- *     // TypeScript REQUIRES customErrors because ChannelNotFoundError is not common
- *     customErrors: {
- *       ChannelNotFoundError: () => ({
- *         title: "Channel not found",
- *         description: "This channel may have been deleted.",
- *         isRetryable: false,
- *       }),
- *     },
- *   }
- * )
- *
- * // RPC returns only: UnauthorizedError | InternalServerError (all common)
- * toastExit(
- *   updateUser({ userId, data }),
- *   {
- *     loading: "Updating...",
- *     success: "Updated",
- *     // customErrors NOT required - all errors are handled automatically
- *   }
- * )
- * ```
+ * @template A - Success value type
+ * @template E - Error union type (must have _tag)
+ * @template HandledErrors - Accumulates handled error tags
  */
-export async function toastExit<A, E extends { _tag: string }>(
-	promiseExit: Promise<Exit.Exit<A, E>>,
-	options: ToastExitOptions<A, E>,
-): Promise<Exit.Exit<A, E>> {
-	const loadingToast = toast.loading(options.loading)
+export type ExitToastBuilder<A, E, HandledErrors extends string> = {
+	/**
+	 * Callback executed after successful exit.
+	 */
+	onSuccess(fn: (value: A) => void): ExitToastBuilder<A, E, HandledErrors>
 
-	const exit = await promiseExit
+	/**
+	 * Success toast message (string or function returning string).
+	 */
+	successMessage(msg: string | ((value: A) => string)): ExitToastBuilder<A, E, HandledErrors>
 
-	return Exit.match(exit, {
-		onSuccess: async (value) => {
-			if (options.success) {
-				const message =
-					typeof options.success === "function" ? options.success(value) : options.success
-				toast.success(message, { id: loadingToast })
-			} else {
-				toast.dismiss(loadingToast)
-			}
-			await options.onSuccess?.(value)
-			return exit
-		},
-		onFailure: (cause) => {
-			const toastOptions: ExternalToast = { id: loadingToast }
+	/**
+	 * Handle a specific error tag with custom message.
+	 * Removes the tag from unhandled errors tracking.
+	 */
+	onErrorTag<Tag extends Exclude<AllErrorTags<E>, HandledErrors | CommonErrorTag>>(
+		tag: Tag,
+		handler: (error: Extract<E, { _tag: Tag }>) => UserErrorMessage,
+	): ExitToastBuilder<A, E, HandledErrors | Tag>
 
-			let message: string
-			let description: string | undefined
+	/**
+	 * Override handling for common errors (optional).
+	 */
+	onCommonErrorTag<Tag extends AllErrorTags<E> & CommonErrorTag>(
+		tag: Tag,
+		handler: (error: Extract<E, { _tag: Tag }>) => UserErrorMessage,
+	): ExitToastBuilder<A, E, HandledErrors>
 
-			// Use legacy error option if provided (deprecated)
-			if (options.error) {
-				message = typeof options.error === "function" ? options.error(cause) : options.error
-			} else {
-				// Extract error from cause
-				const failures = Cause.failures(cause)
-				const firstFailure = Chunk.head(failures)
+	/**
+	 * Catch-all handler for remaining errors.
+	 */
+	onError(
+		handler: (error: Exclude<E, { _tag: HandledErrors | CommonErrorTag }>) => UserErrorMessage,
+	): ExitToastBuilder<A, E, AllErrorTags<E>>
 
-				if (Option.isSome(firstFailure)) {
-					const userError = getErrorMessage(firstFailure.value, options.customErrors)
-					message = userError.title
-					description = userError.description
-				} else {
-					const userError = getUserFriendlyError(cause)
-					message = userError.title
-					description = userError.description
-				}
+	/**
+	 * Add retry action to error toast.
+	 */
+	withRetry(options: { label?: string; onRetry: () => void }): ExitToastBuilder<A, E, HandledErrors>
 
-				if (description) {
-					toastOptions.description = description
-				}
-			}
+	/**
+	 * Show detailed error description from Cause.pretty().
+	 */
+	showErrorDescription(): ExitToastBuilder<A, E, HandledErrors>
 
-			if (options.showErrorDescription) {
-				toastOptions.description = Cause.pretty(cause)
-			}
-
-			if (options.retry) {
-				toastOptions.action = {
-					label: options.retry.label ?? "Retry",
-					onClick: () => options.retry?.onRetry(),
-				}
-			}
-
-			toast.error(message, toastOptions)
-			options.onFailure?.(cause)
-			return exit
-		},
-	})
+	/**
+	 * Execute the builder and show appropriate toast.
+	 * Only available when all non-common errors are handled.
+	 */
+	run: NonCommonErrorTags<E> extends HandledErrors ? () => void : BuilderNotReady<E, HandledErrors>
 }
 
 /**
- * Options for toastExitOnError - shows toast only on failure
+ * Helper type that shows which errors still need handlers.
  */
-export type ToastExitOnErrorOptions<E> = {
-	/** @deprecated Use customErrors for type-safe error handling */
-	error?: string | ((cause: Cause.Cause<E>) => string)
-	onFailure?: (cause: Cause.Cause<E>) => void
-	retry?: {
-		label?: string
-		onRetry: () => void | Promise<void>
-	}
-	showErrorDescription?: boolean
-} & RequireCustomErrorsIfNeeded<E>
-
-/**
- * Toast utility for operations without loading state.
- * Only shows toast on failure - useful for background operations.
- *
- * @example
- * ```tsx
- * const exit = await sendMessage({ ... })
- * toastExitOnError(exit, {
- *   customErrors: {
- *     MessageNotFoundError: () => ({
- *       title: "Message not found",
- *       isRetryable: false,
- *     }),
- *   },
- * })
- * if (Exit.isSuccess(exit)) clearAttachments()
- * ```
- */
-export function toastExitOnError<A, E extends { _tag: string }>(
-	exit: Exit.Exit<A, E>,
-	options: ToastExitOnErrorOptions<E>,
-): Exit.Exit<A, E> {
-	return Exit.match(exit, {
-		onSuccess: () => exit,
-		onFailure: (cause) => {
-			const toastOptions: ExternalToast = {}
-
-			let message: string
-			let description: string | undefined
-
-			if (options.error) {
-				message = typeof options.error === "function" ? options.error(cause) : options.error
-			} else {
-				const failures = Cause.failures(cause)
-				const firstFailure = Chunk.head(failures)
-
-				if (Option.isSome(firstFailure)) {
-					const userError = getErrorMessage(firstFailure.value, options.customErrors)
-					message = userError.title
-					description = userError.description
-				} else {
-					const userError = getUserFriendlyError(cause)
-					message = userError.title
-					description = userError.description
-				}
-
-				if (description) {
-					toastOptions.description = description
-				}
-			}
-
-			if (options.showErrorDescription) {
-				toastOptions.description = Cause.pretty(cause)
-			}
-
-			if (options.retry) {
-				toastOptions.action = {
-					label: options.retry.label ?? "Retry",
-					onClick: () => options.retry?.onRetry(),
-				}
-			}
-
-			toast.error(message, toastOptions)
-			options.onFailure?.(cause)
-			return exit
-		},
-	})
+type BuilderNotReady<E, HandledErrors extends string> = {
+	readonly _unhandledErrors: Exclude<NonCommonErrorTags<E>, HandledErrors>
+	readonly _message: "Missing handlers for non-common errors. Use onErrorTag() to handle them."
 }
 
 /**
- * Options for matchExitWithToast - drop-in replacement for Exit.match + toast
+ * Builder type for exitToastAsync - chainable API with loading state support.
  */
-export type MatchExitWithToastOptions<A, E> = {
-	onSuccess: (value: A) => void
-	successMessage?: string
-	/** @deprecated Use customErrors for type-safe error handling */
-	errorMessage?: string
-	showErrorDescription?: boolean
-	retry?: {
-		label?: string
-		onRetry: () => void | Promise<void>
-	}
-} & RequireCustomErrorsIfNeeded<E>
+export type ExitToastAsyncBuilder<A, E, HandledErrors extends string> = {
+	/**
+	 * Loading toast message shown while awaiting the promise.
+	 */
+	loading(message: string): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Callback executed after successful exit.
+	 */
+	onSuccess(fn: (value: A) => void): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Success toast message (string or function returning string).
+	 */
+	successMessage(msg: string | ((value: A) => string)): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Handle a specific error tag with custom message.
+	 */
+	onErrorTag<Tag extends Exclude<AllErrorTags<E>, HandledErrors | CommonErrorTag>>(
+		tag: Tag,
+		handler: (error: Extract<E, { _tag: Tag }>) => UserErrorMessage,
+	): ExitToastAsyncBuilder<A, E, HandledErrors | Tag>
+
+	/**
+	 * Override handling for common errors (optional).
+	 */
+	onCommonErrorTag<Tag extends AllErrorTags<E> & CommonErrorTag>(
+		tag: Tag,
+		handler: (error: Extract<E, { _tag: Tag }>) => UserErrorMessage,
+	): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Catch-all handler for remaining errors.
+	 */
+	onError(
+		handler: (error: Exclude<E, { _tag: HandledErrors | CommonErrorTag }>) => UserErrorMessage,
+	): ExitToastAsyncBuilder<A, E, AllErrorTags<E>>
+
+	/**
+	 * Add retry action to error toast.
+	 */
+	withRetry(options: { label?: string; onRetry: () => void }): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Show detailed error description from Cause.pretty().
+	 */
+	showErrorDescription(): ExitToastAsyncBuilder<A, E, HandledErrors>
+
+	/**
+	 * Execute the builder, await the promise, and show appropriate toast.
+	 * Returns the Exit for further handling.
+	 */
+	run: NonCommonErrorTags<E> extends HandledErrors
+		? () => Promise<Exit.Exit<A, E>>
+		: BuilderNotReady<E, HandledErrors>
+}
 
 /**
- * Drop-in replacement for manual Exit.match + toast patterns.
- *
- * @example
- * ```tsx
- * matchExitWithToast(exit, {
- *   onSuccess: () => cleanup(),
- *   successMessage: "Done",
- *   customErrors: {
- *     ChannelNotFoundError: () => ({
- *       title: "Channel not found",
- *       isRetryable: false,
- *     }),
- *   },
- * })
- * ```
+ * Internal state for the builder.
  */
-export function matchExitWithToast<A, E extends { _tag: string }>(
+interface BuilderState<A, E> {
+	onSuccessFn?: (value: A) => void
+	successMsg?: string | ((value: A) => string)
+	errorHandlers: Record<string, (error: E) => UserErrorMessage>
+	retryOptions?: { label?: string; onRetry: () => void }
+	showDescription: boolean
+	loadingMsg?: string
+}
+
+/**
+ * Executes the toast logic for an Exit.
+ */
+function executeToast<A, E extends { _tag: string }>(
 	exit: Exit.Exit<A, E>,
-	options: MatchExitWithToastOptions<A, E>,
+	state: BuilderState<A, E>,
+	loadingToastId?: string | number,
 ): void {
 	Exit.match(exit, {
 		onSuccess: (value) => {
-			if (options.successMessage) {
-				toast.success(options.successMessage)
+			if (state.successMsg) {
+				const msg =
+					typeof state.successMsg === "function" ? state.successMsg(value) : state.successMsg
+				if (loadingToastId !== undefined) {
+					toast.success(msg, { id: loadingToastId })
+				} else {
+					toast.success(msg)
+				}
+			} else if (loadingToastId !== undefined) {
+				toast.dismiss(loadingToastId)
 			}
-			options.onSuccess(value)
+			state.onSuccessFn?.(value)
 		},
 		onFailure: (cause) => {
 			const toastOptions: ExternalToast = {}
-
-			let message: string
-			let description: string | undefined
-
-			if (options.errorMessage) {
-				message = options.errorMessage
-			} else {
-				const failures = Cause.failures(cause)
-				const firstFailure = Chunk.head(failures)
-
-				if (Option.isSome(firstFailure)) {
-					const userError = getErrorMessage(firstFailure.value, options.customErrors)
-					message = userError.title
-					description = userError.description
-				} else {
-					const userError = getUserFriendlyError(cause)
-					message = userError.title
-					description = userError.description
-				}
-
-				if (description) {
-					toastOptions.description = description
-				}
+			if (loadingToastId !== undefined) {
+				toastOptions.id = loadingToastId
 			}
 
-			if (options.showErrorDescription) {
+			const failures = Cause.failures(cause)
+			const firstFailure = Chunk.head(failures)
+
+			let userError: UserErrorMessage
+
+			if (Option.isSome(firstFailure)) {
+				userError = getErrorMessage(firstFailure.value, state.errorHandlers)
+			} else {
+				userError = getUserFriendlyError(cause)
+			}
+
+			if (userError.description) {
+				toastOptions.description = userError.description
+			}
+
+			if (state.showDescription) {
 				toastOptions.description = Cause.pretty(cause)
 			}
 
-			if (options.retry) {
+			if (state.retryOptions) {
 				toastOptions.action = {
-					label: options.retry.label ?? "Retry",
-					onClick: () => options.retry?.onRetry(),
+					label: state.retryOptions.label ?? "Retry",
+					onClick: state.retryOptions.onRetry,
 				}
 			}
 
-			toast.error(message, toastOptions)
+			toast.error(userError.title, toastOptions)
 		},
 	})
+}
+
+/**
+ * Creates a builder for Exit toast handling.
+ * Provides a chainable API consistent with Result.builder.
+ *
+ * @example
+ * ```tsx
+ * // Simple usage with only common errors
+ * exitToast(exit)
+ *   .successMessage("Saved!")
+ *   .run()
+ *
+ * // With custom error handling
+ * exitToast(exit)
+ *   .onSuccess(() => onOpenChange(false))
+ *   .successMessage("Channel deleted successfully")
+ *   .onErrorTag("ChannelNotFoundError", () => ({
+ *     title: "Channel not found",
+ *     description: "This channel may have been deleted.",
+ *     isRetryable: false,
+ *   }))
+ *   .run()
+ *
+ * // Multiple custom errors
+ * exitToast(exit)
+ *   .successMessage(`Subscribed to ${repo}`)
+ *   .onErrorTag("GitHubSubscriptionExistsError", () => ({
+ *     title: "Already subscribed",
+ *     description: "This channel is already subscribed.",
+ *     isRetryable: false,
+ *   }))
+ *   .onErrorTag("GitHubNotConnectedError", () => ({
+ *     title: "GitHub not connected",
+ *     description: "Connect GitHub in settings first.",
+ *     isRetryable: false,
+ *   }))
+ *   .run()
+ * ```
+ */
+export function exitToast<A, E extends { _tag: string }>(
+	exit: Exit.Exit<A, E>,
+): ExitToastBuilder<A, E, never> {
+	const state: BuilderState<A, E> = {
+		errorHandlers: {},
+		showDescription: false,
+	}
+
+	const builder: ExitToastBuilder<A, E, never> = {
+		onSuccess(fn) {
+			state.onSuccessFn = fn
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		successMessage(msg) {
+			state.successMsg = msg
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onErrorTag(tag, handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers[tag] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onCommonErrorTag(tag, handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers[tag] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onError(handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers["*"] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		withRetry(options) {
+			state.retryOptions = options
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		showErrorDescription() {
+			state.showDescription = true
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: run() type depends on HandledErrors
+		run: (() => executeToast(exit, state)) as any,
+	}
+
+	return builder
+}
+
+/**
+ * Creates a builder for async Exit toast handling with loading state.
+ * Provides a chainable API with loading toast support.
+ *
+ * @example
+ * ```tsx
+ * // With loading state
+ * const exit = await exitToastAsync(createChannel({ name }))
+ *   .loading("Creating channel...")
+ *   .onSuccess((result) => {
+ *     navigate({ to: `/c/$channelId`, params: { channelId: result.id } })
+ *     onOpenChange(false)
+ *   })
+ *   .successMessage("Channel created successfully")
+ *   .run()
+ *
+ * // Without loading (shows toast only on result)
+ * await exitToastAsync(deleteItem({ id }))
+ *   .successMessage("Deleted")
+ *   .run()
+ * ```
+ */
+export function exitToastAsync<A, E extends { _tag: string }>(
+	promiseExit: Promise<Exit.Exit<A, E>>,
+): ExitToastAsyncBuilder<A, E, never> {
+	const state: BuilderState<A, E> = {
+		errorHandlers: {},
+		showDescription: false,
+	}
+
+	const builder: ExitToastAsyncBuilder<A, E, never> = {
+		loading(message) {
+			state.loadingMsg = message
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onSuccess(fn) {
+			state.onSuccessFn = fn
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		successMessage(msg) {
+			state.successMsg = msg
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onErrorTag(tag, handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers[tag] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onCommonErrorTag(tag, handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers[tag] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		onError(handler) {
+			// biome-ignore lint/suspicious/noExplicitAny: Handler types are checked at call site
+			state.errorHandlers["*"] = handler as any
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		withRetry(options) {
+			state.retryOptions = options
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		showErrorDescription() {
+			state.showDescription = true
+			// biome-ignore lint/suspicious/noExplicitAny: Builder pattern requires flexible return types
+			return builder as any
+		},
+		// biome-ignore lint/suspicious/noExplicitAny: run() type depends on HandledErrors
+		run: (async () => {
+			const loadingToastId = state.loadingMsg ? toast.loading(state.loadingMsg) : undefined
+			const exit = await promiseExit
+			executeToast(exit, state, loadingToastId)
+			return exit
+		}) as any,
+	}
+
+	return builder
 }

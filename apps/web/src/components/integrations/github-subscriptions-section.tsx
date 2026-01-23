@@ -21,7 +21,7 @@ import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator } from "~/components/ui/menu"
 import { channelCollection } from "~/db/collections"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { AddGitHubSubscriptionModal } from "./add-github-subscription-modal"
 import { EditGitHubSubscriptionModal } from "./edit-github-subscription-modal"
 
@@ -88,9 +88,9 @@ export function GitHubSubscriptionsSection({ organizationId }: GitHubSubscriptio
 		if (isInitial) setIsLoading(true)
 		const exit = await listSubscriptionsRef.current({ payload: {} })
 
-		matchExitWithToast(exit, {
-			onSuccess: (result) => setSubscriptions(result.data),
-		})
+		exitToast(exit)
+			.onSuccess((result) => setSubscriptions(result.data))
+			.run()
 		if (isInitial) setIsLoading(false)
 	}, [])
 
@@ -142,17 +142,15 @@ export function GitHubSubscriptionsSection({ organizationId }: GitHubSubscriptio
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => fetchSubscriptions(),
-			successMessage: subscription.isEnabled ? "Subscription disabled" : "Subscription enabled",
-			customErrors: {
-				GitHubSubscriptionNotFoundError: () => ({
-					title: "Subscription not found",
-					description: "This subscription may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => fetchSubscriptions())
+			.successMessage(subscription.isEnabled ? "Subscription disabled" : "Subscription enabled")
+			.onErrorTag("GitHubSubscriptionNotFoundError", () => ({
+				title: "Subscription not found",
+				description: "This subscription may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const handleDelete = async (subscription: GitHubSubscriptionData) => {
@@ -160,17 +158,15 @@ export function GitHubSubscriptionsSection({ organizationId }: GitHubSubscriptio
 			payload: { id: subscription.id as GitHubSubscriptionId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => fetchSubscriptions(),
-			successMessage: "Subscription removed",
-			customErrors: {
-				GitHubSubscriptionNotFoundError: () => ({
-					title: "Subscription not found",
-					description: "This subscription may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => fetchSubscriptions())
+			.successMessage("Subscription removed")
+			.onErrorTag("GitHubSubscriptionNotFoundError", () => ({
+				title: "Subscription not found",
+				description: "This subscription may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const handleEdit = (subscription: GitHubSubscriptionData, channelName: string) => {

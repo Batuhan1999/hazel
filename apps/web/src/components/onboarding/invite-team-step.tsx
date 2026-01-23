@@ -10,7 +10,7 @@ import { CardDescription, CardHeader, CardTitle } from "~/components/ui/card"
 import { Description, FieldError, Label } from "~/components/ui/field"
 import { Input } from "~/components/ui/input"
 import { TextField } from "~/components/ui/text-field"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { OnboardingNavigation } from "./onboarding-navigation"
 
 interface InviteTeamStepProps {
@@ -94,7 +94,7 @@ export function InviteTeamStep({ onBack, onContinue, onSkip, organizationId }: I
 					})),
 				},
 			})
-			toastExitOnError(exit, {})
+			exitToast(exit).run()
 
 			if (Exit.isSuccess(exit)) {
 				onContinue(filledEmails)

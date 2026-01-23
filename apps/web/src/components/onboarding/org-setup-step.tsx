@@ -8,7 +8,7 @@ import { Input } from "~/components/ui/input"
 import { TextField } from "~/components/ui/text-field"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useAuth } from "~/lib/auth"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { OnboardingNavigation } from "./onboarding-navigation"
 
 // Sanitize slug value to URL-safe format
@@ -74,15 +74,13 @@ export function OrgSetupStep({
 					isPublic: false,
 				},
 			})
-			toastExitOnError(exit, {
-				customErrors: {
-					OrganizationSlugAlreadyExistsError: (error) => ({
-						title: "Slug already taken",
-						description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onErrorTag("OrganizationSlugAlreadyExistsError", (error) => ({
+					title: "Slug already taken",
+					description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
+					isRetryable: false,
+				}))
+				.run()
 
 			if (Exit.isSuccess(exit)) {
 				const organizationId = exit.value.data.id

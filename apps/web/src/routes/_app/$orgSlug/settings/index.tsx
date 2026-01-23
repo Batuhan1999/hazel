@@ -20,7 +20,7 @@ import { organizationMemberCollection, userCollection } from "~/db/collections"
 import { useOrganizationAvatarUpload } from "~/hooks/use-organization-avatar-upload"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/")({
 	component: GeneralSettings,
@@ -92,28 +92,25 @@ function GeneralSettings() {
 	const handleSaveName = async () => {
 		if (!organizationId || !name.trim() || name === organization?.name) return
 
-		await toastExit(
+		await exitToastAsync(
 			updateOrganization({
 				organizationId,
 				name: name.trim(),
 			}),
-			{
-				loading: "Updating organization name...",
-				success: "Organization name updated",
-				customErrors: {
-					OrganizationNotFoundError: () => ({
-						title: "Organization not found",
-						description: "This organization may have been deleted.",
-						isRetryable: false,
-					}),
-					OrganizationSlugAlreadyExistsError: () => ({
-						title: "Slug already exists",
-						description: "This organization slug is already taken.",
-						isRetryable: false,
-					}),
-				},
-			},
 		)
+			.loading("Updating organization name...")
+			.successMessage("Organization name updated")
+			.onErrorTag("OrganizationNotFoundError", () => ({
+				title: "Organization not found",
+				description: "This organization may have been deleted.",
+				isRetryable: false,
+			}))
+			.onErrorTag("OrganizationSlugAlreadyExistsError", () => ({
+				title: "Slug already exists",
+				description: "This organization slug is already taken.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,23 +139,20 @@ function GeneralSettings() {
 	const handleTogglePublicMode = async (isPublic: boolean) => {
 		if (!organizationId) return
 
-		await toastExit(
+		await exitToastAsync(
 			setPublicMode({
 				organizationId,
 				isPublic,
 			}),
-			{
-				loading: isPublic ? "Enabling public invites..." : "Disabling public invites...",
-				success: isPublic ? "Public invites enabled" : "Public invites disabled",
-				customErrors: {
-					OrganizationNotFoundError: () => ({
-						title: "Organization not found",
-						description: "This organization may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			},
 		)
+			.loading(isPublic ? "Enabling public invites..." : "Disabling public invites...")
+			.successMessage(isPublic ? "Public invites enabled" : "Public invites disabled")
+			.onErrorTag("OrganizationNotFoundError", () => ({
+				title: "Organization not found",
+				description: "This organization may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const workspaceUrl = orgSlug ? `${window.location.origin}/${orgSlug}` : ""

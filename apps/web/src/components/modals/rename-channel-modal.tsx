@@ -10,7 +10,7 @@ import { TextField } from "~/components/ui/text-field"
 import { updateChannelAction } from "~/db/actions"
 import { channelCollection } from "~/db/collections"
 import { useAppForm } from "~/hooks/use-app-form"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 const channelNameSchema = type({
 	name: "string.trim",
@@ -53,20 +53,18 @@ export function RenameChannelModal({ channelId, isOpen, onOpenChange }: RenameCh
 
 			const exit = await updateChannel({ channelId: channel.id, name: trimmedName })
 
-			matchExitWithToast(exit, {
-				onSuccess: () => {
+			exitToast(exit)
+				.onSuccess(() => {
 					onOpenChange(false)
 					form.reset()
-				},
-				successMessage: "Channel renamed successfully",
-				customErrors: {
-					ChannelNotFoundError: () => ({
-						title: "Channel not found",
-						description: "This channel may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+				})
+				.successMessage("Channel renamed successfully")
+				.onErrorTag("ChannelNotFoundError", () => ({
+					title: "Channel not found",
+					description: "This channel may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 	})
 

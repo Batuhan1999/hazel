@@ -8,7 +8,7 @@ import { TextField } from "~/components/ui/text-field"
 import { createChannelSectionAction } from "~/db/actions"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useOrganization } from "~/hooks/use-organization"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const sectionSchema = type({
 	name: "string > 1",
@@ -38,23 +38,19 @@ export function CreateSectionModal({ isOpen, onOpenChange }: CreateSectionModalP
 		onSubmit: async ({ value }) => {
 			if (!organizationId) return
 
-			const exit = await toastExit(
+			const exit = await exitToastAsync(
 				createSection({
 					name: value.name,
 					organizationId,
 				}),
-				{
-					loading: "Creating section...",
-					success: () => {
-						// Close modal and reset form
-						onOpenChange(false)
-						form.reset()
-
-						return "Section created successfully"
-					},
-					customErrors: {},
-				},
 			)
+				.loading("Creating section...")
+				.onSuccess(() => {
+					onOpenChange(false)
+					form.reset()
+				})
+				.successMessage("Section created successfully")
+				.run()
 
 			return exit
 		},

@@ -11,7 +11,7 @@ import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator } from "~/compone
 import { SidebarSection } from "~/components/ui/sidebar"
 import { Strong } from "~/components/ui/text"
 import { deleteChannelSectionAction, moveChannelToSectionAction } from "~/db/actions"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 import IconChevronDown from "../icons/icon-chevron-down"
 import IconCirclePlus from "../icons/icon-circle-plus"
 import IconHashtag from "../icons/icon-hashtag"
@@ -67,28 +67,25 @@ export function SectionGroup({
 				const data: ChannelDragData = JSON.parse(await item.getText(CHANNEL_DRAG_TYPE))
 				const targetSectionId = sectionId === "default" ? null : sectionId
 				if (data.currentSectionId === targetSectionId) continue
-				await toastExit(
+				await exitToastAsync(
 					moveChannelToSection({
 						channelId: data.channelId as ChannelId,
 						sectionId: targetSectionId,
 					}),
-					{
-						loading: "Moving channel...",
-						success: `Moved "${data.channelName}" to ${name}`,
-						customErrors: {
-							ChannelNotFoundError: () => ({
-								title: "Channel not found",
-								description: "This channel may have been deleted.",
-								isRetryable: false,
-							}),
-							ChannelSectionNotFoundError: () => ({
-								title: "Section not found",
-								description: "This section may have been deleted.",
-								isRetryable: false,
-							}),
-						},
-					},
 				)
+					.loading("Moving channel...")
+					.successMessage(`Moved "${data.channelName}" to ${name}`)
+					.onErrorTag("ChannelNotFoundError", () => ({
+						title: "Channel not found",
+						description: "This channel may have been deleted.",
+						isRetryable: false,
+					}))
+					.onErrorTag("ChannelSectionNotFoundError", () => ({
+						title: "Section not found",
+						description: "This section may have been deleted.",
+						isRetryable: false,
+					}))
+					.run()
 			}
 		}
 	}
@@ -127,17 +124,15 @@ export function SectionGroup({
 	const handleDelete = async () => {
 		if (sectionId === "default" || sectionId === "dms") return
 
-		await toastExit(deleteSection({ sectionId }), {
-			loading: "Deleting section...",
-			success: "Section deleted",
-			customErrors: {
-				ChannelSectionNotFoundError: () => ({
-					title: "Section not found",
-					description: "This section may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		await exitToastAsync(deleteSection({ sectionId }))
+			.loading("Deleting section...")
+			.successMessage("Section deleted")
+			.onErrorTag("ChannelSectionNotFoundError", () => ({
+				title: "Section not found",
+				description: "This section may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const menuActions = [

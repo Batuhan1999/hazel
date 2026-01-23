@@ -16,7 +16,7 @@ import { EmptyState } from "~/components/ui/empty-state"
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "~/components/ui/menu"
 import { invitationCollection, userCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/invitations")({
 	component: InvitationsSettings,
@@ -86,25 +86,21 @@ function InvitationsSettings() {
 	const handleResendInvitation = async (invitationId: InvitationId) => {
 		setResendingId(invitationId)
 		try {
-			await toastExit(
+			await exitToastAsync(
 				resendInvitation({
 					payload: {
 						invitationId,
 					},
 				}),
-				{
-					loading: "Resending invitation...",
-					success: "Invitation resent successfully",
-					error: "Failed to resend invitation",
-					customErrors: {
-						InvitationNotFoundError: () => ({
-							title: "Invitation not found",
-							description: "This invitation may have been revoked or expired.",
-							isRetryable: false,
-						}),
-					},
-				},
 			)
+				.loading("Resending invitation...")
+				.successMessage("Invitation resent successfully")
+				.onErrorTag("InvitationNotFoundError", () => ({
+					title: "Invitation not found",
+					description: "This invitation may have been revoked or expired.",
+					isRetryable: false,
+				}))
+				.run()
 		} finally {
 			setResendingId(null)
 		}
@@ -113,25 +109,21 @@ function InvitationsSettings() {
 	const handleRevokeInvitation = async (invitationId: InvitationId) => {
 		setRevokingId(invitationId)
 		try {
-			await toastExit(
+			await exitToastAsync(
 				revokeInvitation({
 					payload: {
 						invitationId,
 					},
 				}),
-				{
-					loading: "Revoking invitation...",
-					success: "Invitation revoked successfully",
-					error: "Failed to revoke invitation",
-					customErrors: {
-						InvitationNotFoundError: () => ({
-							title: "Invitation not found",
-							description: "This invitation may have already been revoked or expired.",
-							isRetryable: false,
-						}),
-					},
-				},
 			)
+				.loading("Revoking invitation...")
+				.successMessage("Invitation revoked successfully")
+				.onErrorTag("InvitationNotFoundError", () => ({
+					title: "Invitation not found",
+					description: "This invitation may have already been revoked or expired.",
+					isRetryable: false,
+				}))
+				.run()
 		} finally {
 			setRevokingId(null)
 		}

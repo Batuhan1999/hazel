@@ -15,7 +15,7 @@ import { SectionHeader } from "~/components/ui/section-header"
 import { TextField } from "~/components/ui/text-field"
 import { channelCollection } from "~/db/collections"
 import { useAppForm } from "~/hooks/use-app-form"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/channels/$channelId/settings/overview")({
 	component: OverviewPage,
@@ -60,17 +60,15 @@ function ChannelSettingsForm({
 				},
 			})
 
-			matchExitWithToast(exit, {
-				onSuccess: () => setIconDirty(false),
-				successMessage: "Channel updated successfully",
-				customErrors: {
-					ChannelNotFoundError: () => ({
-						title: "Channel not found",
-						description: "This channel may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onSuccess(() => setIconDirty(false))
+				.successMessage("Channel updated successfully")
+				.onErrorTag("ChannelNotFoundError", () => ({
+					title: "Channel not found",
+					description: "This channel may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 	})
 

@@ -22,7 +22,7 @@ import { Textarea } from "~/components/ui/textarea"
 import { TextField } from "~/components/ui/text-field"
 import { useAppForm } from "~/hooks/use-app-form"
 import { BOT_SCOPES } from "~/lib/bot-scopes"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const botSchema = type({
 	name: "1<string<101",
@@ -61,7 +61,7 @@ export function CreateBotModal({ isOpen, onOpenChange, onSuccess, reactivityKeys
 				return
 			}
 
-			await toastExit(
+			await exitToastAsync(
 				createBot({
 					payload: {
 						name: value.name,
@@ -72,22 +72,19 @@ export function CreateBotModal({ isOpen, onOpenChange, onSuccess, reactivityKeys
 					},
 					reactivityKeys,
 				}),
-				{
-					loading: "Creating application...",
-					success: (result) => {
-						setCreatedBotToken(result.token)
-						setCreatedBotName(value.name)
-						return `Application "${value.name}" created successfully`
-					},
-					customErrors: {
-						RateLimitExceededError: () => ({
-							title: "Rate limit exceeded",
-							description: "Please wait before trying again.",
-							isRetryable: true,
-						}),
-					},
-				},
 			)
+				.loading("Creating application...")
+				.onSuccess((result) => {
+					setCreatedBotToken(result.token)
+					setCreatedBotName(value.name)
+				})
+				.successMessage(`Application "${value.name}" created successfully`)
+				.onErrorTag("RateLimitExceededError", () => ({
+					title: "Rate limit exceeded",
+					description: "Please wait before trying again.",
+					isRetryable: true,
+				}))
+				.run()
 		},
 	})
 

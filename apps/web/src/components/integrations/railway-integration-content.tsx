@@ -14,7 +14,7 @@ import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Input } from "~/components/ui/input"
 import { channelCollection } from "~/db/collections"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { ConfigureRailwayModal } from "./configure-railway-modal"
 
 type ChannelData = typeof Channel.Model.Type
@@ -60,9 +60,9 @@ export function RailwayIntegrationContent({ organizationId }: RailwayIntegration
 		if (isInitial) setIsLoading(true)
 		const exit = await listWebhooksRef.current({ payload: {} })
 
-		matchExitWithToast(exit, {
-			onSuccess: (result) => setWebhooks(result.data),
-		})
+		exitToast(exit)
+			.onSuccess((result) => setWebhooks(result.data))
+			.run()
 		if (isInitial) setIsLoading(false)
 	}, [])
 

@@ -22,7 +22,7 @@ import {
 	ModalHeader,
 	ModalTitle,
 } from "~/components/ui/modal"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 interface BotCardProps {
 	bot: BotWithUser
@@ -53,45 +53,39 @@ export function BotCard({
 
 	const handleDelete = async () => {
 		setIsDeleting(true)
-		await toastExit(deleteBot({ payload: { id: bot.id }, reactivityKeys }), {
-			loading: "Deleting application...",
-			success: () => {
+		await exitToastAsync(deleteBot({ payload: { id: bot.id }, reactivityKeys }))
+			.loading("Deleting application...")
+			.onSuccess(() => {
 				setShowDeleteConfirm(false)
 				onDelete?.()
-				return "Application deleted successfully"
-			},
-			customErrors: {
-				BotNotFoundError: () => ({
-					title: "Application not found",
-					description: "This application may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage("Application deleted successfully")
+			.onErrorTag("BotNotFoundError", () => ({
+				title: "Application not found",
+				description: "This application may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsDeleting(false)
 	}
 
 	const handleRegenerateToken = async () => {
 		setIsRegenerating(true)
-		await toastExit(regenerateToken({ payload: { id: bot.id } }), {
-			loading: "Regenerating token...",
-			success: (result) => {
-				setRegeneratedToken(result.token)
-				return "Token regenerated successfully"
-			},
-			customErrors: {
-				BotNotFoundError: () => ({
-					title: "Application not found",
-					description: "This application may have been deleted.",
-					isRetryable: false,
-				}),
-				RateLimitExceededError: () => ({
-					title: "Rate limit exceeded",
-					description: "Please wait before trying again.",
-					isRetryable: true,
-				}),
-			},
-		})
+		await exitToastAsync(regenerateToken({ payload: { id: bot.id } }))
+			.loading("Regenerating token...")
+			.onSuccess((result) => setRegeneratedToken(result.token))
+			.successMessage("Token regenerated successfully")
+			.onErrorTag("BotNotFoundError", () => ({
+				title: "Application not found",
+				description: "This application may have been deleted.",
+				isRetryable: false,
+			}))
+			.onErrorTag("RateLimitExceededError", () => ({
+				title: "Rate limit exceeded",
+				description: "Please wait before trying again.",
+				isRetryable: true,
+			}))
+			.run()
 		setIsRegenerating(false)
 	}
 

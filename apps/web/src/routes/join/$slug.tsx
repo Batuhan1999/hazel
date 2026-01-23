@@ -10,7 +10,7 @@ import { Avatar } from "~/components/ui/avatar"
 import { Button } from "~/components/ui/button"
 import { Loader } from "~/components/ui/loader"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/join/$slug")({
 	component: JoinPage,
@@ -78,32 +78,29 @@ function JoinPage() {
 	const handleJoin = async () => {
 		setIsJoining(true)
 		try {
-			const result = await toastExit(
+			const result = await exitToastAsync(
 				joinOrg({
 					payload: { slug },
 				}),
-				{
-					loading: "Joining workspace...",
-					success: () => "Successfully joined workspace!",
-					customErrors: {
-						OrganizationNotFoundError: () => ({
-							title: "Organization not found",
-							description: "This organization may have been deleted.",
-							isRetryable: false,
-						}),
-						PublicInviteDisabledError: () => ({
-							title: "Public invites disabled",
-							description: "This organization has disabled public invites.",
-							isRetryable: false,
-						}),
-						AlreadyMemberError: () => ({
-							title: "Already a member",
-							description: "You're already a member of this workspace.",
-							isRetryable: false,
-						}),
-					},
-				},
 			)
+				.loading("Joining workspace...")
+				.successMessage("Successfully joined workspace!")
+				.onErrorTag("OrganizationNotFoundError", () => ({
+					title: "Organization not found",
+					description: "This organization may have been deleted.",
+					isRetryable: false,
+				}))
+				.onErrorTag("PublicInviteDisabledError", () => ({
+					title: "Public invites disabled",
+					description: "This organization has disabled public invites.",
+					isRetryable: false,
+				}))
+				.onErrorTag("AlreadyMemberError", () => ({
+					title: "Already a member",
+					description: "You're already a member of this workspace.",
+					isRetryable: false,
+				}))
+				.run()
 
 			if (result._tag === "Success") {
 				navigate({

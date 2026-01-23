@@ -31,7 +31,7 @@ import { organizationMemberCollection, userCollection, userPresenceStatusCollect
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import { findExistingDmChannel } from "~/lib/channels"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 import { cn } from "~/lib/utils"
 import { getStatusBadgeColor, getStatusLabel } from "~/utils/status"
 
@@ -122,7 +122,7 @@ function TeamSettings() {
 				params: { orgSlug, id: existingChannel.id },
 			})
 		} else {
-			await toastExit(
+			await exitToastAsync(
 				createDmChannel({
 					payload: {
 						organizationId,
@@ -130,18 +130,16 @@ function TeamSettings() {
 						type: "single",
 					},
 				}),
-				{
-					loading: `Starting conversation with ${targetUserName}...`,
-					success: ({ data }) => {
-						// Navigate to the newly created channel
-						navigate({
-							to: "/$orgSlug/chat/$id",
-							params: { orgSlug, id: data.id },
-						})
-						return `Started conversation with ${targetUserName}`
-					},
-				},
 			)
+				.loading(`Starting conversation with ${targetUserName}...`)
+				.onSuccess(({ data }) => {
+					navigate({
+						to: "/$orgSlug/chat/$id",
+						params: { orgSlug, id: data.id },
+					})
+				})
+				.successMessage(`Started conversation with ${targetUserName}`)
+				.run()
 		}
 	}
 

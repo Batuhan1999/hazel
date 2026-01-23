@@ -23,7 +23,7 @@ import { Textarea } from "~/components/ui/textarea"
 import { TextField } from "~/components/ui/text-field"
 import { useAppForm } from "~/hooks/use-app-form"
 import { BOT_SCOPES } from "~/lib/bot-scopes"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const botSchema = type({
 	name: "1<string<101",
@@ -60,7 +60,7 @@ export function EditBotModal({ isOpen, onOpenChange, bot, onSuccess, reactivityK
 				return
 			}
 
-			await toastExit(
+			await exitToastAsync(
 				updateBot({
 					payload: {
 						id: bot.id,
@@ -72,27 +72,24 @@ export function EditBotModal({ isOpen, onOpenChange, bot, onSuccess, reactivityK
 					},
 					reactivityKeys,
 				}),
-				{
-					loading: "Updating application...",
-					success: () => {
-						onOpenChange(false)
-						onSuccess?.()
-						return `Application "${value.name}" updated successfully`
-					},
-					customErrors: {
-						BotNotFoundError: () => ({
-							title: "Application not found",
-							description: "This application may have been deleted.",
-							isRetryable: false,
-						}),
-						RateLimitExceededError: () => ({
-							title: "Rate limit exceeded",
-							description: "Please wait before trying again.",
-							isRetryable: true,
-						}),
-					},
-				},
 			)
+				.loading("Updating application...")
+				.onSuccess(() => {
+					onOpenChange(false)
+					onSuccess?.()
+				})
+				.successMessage(`Application "${value.name}" updated successfully`)
+				.onErrorTag("BotNotFoundError", () => ({
+					title: "Application not found",
+					description: "This application may have been deleted.",
+					isRetryable: false,
+				}))
+				.onErrorTag("RateLimitExceededError", () => ({
+					title: "Rate limit exceeded",
+					description: "Please wait before trying again.",
+					isRetryable: true,
+				}))
+				.run()
 		},
 	})
 

@@ -20,7 +20,7 @@ import { moveChannelToSectionAction } from "~/db/actions"
 import { useChannelMemberActions } from "~/hooks/use-channel-member-actions"
 import { useOrganization } from "~/hooks/use-organization"
 import { useScrollIntoViewOnActive } from "~/hooks/use-scroll-into-view-on-active"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 interface ChannelItemProps {
 	channel: Omit<Channel, "updatedAt"> & { updatedAt: Date | null }
@@ -51,28 +51,25 @@ export function ChannelItem({ channel, member, threads, sections = [] }: Channel
 		// Don't do anything if already in the target section
 		if (channel.sectionId === sectionId) return
 
-		await toastExit(
+		await exitToastAsync(
 			moveChannelToSection({
 				channelId: channel.id,
 				sectionId,
 			}),
-			{
-				loading: "Moving channel...",
-				success: sectionId ? "Channel moved to section" : "Channel moved to default",
-				customErrors: {
-					ChannelNotFoundError: () => ({
-						title: "Channel not found",
-						description: "This channel may have been deleted.",
-						isRetryable: false,
-					}),
-					ChannelSectionNotFoundError: () => ({
-						title: "Section not found",
-						description: "This section may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			},
 		)
+			.loading("Moving channel...")
+			.successMessage(sectionId ? "Channel moved to section" : "Channel moved to default")
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.onErrorTag("ChannelSectionNotFoundError", () => ({
+				title: "Section not found",
+				description: "This section may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const hasThreads = threads && threads.length > 0

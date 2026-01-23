@@ -4,7 +4,7 @@ import { Button } from "~/components/ui/button"
 import { Description } from "~/components/ui/field"
 import { ModalContent, ModalFooter, ModalHeader, ModalTitle } from "~/components/ui/modal"
 import { deleteChannelAction } from "~/db/actions"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 interface DeleteChannelModalProps {
 	channelId: ChannelId
@@ -26,19 +26,15 @@ export function DeleteChannelModal({
 	const handleDelete = async () => {
 		const exit = await deleteChannel({ channelId })
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
-				onOpenChange(false)
-			},
-			successMessage: "Channel deleted successfully",
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onOpenChange(false))
+			.successMessage("Channel deleted successfully")
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	return (

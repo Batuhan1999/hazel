@@ -13,7 +13,7 @@ import IconCheck from "~/components/icons/icon-check"
 import IconCopy from "~/components/icons/icon-copy"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { getProviderIconUrl } from "../embeds/use-embed-theme"
 
 type IntegrationProvider = "openstatus" | "railway"
@@ -84,20 +84,18 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: (result) => {
+		exitToast(exit)
+			.onSuccess((result) => {
 				setCreatedToken(result.token)
 				onWebhookChange()
-			},
-			successMessage: `${config.name} connected`,
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage(`${config.name} connected`)
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsCreating(false)
 	}
 
@@ -110,17 +108,15 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => onWebhookChange(),
-			successMessage: webhook.isEnabled ? `${config.name} disabled` : `${config.name} enabled`,
-			customErrors: {
-				ChannelWebhookNotFoundError: () => ({
-					title: "Webhook not found",
-					description: "This webhook may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onWebhookChange())
+			.successMessage(webhook.isEnabled ? `${config.name} disabled` : `${config.name} enabled`)
+			.onErrorTag("ChannelWebhookNotFoundError", () => ({
+				title: "Webhook not found",
+				description: "This webhook may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const handleDelete = async () => {
@@ -136,20 +132,18 @@ export function IntegrationCard({ provider, channelId, webhook, onWebhookChange 
 			payload: { id: webhook.id as ChannelWebhookId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
+		exitToast(exit)
+			.onSuccess(() => {
 				setConfirmDelete(false)
 				onWebhookChange()
-			},
-			successMessage: `${config.name} disconnected`,
-			customErrors: {
-				ChannelWebhookNotFoundError: () => ({
-					title: "Webhook not found",
-					description: "This webhook may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage(`${config.name} disconnected`)
+			.onErrorTag("ChannelWebhookNotFoundError", () => ({
+				title: "Webhook not found",
+				description: "This webhook may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsDeleting(false)
 	}
 

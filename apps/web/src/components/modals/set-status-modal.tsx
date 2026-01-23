@@ -14,7 +14,7 @@ import { Switch, SwitchLabel } from "~/components/ui/switch"
 import { TextField } from "~/components/ui/text-field"
 import { TimeField } from "~/components/ui/time-field"
 import { usePresence } from "~/hooks/use-presence"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { EmojiPickerDialog } from "../emoji-picker/emoji-picker-dialog"
 
 type ExpirationOption = "never" | "30min" | "1hr" | "4hr" | "today" | "week" | "custom"
@@ -120,11 +120,11 @@ export function SetStatusModal({ isOpen, onOpenChange }: SetStatusModalProps) {
 			const expiresAt = getExpirationDate(expiration, customDate, customTime)
 			const exit = await setCustomStatus(emoji, message || null, expiresAt, pauseNotifications)
 
-			if (exit && Exit.isSuccess(exit)) {
-				toast.success("Status updated")
-				onOpenChange(false)
-			} else if (exit) {
-				toastExitOnError(exit, {})
+			if (exit) {
+				exitToast(exit)
+					.onSuccess(() => onOpenChange(false))
+					.successMessage("Status updated")
+					.run()
 			}
 		} finally {
 			setIsSubmitting(false)
@@ -136,17 +136,19 @@ export function SetStatusModal({ isOpen, onOpenChange }: SetStatusModalProps) {
 		try {
 			const exit = await clearCustomStatus()
 
-			if (exit && Exit.isSuccess(exit)) {
-				toast.success("Status cleared")
-				setEmoji(null)
-				setMessage("")
-				setExpiration("never")
-				setCustomDate(null)
-				setCustomTime(null)
-				setPauseNotifications(false)
-				onOpenChange(false)
-			} else if (exit) {
-				toastExitOnError(exit, {})
+			if (exit) {
+				exitToast(exit)
+					.onSuccess(() => {
+						setEmoji(null)
+						setMessage("")
+						setExpiration("never")
+						setCustomDate(null)
+						setCustomTime(null)
+						setPauseNotifications(false)
+						onOpenChange(false)
+					})
+					.successMessage("Status cleared")
+					.run()
 			}
 		} finally {
 			setIsSubmitting(false)

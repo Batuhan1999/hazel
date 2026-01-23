@@ -10,7 +10,7 @@ import { Input } from "~/components/ui/input"
 import { TextField } from "~/components/ui/text-field"
 import { Textarea } from "~/components/ui/textarea"
 import { useAppForm } from "~/hooks/use-app-form"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { TokenDisplay } from "./token-display"
 
 const webhookSchema = type({
@@ -56,23 +56,21 @@ export function CreateWebhookForm({ channelId, onSuccess }: CreateWebhookFormPro
 				},
 			})
 
-			matchExitWithToast(exit, {
-				onSuccess: (result) => {
+			exitToast(exit)
+				.onSuccess((result) => {
 					setCreatedWebhook({
 						token: result.token,
 						webhookUrl: result.webhookUrl,
 					})
 					onSuccess?.()
-				},
-				successMessage: "Webhook created successfully",
-				customErrors: {
-					ChannelNotFoundError: () => ({
-						title: "Channel not found",
-						description: "This channel may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+				})
+				.successMessage("Webhook created successfully")
+				.onErrorTag("ChannelNotFoundError", () => ({
+					title: "Channel not found",
+					description: "This channel may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 	})
 

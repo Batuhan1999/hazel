@@ -17,7 +17,7 @@ import { useIntegrationConnection } from "~/db/hooks"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import {
 	type ConfigOption,
 	getBrandfetchIcon,
@@ -144,16 +144,16 @@ function IntegrationConfigPage() {
 			path: { orgId: organizationId, provider: integrationId as IntegrationProvider },
 		})
 
-		toastExitOnError(exit, {
-			onFailure: () => setIsConnecting(false),
-			customErrors: {
-				UnsupportedProviderError: (error) => ({
-					title: "Unsupported provider",
-					description: `The provider "${error.provider}" is not supported.`,
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onErrorTag("UnsupportedProviderError", (error) => ({
+				title: "Unsupported provider",
+				description: `The provider "${error.provider}" is not supported.`,
+				isRetryable: false,
+			}))
+			.run()
+		if (Exit.isFailure(exit)) {
+			setIsConnecting(false)
+		}
 		if (Exit.isSuccess(exit)) {
 			// Redirect to OAuth authorization URL
 			window.location.href = exit.value.authorizationUrl
@@ -167,20 +167,18 @@ function IntegrationConfigPage() {
 			path: { orgId: organizationId, provider: integrationId as IntegrationProvider },
 		})
 
-		toastExitOnError(exit, {
-			customErrors: {
-				IntegrationNotConnectedError: () => ({
-					title: "Integration not connected",
-					description: "This integration is already disconnected.",
-					isRetryable: false,
-				}),
-				UnsupportedProviderError: (error) => ({
-					title: "Unsupported provider",
-					description: `The provider "${error.provider}" is not supported.`,
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onErrorTag("IntegrationNotConnectedError", () => ({
+				title: "Integration not connected",
+				description: "This integration is already disconnected.",
+				isRetryable: false,
+			}))
+			.onErrorTag("UnsupportedProviderError", (error) => ({
+				title: "Unsupported provider",
+				description: `The provider "${error.provider}" is not supported.`,
+				isRetryable: false,
+			}))
+			.run()
 		// Status will be refetched automatically
 		setIsDisconnecting(false)
 	}

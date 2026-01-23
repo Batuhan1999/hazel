@@ -13,7 +13,7 @@ import { TextField } from "~/components/ui/text-field"
 import { organizationCollection, organizationMemberCollection } from "~/db/collections"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useAuth } from "~/lib/auth"
-import { toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 const searchSchema = type({
 	"orgId?": "string",
@@ -92,20 +92,18 @@ function RouteComponent() {
 				payload: { id: organization.id, slug: value.slug },
 			})
 
-			toastExitOnError(exit, {
-				customErrors: {
-					OrganizationSlugAlreadyExistsError: (error) => ({
-						title: "Slug already taken",
-						description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
-						isRetryable: false,
-					}),
-					OrganizationNotFoundError: () => ({
-						title: "Organization not found",
-						description: "This organization may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onErrorTag("OrganizationSlugAlreadyExistsError", (error) => ({
+					title: "Slug already taken",
+					description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
+					isRetryable: false,
+				}))
+				.onErrorTag("OrganizationNotFoundError", () => ({
+					title: "Organization not found",
+					description: "This organization may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 
 			if (Exit.isSuccess(exit)) {
 				navigate({ to: "/$orgSlug", params: { orgSlug: value.slug } })

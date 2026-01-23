@@ -14,7 +14,7 @@ import { createChannelAction } from "~/db/actions"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const channelSchema = type({
 	name: "string > 2",
@@ -49,7 +49,7 @@ export function CreateChannelModal({ isOpen, onOpenChange }: CreateChannelModalP
 		onSubmit: async ({ value }) => {
 			if (!user?.id || !organizationId || !slug) return
 
-			const exit = await toastExit(
+			const exit = await exitToastAsync(
 				createChannel({
 					name: value.name,
 					icon,
@@ -58,27 +58,25 @@ export function CreateChannelModal({ isOpen, onOpenChange }: CreateChannelModalP
 					parentChannelId: null,
 					currentUserId: user.id,
 				}),
-				{
-					loading: "Creating channel...",
-					success: (result) => {
-						// Navigate to the new channel
-						navigate({
-							to: "/$orgSlug/chat/$id",
-							params: {
-								orgSlug: slug,
-								id: result.data.channelId,
-							},
-						})
-
-						// Close modal and reset form
-						onOpenChange(false)
-						form.reset()
-						setIcon(null)
-
-						return "Channel created successfully"
-					},
-				},
 			)
+				.loading("Creating channel...")
+				.onSuccess((result) => {
+					// Navigate to the new channel
+					navigate({
+						to: "/$orgSlug/chat/$id",
+						params: {
+							orgSlug: slug,
+							id: result.data.channelId,
+						},
+					})
+
+					// Close modal and reset form
+					onOpenChange(false)
+					form.reset()
+					setIcon(null)
+				})
+				.successMessage("Channel created successfully")
+				.run()
 
 			return exit
 		},

@@ -11,7 +11,7 @@ import { Input, InputGroup } from "~/components/ui/input"
 import { SectionHeader } from "~/components/ui/section-header"
 import { usePublicBots } from "~/db/hooks"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/integrations/marketplace")({
 	component: MarketplaceSettings,
@@ -43,32 +43,29 @@ function MarketplaceSettings() {
 	// Handle bot installation
 	const handleInstall = useCallback(
 		async (botId: string) => {
-			await toastExit(
+			await exitToastAsync(
 				installBot({
 					payload: { botId: botId as BotId },
 				}),
-				{
-					loading: "Installing application...",
-					success: () => "Application installed successfully",
-					customErrors: {
-						BotNotFoundError: () => ({
-							title: "Application not found",
-							description: "This application may no longer be available.",
-							isRetryable: false,
-						}),
-						BotAlreadyInstalledError: () => ({
-							title: "Already installed",
-							description: "This application is already installed in your workspace.",
-							isRetryable: false,
-						}),
-						RateLimitExceededError: () => ({
-							title: "Rate limit exceeded",
-							description: "Please wait before trying again.",
-							isRetryable: true,
-						}),
-					},
-				},
 			)
+				.loading("Installing application...")
+				.successMessage("Application installed successfully")
+				.onErrorTag("BotNotFoundError", () => ({
+					title: "Application not found",
+					description: "This application may no longer be available.",
+					isRetryable: false,
+				}))
+				.onErrorTag("BotAlreadyInstalledError", () => ({
+					title: "Already installed",
+					description: "This application is already installed in your workspace.",
+					isRetryable: false,
+				}))
+				.onErrorTag("RateLimitExceededError", () => ({
+					title: "Rate limit exceeded",
+					description: "Please wait before trying again.",
+					isRetryable: true,
+				}))
+				.run()
 		},
 		[installBot],
 	)

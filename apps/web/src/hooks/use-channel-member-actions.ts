@@ -2,15 +2,13 @@ import { useAtomSet } from "@effect-atom/atom-react"
 import type { ChannelMemberId } from "@hazel/schema"
 import { deleteChannelMemberMutation } from "~/atoms/channel-member-atoms"
 import { updateChannelMemberAction } from "~/db/actions"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
-const MEMBER_NOT_FOUND_ERROR = {
-	ChannelMemberNotFoundError: () => ({
-		title: "Membership not found",
-		description: "You may no longer be a member of this item.",
-		isRetryable: false,
-	}),
-}
+const memberNotFoundError = () => ({
+	title: "Membership not found",
+	description: "You may no longer be a member of this item.",
+	isRetryable: false,
+})
 
 interface MemberState {
 	id: ChannelMemberId
@@ -42,11 +40,10 @@ export function useChannelMemberActions(member: MemberState | undefined, itemTyp
 			isMuted: !member.isMuted,
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: member.isMuted ? `${itemLabel} unmuted` : `${itemLabel} muted`,
-			customErrors: MEMBER_NOT_FOUND_ERROR,
-		})
+		exitToast(exit)
+			.successMessage(member.isMuted ? `${itemLabel} unmuted` : `${itemLabel} muted`)
+			.onErrorTag("ChannelMemberNotFoundError", memberNotFoundError)
+			.run()
 	}
 
 	const handleToggleFavorite = async () => {
@@ -56,11 +53,10 @@ export function useChannelMemberActions(member: MemberState | undefined, itemTyp
 			isFavorite: !member.isFavorite,
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: member.isFavorite ? "Removed from favorites" : "Added to favorites",
-			customErrors: MEMBER_NOT_FOUND_ERROR,
-		})
+		exitToast(exit)
+			.successMessage(member.isFavorite ? "Removed from favorites" : "Added to favorites")
+			.onErrorTag("ChannelMemberNotFoundError", memberNotFoundError)
+			.run()
 	}
 
 	const handleLeave = async () => {
@@ -69,11 +65,10 @@ export function useChannelMemberActions(member: MemberState | undefined, itemTyp
 			payload: { id: member.id },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: itemType === "thread" ? "Left thread" : "Left channel successfully",
-			customErrors: MEMBER_NOT_FOUND_ERROR,
-		})
+		exitToast(exit)
+			.successMessage(itemType === "thread" ? "Left thread" : "Left channel successfully")
+			.onErrorTag("ChannelMemberNotFoundError", memberNotFoundError)
+			.run()
 	}
 
 	const handleToggleHidden = async () => {
@@ -83,11 +78,10 @@ export function useChannelMemberActions(member: MemberState | undefined, itemTyp
 			isHidden: !member.isHidden,
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {},
-			successMessage: member.isHidden ? "Conversation unhidden" : "Conversation hidden",
-			customErrors: MEMBER_NOT_FOUND_ERROR,
-		})
+		exitToast(exit)
+			.successMessage(member.isHidden ? "Conversation unhidden" : "Conversation hidden")
+			.onErrorTag("ChannelMemberNotFoundError", memberNotFoundError)
+			.run()
 	}
 
 	return { handleToggleMute, handleToggleFavorite, handleLeave, handleToggleHidden }

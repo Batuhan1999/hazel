@@ -20,7 +20,7 @@ import { SectionLabel } from "~/components/ui/section-label"
 import { Switch, SwitchLabel } from "~/components/ui/switch"
 import { useOrganization } from "~/hooks/use-organization"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/debug")({
 	beforeLoad: ({ params }) => {
@@ -49,21 +49,20 @@ function DebugSettings() {
 
 	const handleGenerateMockData = async () => {
 		setIsGeneratingMockData(true)
-		const _exit = await toastExit(
+		await exitToastAsync(
 			generateMockData({
 				payload: {
 					organizationId: organizationId!,
 				},
 			}),
-			{
-				loading: "Generating mock data...",
-				success: (result) => {
-					setShowMockDataDialog(false)
-					return `Mock data generated! Created ${result.created.users} users, ${result.created.channels} channels, ${result.created.messages} messages, and ${result.created.threads} thread.`
-				},
-				error: "Failed to generate mock data",
-			},
 		)
+			.loading("Generating mock data...")
+			.onSuccess(() => setShowMockDataDialog(false))
+			.successMessage(
+				(result) =>
+					`Mock data generated! Created ${result.created.users} users, ${result.created.channels} channels, ${result.created.messages} messages, and ${result.created.threads} thread.`,
+			)
+			.run()
 		setIsGeneratingMockData(false)
 	}
 

@@ -36,7 +36,7 @@ import { channelMemberWithUserCollection } from "~/db/materialized-collections"
 import { useOrganization } from "~/hooks/use-organization"
 import { usePresence } from "~/hooks/use-presence"
 import { useAuth } from "~/lib/auth"
-import { matchExitWithToast, toastExit } from "~/lib/toast-exit"
+import { exitToast, exitToastAsync } from "~/lib/toast-exit"
 import { cn } from "~/lib/utils"
 import { ChannelIcon } from "./channel-icon"
 import IconHashtag from "./icons/icon-hashtag"
@@ -818,7 +818,7 @@ function CreateChannelView({ onClose, onBack }: { onClose: () => void; onBack: (
 		setIsSubmitting(true)
 		setError(null)
 
-		await toastExit(
+		await exitToastAsync(
 			createChannel({
 				name,
 				icon: null,
@@ -827,21 +827,20 @@ function CreateChannelView({ onClose, onBack }: { onClose: () => void; onBack: (
 				parentChannelId: null,
 				currentUserId: user.id,
 			}),
-			{
-				loading: "Creating channel...",
-				success: (result) => {
-					navigate({
-						to: "/$orgSlug/chat/$id",
-						params: {
-							orgSlug: slug,
-							id: result.data.channelId,
-						},
-					})
-					onClose()
-					return "Channel created successfully"
-				},
-			},
 		)
+			.loading("Creating channel...")
+			.onSuccess((result) => {
+				navigate({
+					to: "/$orgSlug/chat/$id",
+					params: {
+						orgSlug: slug,
+						id: result.data.channelId,
+					},
+				})
+				onClose()
+			})
+			.successMessage("Channel created successfully")
+			.run()
 
 		setIsSubmitting(false)
 	}
@@ -965,19 +964,15 @@ function JoinChannelView({ onClose, onBack }: { onClose: () => void; onBack: () 
 			userId: user.id as UserId,
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
-				onClose()
-			},
-			successMessage: "Successfully joined channel",
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onClose())
+			.successMessage("Successfully joined channel")
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	return (

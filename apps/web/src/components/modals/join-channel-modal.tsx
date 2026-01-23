@@ -13,7 +13,7 @@ import { joinChannelAction } from "~/db/actions"
 import { channelCollection, channelMemberCollection } from "~/db/collections"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 interface JoinChannelModalProps {
 	isOpen: boolean
@@ -72,20 +72,18 @@ export function JoinChannelModal({ isOpen, onOpenChange }: JoinChannelModalProps
 			userId: UserId.make(user.id),
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
+		exitToast(exit)
+			.onSuccess(() => {
 				onOpenChange(false)
 				setSearchQuery("")
-			},
-			successMessage: "Successfully joined channel",
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage("Successfully joined channel")
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const filteredChannels =

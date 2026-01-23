@@ -8,7 +8,7 @@ import { Description, Label } from "~/components/ui/field"
 import { Input } from "~/components/ui/input"
 import { ModalBody, ModalContent, ModalFooter, ModalHeader, ModalTitle } from "~/components/ui/modal"
 import { TextField } from "~/components/ui/text-field"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 interface DeleteWorkspaceModalProps {
 	organizationId: OrganizationId
@@ -40,26 +40,24 @@ export function DeleteWorkspaceModal({
 
 		const exit = await deleteOrganization({ payload: { id: organizationId } })
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
+		exitToast(exit)
+			.onSuccess(() => {
 				setConfirmationText("")
 				onOpenChange(false)
 				onDeleted()
-			},
-			successMessage: "Workspace deleted successfully",
-			customErrors: {
-				OrganizationNotFoundError: () => ({
-					title: "Workspace not found",
-					description: "This workspace may have already been deleted.",
-					isRetryable: false,
-				}),
-				UnauthorizedError: () => ({
-					title: "Unauthorized",
-					description: "You don't have permission to delete this workspace.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage("Workspace deleted successfully")
+			.onErrorTag("OrganizationNotFoundError", () => ({
+				title: "Workspace not found",
+				description: "This workspace may have already been deleted.",
+				isRetryable: false,
+			}))
+			.onCommonErrorTag("UnauthorizedError", () => ({
+				title: "Unauthorized",
+				description: "You don't have permission to delete this workspace.",
+				isRetryable: false,
+			}))
+			.run()
 	}
 
 	const handleOpenChange = (open: boolean) => {

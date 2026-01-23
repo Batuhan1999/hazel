@@ -19,7 +19,7 @@ import { useAppForm } from "~/hooks/use-app-form"
 import { useOrganization } from "~/hooks/use-organization"
 import { useAuth } from "~/lib/auth"
 import { findExistingDmChannel } from "~/lib/channels"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const dmFormSchema = type({
 	userIds: "string[]",
@@ -98,7 +98,7 @@ export function CreateDmModal({ isOpen, onOpenChange }: CreateDmModalProps) {
 				})
 				return handleClose()
 			}
-			await toastExit(
+			await exitToastAsync(
 				createDmChannel({
 					payload: {
 						organizationId,
@@ -107,21 +107,21 @@ export function CreateDmModal({ isOpen, onOpenChange }: CreateDmModalProps) {
 						name: type === "direct" ? selectedUserNames : undefined,
 					},
 				}),
-				{
-					loading: "Creating conversation...",
-					success: (result) => {
-						navigate({
-							to: "/$orgSlug/chat/$id",
-							params: { orgSlug: slug, id: result.data.id },
-						})
-						handleClose()
-						if (type === "single") {
-							return `Started conversation with ${targetUser?.firstName}`
-						}
-						return `Created group conversation with ${value.userIds.length} people`
-					},
-				},
 			)
+				.loading("Creating conversation...")
+				.onSuccess((result) => {
+					navigate({
+						to: "/$orgSlug/chat/$id",
+						params: { orgSlug: slug, id: result.data.id },
+					})
+					handleClose()
+				})
+				.successMessage(() =>
+					type === "single"
+						? `Started conversation with ${targetUser?.firstName}`
+						: `Created group conversation with ${value.userIds.length} people`,
+				)
+				.run()
 		},
 	})
 

@@ -12,7 +12,7 @@ import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalTitle } 
 import { Select, SelectContent, SelectItem, SelectTrigger } from "~/components/ui/select"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useOrganization } from "~/hooks/use-organization"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 interface InviteFormData {
 	invites: {
@@ -51,33 +51,30 @@ export const EmailInviteModal = ({
 
 			if (validInvites.length === 0) return
 
-			const exit = await toastExit(
+			const exit = await exitToastAsync(
 				createInvitation({
 					payload: {
 						organizationId,
 						invites: validInvites,
 					},
 				}),
-				{
-					loading: "Sending invitations...",
-					success: (result) => {
-						const { successCount, errorCount } = result
-
-						// Close modal and reset form
-						onOpenChange(false)
-						form.reset()
-
-						if (successCount > 0 && errorCount === 0) {
-							return `Successfully sent ${successCount} invitation${successCount > 1 ? "s" : ""}`
-						}
-						if (successCount > 0 && errorCount > 0) {
-							return `Sent ${successCount} invitation${successCount > 1 ? "s" : ""}, ${errorCount} failed`
-						}
-						return "Failed to send invitations"
-					},
-					error: "Failed to send invitations",
-				},
 			)
+				.loading("Sending invitations...")
+				.onSuccess((result) => {
+					onOpenChange(false)
+					form.reset()
+				})
+				.successMessage((result) => {
+					const { successCount, errorCount } = result
+					if (successCount > 0 && errorCount === 0) {
+						return `Successfully sent ${successCount} invitation${successCount > 1 ? "s" : ""}`
+					}
+					if (successCount > 0 && errorCount > 0) {
+						return `Sent ${successCount} invitation${successCount > 1 ? "s" : ""}, ${errorCount} failed`
+					}
+					return "Failed to send invitations"
+				})
+				.run()
 
 			return exit
 		},

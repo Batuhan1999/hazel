@@ -19,7 +19,7 @@ import {
 } from "~/components/ui/modal"
 import { channelCollection } from "~/db/collections"
 import { HazelApiClient } from "~/lib/services/common/atom-client"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 type GitHubEventType = typeof GitHubSubscription.GitHubEventType.Type
 type ChannelData = typeof Channel.Model.Type
@@ -104,30 +104,28 @@ export function AddGitHubSubscriptionModal({
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => {
+		exitToast(exit)
+			.onSuccess(() => {
 				onSuccess()
 				handleClose()
-			},
-			successMessage: `Subscribed #${selectedChannel.name} to ${selectedRepo.fullName}`,
-			customErrors: {
-				GitHubSubscriptionExistsError: () => ({
-					title: "Already subscribed",
-					description: "This channel is already subscribed to this repository.",
-					isRetryable: false,
-				}),
-				GitHubNotConnectedError: () => ({
-					title: "GitHub not connected",
-					description: "Connect GitHub in organization settings first.",
-					isRetryable: false,
-				}),
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+			})
+			.successMessage(`Subscribed #${selectedChannel.name} to ${selectedRepo.fullName}`)
+			.onErrorTag("GitHubSubscriptionExistsError", () => ({
+				title: "Already subscribed",
+				description: "This channel is already subscribed to this repository.",
+				isRetryable: false,
+			}))
+			.onErrorTag("GitHubNotConnectedError", () => ({
+				title: "GitHub not connected",
+				description: "Connect GitHub in organization settings first.",
+				isRetryable: false,
+			}))
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsCreating(false)
 	}
 

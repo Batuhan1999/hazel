@@ -14,7 +14,7 @@ import { resolvedThemeAtom } from "~/components/theme-provider"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { Menu, MenuContent, MenuItem, MenuLabel, MenuSeparator } from "~/components/ui/menu"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { getProviderIconUrl } from "../embeds/use-embed-theme"
 import { IconPlay } from "../icons/icon-play"
 
@@ -54,17 +54,15 @@ export function GitHubSubscriptionItem({ subscription, onUpdate, onEdit }: GitHu
 			},
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => onUpdate(),
-			successMessage: subscription.isEnabled ? "Subscription disabled" : "Subscription enabled",
-			customErrors: {
-				GitHubSubscriptionNotFoundError: () => ({
-					title: "Subscription not found",
-					description: "This subscription may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onUpdate())
+			.successMessage(subscription.isEnabled ? "Subscription disabled" : "Subscription enabled")
+			.onErrorTag("GitHubSubscriptionNotFoundError", () => ({
+				title: "Subscription not found",
+				description: "This subscription may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsToggling(false)
 	}
 
@@ -80,17 +78,15 @@ export function GitHubSubscriptionItem({ subscription, onUpdate, onEdit }: GitHu
 			payload: { id: subscription.id as GitHubSubscriptionId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: () => onUpdate(),
-			successMessage: "Subscription removed",
-			customErrors: {
-				GitHubSubscriptionNotFoundError: () => ({
-					title: "Subscription not found",
-					description: "This subscription may have already been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess(() => onUpdate())
+			.successMessage("Subscription removed")
+			.onErrorTag("GitHubSubscriptionNotFoundError", () => ({
+				title: "Subscription not found",
+				description: "This subscription may have already been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsDeleting(false)
 	}
 

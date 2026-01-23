@@ -10,7 +10,7 @@ import { Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, ModalTitle } 
 import { TextField } from "~/components/ui/text-field"
 import { useAppForm } from "~/hooks/use-app-form"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 const organizationSchema = type({
 	name: "string > 2",
@@ -43,7 +43,7 @@ export function CreateOrganizationModal({ isOpen, onOpenChange }: CreateOrganiza
 			onChange: organizationSchema,
 		},
 		onSubmit: async ({ value }) => {
-			const exit = await toastExit(
+			const exit = await exitToastAsync(
 				createOrganization({
 					payload: {
 						name: value.name,
@@ -53,29 +53,24 @@ export function CreateOrganizationModal({ isOpen, onOpenChange }: CreateOrganiza
 						isPublic: false,
 					},
 				}),
-				{
-					loading: "Creating server...",
-					success: (result) => {
-						// Close modal and reset form
-						handleClose()
-						form.reset()
-
-						// Redirect to the new organization
-						// Use login() to handle organization switch - Tauri-aware
-						const returnUrl = `/${result.data.slug}`
-						login({ organizationId: result.data.id, returnTo: returnUrl })
-
-						return "Server created successfully"
-					},
-					customErrors: {
-						OrganizationSlugAlreadyExistsError: (error) => ({
-							title: "Slug already taken",
-							description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
-							isRetryable: false,
-						}),
-					},
-				},
 			)
+				.loading("Creating server...")
+				.onSuccess((result) => {
+					handleClose()
+					form.reset()
+
+					// Redirect to the new organization
+					// Use login() to handle organization switch - Tauri-aware
+					const returnUrl = `/${result.data.slug}`
+					login({ organizationId: result.data.id, returnTo: returnUrl })
+				})
+				.successMessage("Server created successfully")
+				.onErrorTag("OrganizationSlugAlreadyExistsError", (error) => ({
+					title: "Slug already taken",
+					description: `The slug "${error.slug}" is already in use. Please choose a different one.`,
+					isRetryable: false,
+				}))
+				.run()
 
 			return exit
 		},

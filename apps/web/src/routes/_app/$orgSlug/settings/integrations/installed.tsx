@@ -10,7 +10,7 @@ import { EmptyState } from "~/components/ui/empty-state"
 import { SectionHeader } from "~/components/ui/section-header"
 import { useInstalledBots } from "~/db/hooks"
 import { useAuth } from "~/lib/auth"
-import { toastExit } from "~/lib/toast-exit"
+import { exitToastAsync } from "~/lib/toast-exit"
 
 export const Route = createFileRoute("/_app/$orgSlug/settings/integrations/installed")({
 	component: InstalledAppsSettings,
@@ -31,27 +31,24 @@ function InstalledAppsSettings() {
 	// Handle bot uninstallation
 	const handleUninstall = useCallback(
 		async (botId: string) => {
-			await toastExit(
+			await exitToastAsync(
 				uninstallBot({
 					payload: { botId: botId as BotId },
 				}),
-				{
-					loading: "Uninstalling application...",
-					success: () => "Application uninstalled successfully",
-					customErrors: {
-						BotNotFoundError: () => ({
-							title: "Application not found",
-							description: "This application may have already been uninstalled.",
-							isRetryable: false,
-						}),
-						RateLimitExceededError: () => ({
-							title: "Rate limit exceeded",
-							description: "Please wait before trying again.",
-							isRetryable: true,
-						}),
-					},
-				},
 			)
+				.loading("Uninstalling application...")
+				.successMessage("Application uninstalled successfully")
+				.onErrorTag("BotNotFoundError", () => ({
+					title: "Application not found",
+					description: "This application may have already been uninstalled.",
+					isRetryable: false,
+				}))
+				.onErrorTag("RateLimitExceededError", () => ({
+					title: "Rate limit exceeded",
+					description: "Please wait before trying again.",
+					isRetryable: true,
+				}))
+				.run()
 		},
 		[uninstallBot],
 	)

@@ -32,7 +32,7 @@ import {
 	unpinMessageAction,
 } from "~/db/actions"
 import { useAuth } from "~/lib/auth"
-import { matchExitWithToast, toastExitOnError } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 interface SendMessageProps {
 	content: string
@@ -195,20 +195,18 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				setReplyToMessageId(savedReplyToMessageId)
 				setAttachmentIds(savedAttachmentIds)
 
-				toastExitOnError(tx, {
-					customErrors: {
-						RateLimitExceededError: (e) => ({
-							title: "Rate limit exceeded",
-							description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before sending another message.`,
-							isRetryable: false,
-						}),
-						ChannelNotFoundError: () => ({
-							title: "Channel not found",
-							description: "This channel may have been deleted.",
-							isRetryable: false,
-						}),
-					},
-				})
+				exitToast(tx)
+					.onErrorTag("RateLimitExceededError", (e) => ({
+						title: "Rate limit exceeded",
+						description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before sending another message.`,
+						isRetryable: false,
+					}))
+					.onErrorTag("ChannelNotFoundError", () => ({
+						title: "Channel not found",
+						description: "This channel may have been deleted.",
+						isRetryable: false,
+					}))
+					.run()
 			}
 		},
 		[
@@ -227,20 +225,18 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 	const editMessage = useCallback(
 		async (messageId: MessageId, content: string) => {
 			const exit = await editMessageMutation({ messageId, content })
-			toastExitOnError(exit, {
-				customErrors: {
-					RateLimitExceededError: (e) => ({
-						title: "Rate limit exceeded",
-						description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before trying again.`,
-						isRetryable: false,
-					}),
-					MessageNotFoundError: () => ({
-						title: "Message not found",
-						description: "This message may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onErrorTag("RateLimitExceededError", (e) => ({
+					title: "Rate limit exceeded",
+					description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before trying again.`,
+					isRetryable: false,
+				}))
+				.onErrorTag("MessageNotFoundError", () => ({
+					title: "Message not found",
+					description: "This message may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 		[editMessageMutation],
 	)
@@ -248,20 +244,18 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 	const deleteMessage = useCallback(
 		async (messageId: MessageId) => {
 			const exit = await deleteMessageMutation({ messageId })
-			toastExitOnError(exit, {
-				customErrors: {
-					RateLimitExceededError: (e) => ({
-						title: "Rate limit exceeded",
-						description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before trying again.`,
-						isRetryable: false,
-					}),
-					MessageNotFoundError: () => ({
-						title: "Message not found",
-						description: "This message may have already been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.onErrorTag("RateLimitExceededError", (e) => ({
+					title: "Rate limit exceeded",
+					description: `Please wait ${Math.ceil(e.retryAfterMs / 1000)} seconds before trying again.`,
+					isRetryable: false,
+				}))
+				.onErrorTag("MessageNotFoundError", () => ({
+					title: "Message not found",
+					description: "This message may have already been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 		[deleteMessageMutation],
 	)
@@ -277,16 +271,13 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				userId: UserId.make(user.id),
 			})
 
-			toastExitOnError(tx, {
-				error: "Failed to toggle reaction",
-				customErrors: {
-					MessageNotFoundError: () => ({
-						title: "Message not found",
-						description: "This message may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(tx)
+				.onErrorTag("MessageNotFoundError", () => ({
+					title: "Message not found",
+					description: "This message may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 		[user?.id, toggleReactionMutation],
 	)
@@ -307,17 +298,14 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				userId: UserId.make(user.id),
 			})
 
-			matchExitWithToast(exit, {
-				onSuccess: () => {},
-				successMessage: "Message pinned",
-				customErrors: {
-					MessageNotFoundError: () => ({
-						title: "Message not found",
-						description: "This message may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.successMessage("Message pinned")
+				.onErrorTag("MessageNotFoundError", () => ({
+					title: "Message not found",
+					description: "This message may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 		[channelId, user?.id, pinMessageMutation],
 	)
@@ -326,17 +314,14 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 		async (pinnedMessageId: PinnedMessageId) => {
 			const exit = await unpinMessageMutation({ pinnedMessageId })
 
-			matchExitWithToast(exit, {
-				onSuccess: () => {},
-				successMessage: "Message unpinned",
-				customErrors: {
-					PinnedMessageNotFoundError: () => ({
-						title: "Pin not found",
-						description: "This message may have already been unpinned.",
-						isRetryable: false,
-					}),
-				},
-			})
+			exitToast(exit)
+				.successMessage("Message unpinned")
+				.onErrorTag("PinnedMessageNotFoundError", () => ({
+					title: "Pin not found",
+					description: "This message may have already been unpinned.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 		[unpinMessageMutation],
 	)
@@ -378,21 +363,18 @@ export function ChatProvider({ channelId, organizationId, children, onMessageSen
 				// Clear pending state
 				setPendingThreadChannelId(null)
 
-				toastExitOnError(exit, {
-					error: "Failed to create thread",
-					customErrors: {
-						MessageNotFoundError: () => ({
-							title: "Message not found",
-							description: "The message no longer exists",
-							isRetryable: false,
-						}),
-						NestedThreadError: () => ({
-							title: "Cannot create thread",
-							description: "Threads cannot be created within threads",
-							isRetryable: false,
-						}),
-					},
-				})
+				exitToast(exit)
+					.onErrorTag("MessageNotFoundError", () => ({
+						title: "Message not found",
+						description: "The message no longer exists",
+						isRetryable: false,
+					}))
+					.onErrorTag("NestedThreadError", () => ({
+						title: "Cannot create thread",
+						description: "Threads cannot be created within threads",
+						isRetryable: false,
+					}))
+					.run()
 
 				// Close panel on failure
 				if (!Exit.isSuccess(exit)) {

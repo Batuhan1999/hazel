@@ -10,7 +10,7 @@ import { TextField } from "~/components/ui/text-field"
 import { updateChannelAction } from "~/db/actions"
 import { channelCollection } from "~/db/collections"
 import { useAppForm } from "~/hooks/use-app-form"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 
 const threadNameSchema = type({
 	name: "string.trim",
@@ -53,20 +53,18 @@ export function RenameThreadModal({ threadId, isOpen, onOpenChange }: RenameThre
 
 			const exit = await updateThread({ channelId: thread.id, name: trimmedName })
 
-			matchExitWithToast(exit, {
-				onSuccess: () => {
+			exitToast(exit)
+				.onSuccess(() => {
 					onOpenChange(false)
 					form.reset()
-				},
-				successMessage: "Thread renamed successfully",
-				customErrors: {
-					ChannelNotFoundError: () => ({
-						title: "Thread not found",
-						description: "This thread may have been deleted.",
-						isRetryable: false,
-					}),
-				},
-			})
+				})
+				.successMessage("Thread renamed successfully")
+				.onErrorTag("ChannelNotFoundError", () => ({
+					title: "Thread not found",
+					description: "This thread may have been deleted.",
+					isRetryable: false,
+				}))
+				.run()
 		},
 	})
 

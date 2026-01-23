@@ -11,7 +11,7 @@ import { resolvedThemeAtom } from "~/components/theme-provider"
 import { Badge } from "~/components/ui/badge"
 import { Button } from "~/components/ui/button"
 import { useIntegrationConnection } from "~/db/hooks"
-import { matchExitWithToast } from "~/lib/toast-exit"
+import { exitToast } from "~/lib/toast-exit"
 import { getProviderIconUrl } from "../embeds/use-embed-theme"
 import { AddGitHubRepoModal } from "./add-github-repo-modal"
 import { GitHubSubscriptionItem } from "./github-subscription-card"
@@ -47,16 +47,14 @@ export function GitHubIntegrationCard({
 			payload: { channelId },
 		})
 
-		matchExitWithToast(exit, {
-			onSuccess: (result) => setSubscriptions(result.data as unknown as GitHubSubscriptionData[]),
-			customErrors: {
-				ChannelNotFoundError: () => ({
-					title: "Channel not found",
-					description: "This channel may have been deleted.",
-					isRetryable: false,
-				}),
-			},
-		})
+		exitToast(exit)
+			.onSuccess((result) => setSubscriptions(result.data as unknown as GitHubSubscriptionData[]))
+			.onErrorTag("ChannelNotFoundError", () => ({
+				title: "Channel not found",
+				description: "This channel may have been deleted.",
+				isRetryable: false,
+			}))
+			.run()
 		setIsLoading(false)
 	}, [channelId])
 
