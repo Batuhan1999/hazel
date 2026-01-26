@@ -4,6 +4,7 @@ import { Config, Effect, Option, Schema } from "effect"
 import { createRemoteJWKSet, jwtVerify } from "jose"
 import { UserLookupCache } from "../cache/user-lookup-cache.ts"
 import { SessionValidator } from "../session/session-validator.ts"
+import { WorkOSClient } from "../session/workos-client.ts"
 import type { AuthenticatedUserContext } from "../types.ts"
 
 /**
@@ -31,10 +32,11 @@ export class ProxyAuthenticationError extends Schema.TaggedError<ProxyAuthentica
  */
 export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAuth", {
 	accessors: true,
-	dependencies: [SessionValidator.Default, UserLookupCache.Default],
+	dependencies: [SessionValidator.Default, UserLookupCache.Default, WorkOSClient.Default],
 	effect: Effect.gen(function* () {
 		const validator = yield* SessionValidator
 		const userLookupCache = yield* UserLookupCache
+		const workos = yield* WorkOSClient
 		const db = yield* Database.Database
 
 		/**
@@ -89,6 +91,30 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 			}
 
 			return Option.map(userOption, (user) => user.id)
+		})
+
+		/**
+		 * Resolve the internal organization UUID from a WorkOS organization ID.
+		 * WorkOS stores our internal UUID as the organization's externalId.
+		 */
+		const resolveInternalOrgId = Effect.fn("ProxyAuth.resolveInternalOrgId")(function* (
+			workosOrgId: string | undefined,
+		) {
+			if (!workosOrgId) {
+				return Option.none<OrganizationId>()
+			}
+
+			const orgResult = yield* workos.getOrganization(workosOrgId).pipe(
+				Effect.map(Option.some),
+				Effect.catchTag("OrganizationFetchError", (error) =>
+					Effect.logWarning("Failed to resolve internal org ID from JWT", {
+						workosOrgId,
+						error: error.message,
+					}).pipe(Effect.as(Option.none())),
+				),
+			)
+
+			return Option.flatMap(orgResult, (org) => Option.fromNullable(org.externalId as OrganizationId))
 		})
 
 		/**
@@ -188,11 +214,15 @@ export class ProxyAuth extends Effect.Service<ProxyAuth>()("@hazel/auth/ProxyAut
 			yield* Effect.annotateCurrentSpan("user.found", true)
 			yield* Effect.annotateCurrentSpan("user.id", userIdOption.value)
 
+			// Resolve internal organization ID from WorkOS org_id claim
+			const workosOrgId = payload.org_id as string | undefined
+			const internalOrgId = yield* resolveInternalOrgId(workosOrgId)
+
 			return {
 				workosUserId: workOsUserId,
 				internalUserId: userIdOption.value as UserId,
 				email: (payload.email as string) ?? "",
-				organizationId: (payload.org_id as OrganizationId) ?? undefined,
+				organizationId: Option.getOrUndefined(internalOrgId),
 				role: (payload.role as string) ?? undefined,
 				refreshedSession: undefined, // No session refresh for JWT auth
 			} satisfies AuthenticatedUserContext
